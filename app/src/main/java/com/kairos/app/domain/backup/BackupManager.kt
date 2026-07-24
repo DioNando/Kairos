@@ -1,0 +1,186 @@
+package com.kairos.app.domain.backup
+
+import com.kairos.app.data.local.LabelDao
+import com.kairos.app.data.local.SubtaskDao
+import com.kairos.app.data.local.TaskDao
+import com.kairos.app.data.model.AppSettings
+import com.kairos.app.data.model.Label
+import com.kairos.app.data.model.Subtask
+import com.kairos.app.data.model.Task
+import com.kairos.app.data.repository.SettingsRepository
+import kotlinx.coroutines.flow.first
+import org.json.JSONArray
+import org.json.JSONObject
+
+/**
+ * Sauvegarde et restauration **locale** de toutes les données (JSON auto-suffisant et versionné).
+ * Mapping manuel via `org.json` (aucune dépendance de sérialisation ajoutée).
+ *
+ * L'import **remplace** l'intégralité des données (clear + réinsertion en conservant les ids, ce qui
+ * préserve le lien tâche↔étiquette). Le JSON est entièrement parsé **avant** tout effacement : un
+ * fichier corrompu lève une exception sans toucher à la base.
+ */
+class BackupManager(
+    private val taskDao: TaskDao,
+    private val labelDao: LabelDao,
+    private val subtaskDao: SubtaskDao,
+    private val settingsRepository: SettingsRepository,
+) {
+
+    /** Bilan d'un import réussi, pour le retour utilisateur. */
+    data class ImportResult(val tasks: Int, val labels: Int)
+
+    // --- Export --------------------------------------------------------------------------------
+
+    suspend fun export(): String {
+        val root = JSONObject()
+        root.put("version", FORMAT_VERSION)
+
+        root.put("labels", labelDao.getAll().toJsonArray { l ->
+            JSONObject().apply {
+                put("id", l.id)
+                put("name", l.name)
+                put("colorHex", l.colorHex)
+                put("createdAt", l.createdAt)
+            }
+        })
+
+        root.put("tasks", taskDao.getAll().toJsonArray { t ->
+            JSONObject().apply {
+                put("id", t.id)
+                put("title", t.title)
+                put("note", t.note)
+                put("important", t.important)
+                put("urgent", t.urgent)
+                if (t.dueAt != null) put("dueAt", t.dueAt)
+                if (t.labelId != null) put("labelId", t.labelId)
+                put("position", t.position)
+                put("createdAt", t.createdAt)
+                if (t.completedAt != null) put("completedAt", t.completedAt)
+                put("recurrence", t.recurrence)
+                put("focusSeconds", t.focusSeconds)
+            }
+        })
+
+        root.put("subtasks", subtaskDao.getAll().toJsonArray { s ->
+            JSONObject().apply {
+                put("id", s.id)
+                put("taskId", s.taskId)
+                put("title", s.title)
+                put("done", s.done)
+                put("position", s.position)
+            }
+        })
+
+        root.put("settings", settingsRepository.settings.first().toJson())
+
+        return root.toString(2)
+    }
+
+    // --- Import --------------------------------------------------------------------------------
+
+    suspend fun import(jsonText: String): ImportResult {
+        val root = JSONObject(jsonText)
+
+        // 1) Tout parser d'abord (échec = base intacte).
+        val labels = root.optJSONArray("labels").mapObjects { o ->
+            Label(
+                id = o.getLong("id"),
+                name = o.getString("name"),
+                colorHex = o.optString("colorHex", "#9C9AA6"),
+                createdAt = o.optLong("createdAt"),
+            )
+        }
+        val tasks = root.optJSONArray("tasks").mapObjects { o ->
+            Task(
+                id = o.getLong("id"),
+                title = o.getString("title"),
+                note = o.optString("note", ""),
+                important = o.optBoolean("important"),
+                urgent = o.optBoolean("urgent"),
+                dueAt = if (o.has("dueAt") && !o.isNull("dueAt")) o.getLong("dueAt") else null,
+                labelId = if (o.has("labelId") && !o.isNull("labelId")) o.getLong("labelId") else null,
+                position = o.optInt("position"),
+                createdAt = o.optLong("createdAt"),
+                completedAt = if (o.has("completedAt") && !o.isNull("completedAt")) o.getLong("completedAt") else null,
+                recurrence = o.optInt("recurrence"),
+                focusSeconds = o.optInt("focusSeconds"),
+            )
+        }
+        val subtasks = root.optJSONArray("subtasks").mapObjects { o ->
+            Subtask(
+                id = o.getLong("id"),
+                taskId = o.getLong("taskId"),
+                title = o.getString("title"),
+                done = o.optBoolean("done"),
+                position = o.optInt("position"),
+            )
+        }
+        val settings = root.optJSONObject("settings")?.toSettings()
+
+        // 2) Remplacer : vider puis réinsérer en conservant les ids.
+        subtaskDao.clear()
+        taskDao.clear()
+        labelDao.clear()
+        labels.forEach { labelDao.insert(it) }
+        tasks.forEach { taskDao.insert(it) }
+        subtasks.forEach { subtaskDao.insert(it) }
+        settings?.let { settingsRepository.applyAll(it) }
+
+        return ImportResult(tasks = tasks.size, labels = labels.size)
+    }
+
+    // --- Sérialisation des réglages ------------------------------------------------------------
+
+    private fun AppSettings.toJson(): JSONObject = JSONObject().apply {
+        put("themeMode", themeMode)
+        put("dynamicColor", dynamicColor)
+        put("paletteId", paletteId)
+        put("urgencyThresholdHours", urgencyThresholdHours)
+        put("swimLanes", swimLanes)
+        put("archivePurgeDays", archivePurgeDays)
+        put("onboardingDone", onboardingDone)
+        put("customDoColor", customDoColor)
+        put("customScheduleColor", customScheduleColor)
+        put("customDelegateColor", customDelegateColor)
+        put("customEliminateColor", customEliminateColor)
+        put("pomodoroLiquid", pomodoroLiquid)
+        put("focusMinutes", focusMinutes)
+        put("shortBreakMinutes", shortBreakMinutes)
+        put("longBreakMinutes", longBreakMinutes)
+        put("cyclesBeforeLongBreak", cyclesBeforeLongBreak)
+    }
+
+    private fun JSONObject.toSettings(): AppSettings = AppSettings(
+        themeMode = optInt("themeMode"),
+        dynamicColor = optBoolean("dynamicColor"),
+        paletteId = optInt("paletteId"),
+        urgencyThresholdHours = optInt("urgencyThresholdHours", 48),
+        swimLanes = optBoolean("swimLanes"),
+        archivePurgeDays = optInt("archivePurgeDays"),
+        onboardingDone = optBoolean("onboardingDone"),
+        customDoColor = optString("customDoColor", "#E5645A"),
+        customScheduleColor = optString("customScheduleColor", "#4FA5A0"),
+        customDelegateColor = optString("customDelegateColor", "#E0A24E"),
+        customEliminateColor = optString("customEliminateColor", "#9C9AA6"),
+        pomodoroLiquid = optBoolean("pomodoroLiquid", true),
+        focusMinutes = optInt("focusMinutes", 25),
+        shortBreakMinutes = optInt("shortBreakMinutes", 5),
+        longBreakMinutes = optInt("longBreakMinutes", 15),
+        cyclesBeforeLongBreak = optInt("cyclesBeforeLongBreak", 4),
+    )
+
+    private companion object {
+        const val FORMAT_VERSION = 2
+    }
+}
+
+// --- Helpers org.json --------------------------------------------------------------------------
+
+private fun <T> List<T>.toJsonArray(transform: (T) -> JSONObject): JSONArray =
+    JSONArray().also { arr -> forEach { arr.put(transform(it)) } }
+
+private inline fun <T> JSONArray?.mapObjects(transform: (JSONObject) -> T): List<T> {
+    if (this == null) return emptyList()
+    return (0 until length()).map { transform(getJSONObject(it)) }
+}

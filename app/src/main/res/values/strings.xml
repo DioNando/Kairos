@@ -1,0 +1,189 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Kairós</string>
+
+    <!-- Quadrants -->
+    <string name="quadrant_do">Faire</string>
+    <string name="quadrant_schedule">Planifier</string>
+    <string name="quadrant_delegate">Déléguer</string>
+    <string name="quadrant_eliminate">Supprimer</string>
+    <string name="quadrant_do_sub">urgent et important</string>
+    <string name="quadrant_schedule_sub">important, pas urgent</string>
+    <string name="quadrant_delegate_sub">urgent, pas important</string>
+    <string name="quadrant_eliminate_sub">ni urgent ni important</string>
+    <string name="quadrant_empty">Rien ici</string>
+    <string name="move_to">Déplacer vers</string>
+
+    <!-- Actions génériques -->
+    <string name="action_save">Enregistrer</string>
+    <string name="action_delete">Supprimer</string>
+    <string name="action_cancel">Annuler</string>
+    <string name="action_ok">OK</string>
+    <string name="action_next">Suivant</string>
+    <string name="action_export">Exporter</string>
+    <string name="action_import">Importer</string>
+    <string name="action_undo">Annuler</string>
+
+    <!-- Annulation (snackbar) -->
+    <string name="snack_task_completed">Tâche terminée</string>
+    <string name="snack_task_deleted">Tâche supprimée</string>
+
+    <!-- Récurrence -->
+    <string name="field_recurrence">Récurrence</string>
+    <string name="recurrence_none">Aucune</string>
+    <string name="recurrence_daily">Chaque jour</string>
+    <string name="recurrence_weekly">Chaque semaine</string>
+    <string name="recurrence_monthly">Chaque mois</string>
+
+    <!-- Sous-tâches (checklist) -->
+    <string name="field_subtasks">Sous-tâches</string>
+    <string name="subtask_hint">Élément de la checklist</string>
+    <string name="subtask_add">Ajouter une sous-tâche</string>
+
+    <!-- Temps de concentration -->
+    <string name="focus_time_total">Temps de concentration : %1$d min</string>
+
+    <!-- Éditeur de tâche -->
+    <string name="editor_new">Nouvelle tâche</string>
+    <string name="editor_edit">Modifier la tâche</string>
+    <string name="field_title">Titre</string>
+    <string name="field_note">Note</string>
+    <string name="field_classify">Classer</string>
+    <string name="field_due">Échéance</string>
+    <string name="field_label">Étiquette</string>
+    <string name="axis_important">Important</string>
+    <string name="axis_urgent">Urgent</string>
+    <string name="editor_quadrant_hint">Ira dans « %1$s » — %2$s</string>
+    <string name="due_none">Aucune échéance</string>
+    <string name="due_clear">Retirer</string>
+    <string name="suggest_urgent">L\'échéance approche.</string>
+    <string name="suggest_urgent_action">Passer en urgent</string>
+    <string name="label_none">Aucune</string>
+
+    <!-- Saisie rapide -->
+    <string name="quickadd_title">Ajout rapide</string>
+    <string name="quickadd_more">Plus d\'options</string>
+
+    <!-- Étiquettes -->
+    <string name="labels_title">Étiquettes</string>
+    <string name="label_new">Nouvelle étiquette</string>
+    <string name="label_edit">Modifier l\'étiquette</string>
+    <string name="field_label_name">Nom</string>
+    <string name="field_label_color">Couleur</string>
+
+    <!-- Focus -->
+    <string name="focus_title">Et maintenant ?</string>
+    <string name="focus_prompt">À faire en priorité</string>
+    <string name="focus_empty">Rien à faire pour l\'instant. Profite !</string>
+    <string name="focus_done">Terminer</string>
+    <string name="focus_open">Ouvrir</string>
+    <string name="focus_up_next">À suivre</string>
+
+    <!-- Étiquettes (suite) -->
+    <string name="label_add">Ajouter une étiquette</string>
+
+    <!-- Confirmations de suppression -->
+    <string name="delete_task_title">Supprimer la tâche ?</string>
+    <string name="delete_task_message">« %1$s » sera définitivement supprimée.</string>
+    <string name="delete_label_title">Supprimer l\'étiquette ?</string>
+    <string name="delete_label_message">« %1$s » sera retirée des tâches qui la portent.</string>
+
+    <!-- Archive -->
+    <string name="archive_title">Archive</string>
+    <string name="archive_empty">Aucune tâche archivée. Les tâches terminées apparaîtront ici.</string>
+    <string name="clear_archive_title">Vider l\'archive ?</string>
+    <string name="clear_archive_message">Toutes les tâches terminées seront définitivement supprimées.</string>
+
+    <!-- Onboarding (premier lancement) -->
+    <string name="onb_skip">Passer</string>
+    <string name="onb_next">Suivant</string>
+    <string name="onb_start">Commencer</string>
+    <string name="onb_welcome_title">Bienvenue dans Kairós</string>
+    <string name="onb_welcome_body">Un espace calme pour trier tes tâches selon ce qui compte vraiment, et savoir quoi faire maintenant.</string>
+    <string name="onb_quadrants_title">La matrice d\'Eisenhower</string>
+    <string name="onb_quadrants_body">Chaque tâche se place selon deux axes — important et urgent — et devient une action claire.</string>
+    <string name="onb_start_title">C\'est parti</string>
+    <string name="onb_start_body">Ajoute une tâche, glisse-la entre les quadrants, et laisse le mode Focus t\'indiquer la prochaine.</string>
+
+    <!-- Pomodoro -->
+    <string name="pomodoro_title">Pomodoro</string>
+    <string name="pomo_focus">Focus</string>
+    <string name="pomo_short">Pause courte</string>
+    <string name="pomo_long">Pause longue</string>
+    <string name="pomo_start">Démarrer</string>
+    <string name="pomo_pause">Pause</string>
+    <string name="pomo_running">En cours</string>
+    <string name="pomo_paused">En pause</string>
+    <string name="pomo_resume">Reprendre</string>
+    <string name="pomo_reset">Réinitialiser</string>
+    <string name="pomo_cycles">Cycles de focus terminés</string>
+    <string name="pomo_focus_hint">Minuteur de concentration : alterne des focus et des pauses pour tenir la distance.</string>
+    <string name="pomo_session_logged">Session de concentration terminée (%1$d min)</string>
+    <string name="pomo_channel_timer">Minuteur Pomodoro</string>
+    <string name="pomo_channel_alerts">Fin de cycle Pomodoro</string>
+    <string name="pomo_done_focus_title">Focus terminé</string>
+    <string name="pomo_done_focus_text">Belle session ! C\'est l\'heure de souffler.</string>
+    <string name="pomo_done_break_title">Pause terminée</string>
+    <string name="pomo_done_break_text">On repart pour un focus ?</string>
+    <string name="pomo_durations">Durées Pomodoro (min)</string>
+    <string name="pomo_focus_label">Focus</string>
+    <string name="pomo_short_label">Pause courte</string>
+    <string name="pomo_long_label">Pause longue</string>
+    <string name="pomo_cycles_label">Cycles avant pause longue</string>
+    <string name="pomo_link_none">Aucune tâche liée</string>
+
+    <!-- Réglages -->
+    <string name="settings_title">Réglages</string>
+    <string name="settings_theme">Thème</string>
+    <string name="theme_system">Système</string>
+    <string name="theme_light">Clair</string>
+    <string name="theme_dark">Sombre</string>
+    <string name="settings_dynamic">Couleurs dynamiques</string>
+    <string name="settings_dynamic_desc">Material You (couleurs du système)</string>
+    <string name="settings_swimlanes">Vue en listes (swim lanes)</string>
+    <string name="settings_swimlanes_desc">Affiche les quadrants en liste verticale plutôt qu\'en grille 2×2 (plus confortable à une main).</string>
+    <string name="settings_palette">Palette des quadrants</string>
+    <string name="palette_custom">Personnalisée</string>
+    <string name="settings_urgency">Seuil d\'urgence</string>
+    <string name="settings_urgency_desc">En deçà de ce délai avant l\'échéance, la tâche pulse et propose de passer en urgent.</string>
+    <string name="settings_archive_purge">Purge de l\'archive</string>
+    <string name="settings_archive_purge_desc">Supprime automatiquement les tâches terminées depuis plus longtemps que la durée choisie.</string>
+    <string name="purge_never">Jamais</string>
+    <string name="purge_7">7 jours</string>
+    <string name="purge_30">30 jours</string>
+    <string name="purge_90">90 jours</string>
+    <string name="settings_backup">Sauvegarde</string>
+    <string name="settings_backup_desc">Exporte ou restaure toutes tes tâches et étiquettes dans un fichier JSON.</string>
+    <string name="settings_pomodoro_style">Minuteur « cercle liquide »</string>
+    <string name="settings_pomodoro_style_sub">Sinon, un anneau de progression classique.</string>
+
+    <plurals name="settings_urgency_value">
+        <item quantity="one">%1$d heure</item>
+        <item quantity="other">%1$d heures</item>
+    </plurals>
+
+    <!-- Retours de sauvegarde -->
+    <string name="backup_exported">Sauvegarde exportée.</string>
+    <string name="backup_imported">Importé : %1$d tâches, %2$d étiquettes.</string>
+    <string name="backup_error">Erreur : %1$s</string>
+
+    <!-- Descriptions d'accessibilité (TalkBack) -->
+    <string name="cd_focus">Mode focus</string>
+    <string name="cd_labels">Étiquettes</string>
+    <string name="cd_settings">Réglages</string>
+    <string name="cd_back">Retour</string>
+    <string name="cd_add_task">Ajouter une tâche</string>
+    <string name="cd_add_in_quadrant">Ajouter dans « %1$s »</string>
+    <string name="cd_add_label">Ajouter une étiquette</string>
+    <string name="cd_delete_label">Supprimer l\'étiquette %1$s</string>
+    <string name="cd_task_menu">Options de la tâche</string>
+    <string name="cd_mark_done">Marquer terminée</string>
+    <string name="cd_mark_active">Marquer active</string>
+    <string name="cd_pomodoro">Pomodoro</string>
+    <string name="cd_archive">Archive</string>
+    <string name="cd_restore_task">Restaurer « %1$s »</string>
+    <string name="cd_delete_forever">Supprimer définitivement « %1$s »</string>
+    <string name="cd_clear_archive">Vider l\'archive</string>
+    <string name="cd_recurring">Tâche récurrente</string>
+    <string name="cd_remove_subtask">Retirer la sous-tâche</string>
+</resources>

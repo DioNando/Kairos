@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Thème hôte de l'Activity Compose : le vrai style vit dans KairosTheme (Compose).
+         Ce parent sans ActionBar suffit. -->
+    <style name="Theme.Kairos" parent="android:Theme.Material.Light.NoActionBar" />
+</resources>

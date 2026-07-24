@@ -1,0 +1,189 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Kairós</string>
+
+    <!-- Quadrants -->
+    <string name="quadrant_do">Do</string>
+    <string name="quadrant_schedule">Schedule</string>
+    <string name="quadrant_delegate">Delegate</string>
+    <string name="quadrant_eliminate">Eliminate</string>
+    <string name="quadrant_do_sub">urgent and important</string>
+    <string name="quadrant_schedule_sub">important, not urgent</string>
+    <string name="quadrant_delegate_sub">urgent, not important</string>
+    <string name="quadrant_eliminate_sub">neither urgent nor important</string>
+    <string name="quadrant_empty">Nothing here</string>
+    <string name="move_to">Move to</string>
+
+    <!-- Generic actions -->
+    <string name="action_save">Save</string>
+    <string name="action_delete">Delete</string>
+    <string name="action_cancel">Cancel</string>
+    <string name="action_ok">OK</string>
+    <string name="action_next">Next</string>
+    <string name="action_export">Export</string>
+    <string name="action_import">Import</string>
+    <string name="action_undo">Undo</string>
+
+    <!-- Undo (snackbar) -->
+    <string name="snack_task_completed">Task completed</string>
+    <string name="snack_task_deleted">Task deleted</string>
+
+    <!-- Recurrence -->
+    <string name="field_recurrence">Recurrence</string>
+    <string name="recurrence_none">None</string>
+    <string name="recurrence_daily">Daily</string>
+    <string name="recurrence_weekly">Weekly</string>
+    <string name="recurrence_monthly">Monthly</string>
+
+    <!-- Subtasks (checklist) -->
+    <string name="field_subtasks">Subtasks</string>
+    <string name="subtask_hint">Checklist item</string>
+    <string name="subtask_add">Add a subtask</string>
+
+    <!-- Focus time -->
+    <string name="focus_time_total">Focus time: %1$d min</string>
+
+    <!-- Task editor -->
+    <string name="editor_new">New task</string>
+    <string name="editor_edit">Edit task</string>
+    <string name="field_title">Title</string>
+    <string name="field_note">Note</string>
+    <string name="field_classify">Classify</string>
+    <string name="field_due">Due date</string>
+    <string name="field_label">Label</string>
+    <string name="axis_important">Important</string>
+    <string name="axis_urgent">Urgent</string>
+    <string name="editor_quadrant_hint">Goes to “%1$s” — %2$s</string>
+    <string name="due_none">No due date</string>
+    <string name="due_clear">Clear</string>
+    <string name="suggest_urgent">The deadline is approaching.</string>
+    <string name="suggest_urgent_action">Mark urgent</string>
+    <string name="label_none">None</string>
+
+    <!-- Quick add -->
+    <string name="quickadd_title">Quick add</string>
+    <string name="quickadd_more">More options</string>
+
+    <!-- Labels -->
+    <string name="labels_title">Labels</string>
+    <string name="label_new">New label</string>
+    <string name="label_edit">Edit label</string>
+    <string name="field_label_name">Name</string>
+    <string name="field_label_color">Color</string>
+
+    <!-- Focus -->
+    <string name="focus_title">What now?</string>
+    <string name="focus_prompt">Top priority</string>
+    <string name="focus_empty">Nothing to do right now. Enjoy!</string>
+    <string name="focus_done">Complete</string>
+    <string name="focus_open">Open</string>
+    <string name="focus_up_next">Up next</string>
+
+    <!-- Labels (cont.) -->
+    <string name="label_add">Add a label</string>
+
+    <!-- Delete confirmations -->
+    <string name="delete_task_title">Delete task?</string>
+    <string name="delete_task_message">“%1$s” will be permanently deleted.</string>
+    <string name="delete_label_title">Delete label?</string>
+    <string name="delete_label_message">“%1$s” will be removed from the tasks that use it.</string>
+
+    <!-- Archive -->
+    <string name="archive_title">Archive</string>
+    <string name="archive_empty">No archived tasks. Completed tasks will show up here.</string>
+    <string name="clear_archive_title">Clear the archive?</string>
+    <string name="clear_archive_message">All completed tasks will be permanently deleted.</string>
+
+    <!-- Onboarding (first launch) -->
+    <string name="onb_skip">Skip</string>
+    <string name="onb_next">Next</string>
+    <string name="onb_start">Get started</string>
+    <string name="onb_welcome_title">Welcome to Kairós</string>
+    <string name="onb_welcome_body">A calm space to sort your tasks by what truly matters, and know what to do right now.</string>
+    <string name="onb_quadrants_title">The Eisenhower matrix</string>
+    <string name="onb_quadrants_body">Each task is placed along two axes — important and urgent — and becomes a clear action.</string>
+    <string name="onb_start_title">Let\'s go</string>
+    <string name="onb_start_body">Add a task, drag it between quadrants, and let Focus mode point you to the next one.</string>
+
+    <!-- Pomodoro -->
+    <string name="pomodoro_title">Pomodoro</string>
+    <string name="pomo_focus">Focus</string>
+    <string name="pomo_short">Short break</string>
+    <string name="pomo_long">Long break</string>
+    <string name="pomo_start">Start</string>
+    <string name="pomo_pause">Pause</string>
+    <string name="pomo_running">Running</string>
+    <string name="pomo_paused">Paused</string>
+    <string name="pomo_resume">Resume</string>
+    <string name="pomo_reset">Reset</string>
+    <string name="pomo_cycles">Focus cycles completed</string>
+    <string name="pomo_focus_hint">Concentration timer: alternate focus and breaks to go the distance.</string>
+    <string name="pomo_session_logged">Focus session complete (%1$d min)</string>
+    <string name="pomo_channel_timer">Pomodoro timer</string>
+    <string name="pomo_channel_alerts">Pomodoro cycle end</string>
+    <string name="pomo_done_focus_title">Focus complete</string>
+    <string name="pomo_done_focus_text">Great session! Time for a break.</string>
+    <string name="pomo_done_break_title">Break over</string>
+    <string name="pomo_done_break_text">Ready for another focus?</string>
+    <string name="pomo_durations">Pomodoro durations (min)</string>
+    <string name="pomo_focus_label">Focus</string>
+    <string name="pomo_short_label">Short break</string>
+    <string name="pomo_long_label">Long break</string>
+    <string name="pomo_cycles_label">Cycles before long break</string>
+    <string name="pomo_link_none">No linked task</string>
+
+    <!-- Settings -->
+    <string name="settings_title">Settings</string>
+    <string name="settings_theme">Theme</string>
+    <string name="theme_system">System</string>
+    <string name="theme_light">Light</string>
+    <string name="theme_dark">Dark</string>
+    <string name="settings_dynamic">Dynamic colors</string>
+    <string name="settings_dynamic_desc">Material You (system colors)</string>
+    <string name="settings_swimlanes">List view (swim lanes)</string>
+    <string name="settings_swimlanes_desc">Shows the quadrants as a vertical list instead of a 2×2 grid (easier one-handed).</string>
+    <string name="settings_palette">Quadrant palette</string>
+    <string name="palette_custom">Custom</string>
+    <string name="settings_urgency">Urgency threshold</string>
+    <string name="settings_urgency_desc">Within this window before the due date, the task pulses and offers to mark it urgent.</string>
+    <string name="settings_archive_purge">Archive purge</string>
+    <string name="settings_archive_purge_desc">Automatically deletes tasks completed longer ago than the chosen duration.</string>
+    <string name="purge_never">Never</string>
+    <string name="purge_7">7 days</string>
+    <string name="purge_30">30 days</string>
+    <string name="purge_90">90 days</string>
+    <string name="settings_backup">Backup</string>
+    <string name="settings_backup_desc">Export or restore all your tasks and labels in a JSON file.</string>
+    <string name="settings_pomodoro_style">“Liquid circle” timer</string>
+    <string name="settings_pomodoro_style_sub">Otherwise, a classic progress ring.</string>
+
+    <plurals name="settings_urgency_value">
+        <item quantity="one">%1$d hour</item>
+        <item quantity="other">%1$d hours</item>
+    </plurals>
+
+    <!-- Backup feedback -->
+    <string name="backup_exported">Backup exported.</string>
+    <string name="backup_imported">Imported: %1$d tasks, %2$d labels.</string>
+    <string name="backup_error">Error: %1$s</string>
+
+    <!-- Accessibility descriptions (TalkBack) -->
+    <string name="cd_focus">Focus mode</string>
+    <string name="cd_labels">Labels</string>
+    <string name="cd_settings">Settings</string>
+    <string name="cd_back">Back</string>
+    <string name="cd_add_task">Add a task</string>
+    <string name="cd_add_in_quadrant">Add to “%1$s”</string>
+    <string name="cd_add_label">Add a label</string>
+    <string name="cd_delete_label">Delete label %1$s</string>
+    <string name="cd_task_menu">Task options</string>
+    <string name="cd_mark_done">Mark done</string>
+    <string name="cd_mark_active">Mark active</string>
+    <string name="cd_pomodoro">Pomodoro</string>
+    <string name="cd_archive">Archive</string>
+    <string name="cd_restore_task">Restore “%1$s”</string>
+    <string name="cd_delete_forever">Permanently delete “%1$s”</string>
+    <string name="cd_clear_archive">Clear the archive</string>
+    <string name="cd_recurring">Recurring task</string>
+    <string name="cd_remove_subtask">Remove subtask</string>
+</resources>

@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Logo Kairós plein cadre (in-app) : moulin en spirale des 4 couleurs de quadrant. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <!-- Faire (corail) -->
+    <path
+        android:fillColor="#E5645A"
+        android:pathData="m34.88,55.68h17.44c2.78,0,5.03-2.25,5.03-5.03V5.03c0-2.78-2.25-5.03-5.03-5.03H5.03C2.25,0,0,2.25,0,5.03v45.61C0,53.42,2.25,55.68,5.03,55.68h29.85Z" />
+    <!-- Déléguer (ambre) -->
+    <path
+        android:fillColor="#E0A24E"
+        android:pathData="m61.71,55.68v17.44c0,2.78,2.25,5.03,5.03,5.03h36.22c2.78,0,5.03-2.25,5.03-5.03V5.03c0-2.78-2.25-5.03-5.03-5.03h-36.22c-2.78,0-5.03,2.25-5.03,5.03v50.65Z" />
+    <!-- Supprimer (gris-lavande) -->
+    <path
+        android:fillColor="#9C9AA6"
+        android:pathData="m61.71,82.51h-17.44c-2.78,0-5.03,2.25-5.03,5.03v15.43c0,2.78,2.25,5.03,5.03,5.03h58.7c2.78,0,5.03-2.25,5.03-5.03v-15.43c0-2.78-2.25-5.03-5.03-5.03h-41.25Z" />
+    <!-- Planifier (sarcelle) -->
+    <path
+        android:fillColor="#4FA5A0"
+        android:pathData="m34.88,82.51v-17.44c0-2.78-2.25-5.03-5.03-5.03H5.03C2.25,60.04,0,62.29,0,65.07v37.9C0,105.75,2.25,108,5.03,108h24.82c2.78,0,5.03-2.25,5.03-5.03v-20.46Z" />
+</vector>
