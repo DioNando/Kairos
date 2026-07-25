@@ -61,6 +61,14 @@ fun quadrantSubtitleRes(quadrant: Quadrant): Int = when (quadrant) {
     Quadrant.ELIMINATE -> R.string.quadrant_eliminate_sub
 }
 
+/** Message d'encouragement affiché quand un quadrant est vide (par quadrant). */
+fun quadrantEmptyRes(quadrant: Quadrant): Int = when (quadrant) {
+    Quadrant.DO -> R.string.quadrant_empty_do
+    Quadrant.SCHEDULE -> R.string.quadrant_empty_schedule
+    Quadrant.DELEGATE -> R.string.quadrant_empty_delegate
+    Quadrant.ELIMINATE -> R.string.quadrant_empty_eliminate
+}
+
 /** Couleur de premier plan contrastée sur un accent (noir sur clair, blanc sur sombre). */
 fun onAccent(accent: Color): Color =
     if (accent.luminance() > 0.5f) Color(0xFF1D1D1B) else Color.White

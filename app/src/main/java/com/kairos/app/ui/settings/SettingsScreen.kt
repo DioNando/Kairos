@@ -7,8 +7,10 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.consumeWindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -22,7 +24,12 @@ import androidx.compose.material.icons.automirrored.rounded.ArrowBack
 import androidx.compose.material.icons.rounded.AutoAwesome
 import androidx.compose.material.icons.rounded.FileDownload
 import androidx.compose.material.icons.rounded.FileUpload
+import androidx.compose.material.icons.rounded.HelpOutline
+import androidx.compose.material.icons.rounded.MenuBook
+import androidx.compose.material.icons.rounded.NotificationsActive
 import androidx.compose.material.icons.rounded.ViewAgenda
+import androidx.compose.material.icons.rounded.Visibility
+import androidx.compose.material.icons.rounded.VisibilityOff
 import androidx.compose.material.icons.rounded.WaterDrop
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilledTonalButton
@@ -49,6 +56,8 @@ import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.input.PasswordVisualTransformation
+import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
 import com.kairos.app.R
 import com.kairos.app.data.model.AppSettings
@@ -64,14 +73,24 @@ import com.kairos.app.ui.theme.dynamicColorSupported
 fun SettingsScreen(
     settings: AppSettings,
     onSetThemeMode: (Int) -> Unit,
+    onSetLanguage: (Int) -> Unit,
     onSetDynamicColor: (Boolean) -> Unit,
     onSetPalette: (Int) -> Unit,
     onSetCustomPalette: (doColor: String, schedule: String, delegate: String, eliminate: String) -> Unit,
     onSetUrgencyThreshold: (Int) -> Unit,
     onSetSwimLanes: (Boolean) -> Unit,
     onSetArchivePurgeDays: (Int) -> Unit,
+    showGuide: Boolean,
+    onSetShowGuide: (Boolean) -> Unit,
+    onOpenGuide: () -> Unit,
     onSetPomodoroStyle: (Boolean) -> Unit,
     onSetPomodoroDurations: (focus: Int, shortBreak: Int, longBreak: Int, cycles: Int) -> Unit,
+    onSetRemindersEnabled: (Boolean) -> Unit,
+    onSetReminderLead: (Int) -> Unit,
+    geminiKey: String,
+    openRouterKey: String,
+    onSetAiProvider: (Int) -> Unit,
+    onSetAiKey: (provider: Int, key: String) -> Unit,
     onExport: () -> Unit,
     onImport: () -> Unit,
     onBack: () -> Unit,
@@ -92,6 +111,9 @@ fun SettingsScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(padding)
+                // Le contenu se décale au-dessus du clavier (champs de clé API en bas de page).
+                .consumeWindowInsets(padding)
+                .imePadding()
                 .verticalScroll(rememberScrollState())
                 .padding(horizontal = 20.dp)
                 .padding(bottom = 24.dp),
@@ -109,6 +131,23 @@ fun SettingsScreen(
                     KairosFilterChip(
                         selected = settings.themeMode == mode,
                         onClick = { onSetThemeMode(mode) },
+                        label = stringResource(res),
+                    )
+                }
+            }
+
+            // Langue de l'app.
+            SectionTitle(stringResource(R.string.settings_language))
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                val langs = listOf(
+                    AppSettings.LANG_SYSTEM to R.string.lang_system,
+                    AppSettings.LANG_FR to R.string.lang_fr,
+                    AppSettings.LANG_EN to R.string.lang_en,
+                )
+                langs.forEach { (id, res) ->
+                    KairosFilterChip(
+                        selected = settings.language == id,
+                        onClick = { onSetLanguage(id) },
                         label = stringResource(res),
                     )
                 }
@@ -234,6 +273,38 @@ fun SettingsScreen(
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
 
+            // Rappels d'échéance.
+            SectionTitle(stringResource(R.string.settings_reminders))
+            SettingSwitchRow(
+                icon = Icons.Rounded.NotificationsActive,
+                title = stringResource(R.string.reminders_enable),
+                subtitle = stringResource(R.string.reminders_enable_desc),
+                checked = settings.remindersEnabled,
+                onCheckedChange = onSetRemindersEnabled,
+            )
+            if (settings.remindersEnabled) {
+                Text(
+                    stringResource(R.string.reminders_lead),
+                    style = MaterialTheme.typography.bodyMedium,
+                )
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    val leads = listOf(
+                        0 to R.string.reminder_lead_now,
+                        5 to R.string.reminder_lead_5,
+                        15 to R.string.reminder_lead_15,
+                        30 to R.string.reminder_lead_30,
+                        60 to R.string.reminder_lead_60,
+                    )
+                    leads.forEach { (minutes, res) ->
+                        KairosFilterChip(
+                            selected = settings.reminderLeadMinutes == minutes,
+                            onClick = { onSetReminderLead(minutes) },
+                            label = stringResource(res),
+                        )
+                    }
+                }
+            }
+
             // Pomodoro.
             SettingSwitchRow(
                 icon = Icons.Rounded.WaterDrop,
@@ -281,6 +352,52 @@ fun SettingsScreen(
                     modifier = Modifier.weight(1f),
                 )
             }
+
+            // Aide : guide consultable + masquage du raccourci dans la barre du haut.
+            SectionTitle(stringResource(R.string.settings_help))
+            FilledTonalButton(onClick = onOpenGuide, modifier = Modifier.fillMaxWidth()) {
+                Icon(Icons.Rounded.MenuBook, contentDescription = null)
+                Spacer(Modifier.size(8.dp))
+                Text(stringResource(R.string.guide_open))
+            }
+            SettingSwitchRow(
+                icon = Icons.Rounded.HelpOutline,
+                title = stringResource(R.string.settings_show_guide),
+                subtitle = stringResource(R.string.settings_show_guide_desc),
+                checked = showGuide,
+                onCheckedChange = onSetShowGuide,
+            )
+
+            // Assistant IA : reformulation des notes (optionnel, désactivé sans clé).
+            SectionTitle(stringResource(R.string.settings_ai))
+            Text(
+                stringResource(R.string.settings_ai_desc),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                val providers = listOf(
+                    AppSettings.AI_GEMINI to R.string.ai_provider_gemini,
+                    AppSettings.AI_OPENROUTER to R.string.ai_provider_openrouter,
+                )
+                providers.forEach { (id, res) ->
+                    KairosFilterChip(
+                        selected = settings.aiProvider == id,
+                        onClick = { onSetAiProvider(id) },
+                        label = stringResource(res),
+                    )
+                }
+            }
+            AiKeyField(
+                label = stringResource(R.string.ai_key_gemini),
+                value = geminiKey,
+                onValueChange = { onSetAiKey(AppSettings.AI_GEMINI, it) },
+            )
+            AiKeyField(
+                label = stringResource(R.string.ai_key_openrouter),
+                value = openRouterKey,
+                onValueChange = { onSetAiKey(AppSettings.AI_OPENROUTER, it) },
+            )
 
             // Sauvegarde.
             SectionTitle(stringResource(R.string.settings_backup))
@@ -351,6 +468,35 @@ private fun CustomColorRow(label: String, value: String, onValueChange: (String)
             modifier = Modifier.width(140.dp),
         )
     }
+}
+
+/** Champ de saisie d'une clé API : masqué par défaut, avec bascule d'affichage. Sauvegarde à la volée. */
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun AiKeyField(label: String, value: String, onValueChange: (String) -> Unit) {
+    var text by remember { mutableStateOf(value) }
+    var hidden by remember { mutableStateOf(true) }
+    TextField(
+        value = text,
+        onValueChange = { text = it; onValueChange(it) },
+        label = { Text(label) },
+        singleLine = true,
+        visualTransformation = if (hidden) PasswordVisualTransformation() else VisualTransformation.None,
+        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
+        trailingIcon = {
+            IconButton(onClick = { hidden = !hidden }) {
+                Icon(
+                    if (hidden) Icons.Rounded.Visibility else Icons.Rounded.VisibilityOff,
+                    contentDescription = stringResource(
+                        if (hidden) R.string.cd_key_show else R.string.cd_key_hide,
+                    ),
+                )
+            }
+        },
+        shape = KairosFieldShape,
+        colors = kairosFieldColors(),
+        modifier = Modifier.fillMaxWidth(),
+    )
 }
 
 @Composable

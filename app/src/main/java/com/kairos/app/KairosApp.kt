@@ -2,9 +2,24 @@ package com.kairos.app
 
 import android.app.Application
 import com.kairos.app.data.local.KairosDatabase
+import com.kairos.app.data.model.AppSettings
+import com.kairos.app.data.model.LlmProvider
+import com.kairos.app.data.model.Task
+import com.kairos.app.data.remote.GeminiConfig
+import com.kairos.app.data.remote.GeminiHttpService
+import com.kairos.app.data.remote.OpenRouterConfig
+import com.kairos.app.data.remote.OpenRouterHttpService
+import com.kairos.app.data.reminder.ReminderNotifications
+import com.kairos.app.data.reminder.ReminderScheduler
 import com.kairos.app.data.repository.KairosRepository
 import com.kairos.app.data.repository.PomodoroSessionStore
+import com.kairos.app.data.repository.SecureCredentialStore
 import com.kairos.app.data.repository.SettingsRepository
+import com.kairos.app.widget.KairosWidget
+import androidx.glance.appwidget.updateAll
+import com.kairos.app.domain.ai.DynamicNoteEnhancer
+import com.kairos.app.domain.ai.LlmNoteEnhancer
+import com.kairos.app.domain.ai.NoteEnhancer
 import com.kairos.app.domain.backup.BackupManager
 import com.kairos.app.pomodoro.PomodoroNotifications
 import com.kairos.app.pomodoro.PomodoroService
@@ -13,8 +28,12 @@ import com.kairos.app.ui.pomodoro.PomodoroEngine
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
+import okhttp3.OkHttpClient
 
 /**
  * Conteneur de dépendances minimaliste (pas de framework DI) : base et repositories créés
@@ -46,6 +65,55 @@ class KairosApp : Application() {
     /** Portée liée au cycle de vie du process, pour le travail hors UI (export/import). */
     val applicationScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
 
+    // --- Assistant IA (reformulation des notes) -------------------------------------------------
+
+    /** Stockage chiffré des clés API (Gemini, OpenRouter). */
+    val secureCredentialStore by lazy { SecureCredentialStore(this) }
+
+    /** Fournisseur IA primaire courant (issu des réglages), lu dynamiquement par l'enhancer. */
+    @Volatile
+    private var aiPrimaryProvider: Int = AppSettings.AI_GEMINI
+
+    // Clé saisie dans l'app prioritaire ; sinon repli sur la clé de build (.env / local.properties).
+    private val geminiConfig by lazy {
+        GeminiConfig({ secureCredentialStore.geminiKey ?: BuildConfig.GEMINI_API_KEY })
+    }
+    private val openRouterConfig by lazy {
+        OpenRouterConfig({ secureCredentialStore.openRouterKey ?: BuildConfig.OPENROUTER_API_KEY })
+    }
+
+    private fun providerEnabled(provider: LlmProvider): Boolean = when (provider) {
+        LlmProvider.GEMINI -> geminiConfig.isEnabled
+        LlmProvider.OPENROUTER -> openRouterConfig.isEnabled
+    }
+
+    /**
+     * Reformulateur de notes : chaîne Gemini/OpenRouter résolue à chaque appel (primaire choisi en
+     * tête, l'autre en repli), limitée aux fournisseurs dont la clé est saisie.
+     */
+    val noteEnhancer: NoteEnhancer by lazy {
+        val client = OkHttpClient()
+        val enhancers = mapOf(
+            LlmProvider.GEMINI to LlmNoteEnhancer(GeminiHttpService(geminiConfig, client)),
+            LlmProvider.OPENROUTER to LlmNoteEnhancer(OpenRouterHttpService(openRouterConfig, client)),
+        )
+        DynamicNoteEnhancer(enhancers) {
+            val primary = if (aiPrimaryProvider == AppSettings.AI_OPENROUTER) LlmProvider.OPENROUTER else LlmProvider.GEMINI
+            (listOf(primary) + LlmProvider.entries.filter { it != primary }).filter { providerEnabled(it) }
+        }
+    }
+
+    /** Clé API courante d'un fournisseur (pour préremplir les réglages). */
+    fun aiKey(provider: Int): String =
+        (if (provider == AppSettings.AI_OPENROUTER) secureCredentialStore.openRouterKey
+        else secureCredentialStore.geminiKey).orEmpty()
+
+    /** Enregistre (ou efface) la clé API d'un fournisseur. */
+    fun setAiKey(provider: Int, key: String?) {
+        if (provider == AppSettings.AI_OPENROUTER) secureCredentialStore.setOpenRouterKey(key)
+        else secureCredentialStore.setGeminiKey(key)
+    }
+
     // --- Pomodoro (repris de WorkSync) ----------------------------------------------------------
 
     /** Persistance de la session Pomodoro (survie au redémarrage du process). */
@@ -72,12 +140,16 @@ class KairosApp : Application() {
     override fun onCreate() {
         super.onCreate()
         PomodoroNotifications.createChannels(this)
+        ReminderNotifications.createChannel(this)
         // Crée les étiquettes par défaut au premier lancement (saisie immédiate).
         applicationScope.launch { repository.seedIfEmpty(System.currentTimeMillis()) }
-        // Purge l'archive selon le réglage (tâches terminées trop anciennes), une fois au démarrage.
+        // Purge l'archive selon le réglage (tâches archivées trop anciennes), une fois au démarrage,
+        // et nettoie les occurrences récurrentes terminées héritées de l'ancien modèle (sinon les
+        // restaurer recréerait des doublons — la récurrence avance désormais sur place).
         applicationScope.launch {
             val days = settingsRepository.settings.first().archivePurgeDays
             repository.purgeArchive(days, System.currentTimeMillis())
+            repository.purgeLegacyRecurringArchive()
         }
         // Suit les durées Pomodoro choisies dans les réglages.
         applicationScope.launch {
@@ -89,6 +161,7 @@ class KairosApp : Application() {
                     cyclesBeforeLongBreak = it.cyclesBeforeLongBreak,
                 )
                 pomodoroEngine.onDurationsChanged()
+                aiPrimaryProvider = it.aiProvider
             }
         }
         // Restaure une session Pomodoro en cours après un redémarrage du process.
@@ -101,6 +174,36 @@ class KairosApp : Application() {
                     runCatching { PomodoroService.start(this@KairosApp) }
                 }
                 wasActive = state.active
+            }
+        }
+        // Widget écran d'accueil : rafraîchi à chaque changement de la liste des tâches.
+        applicationScope.launch {
+            repository.tasks.collect {
+                try {
+                    KairosWidget().updateAll(this@KairosApp)
+                } catch (_: Throwable) {
+                    // Widget indisponible / non posé : sans conséquence.
+                }
+            }
+        }
+        // Rappels d'échéance : resynchronisés à chaque changement des tâches ou des réglages de
+        // rappel. WorkManager reflète toujours l'état courant des données.
+        applicationScope.launch {
+            val reminderPrefs = settingsRepository.settings
+                .map { it.remindersEnabled to it.reminderLeadMinutes }
+                .distinctUntilChanged()
+            combine(repository.tasks, reminderPrefs) { tasks: List<Task>, prefs: Pair<Boolean, Int> ->
+                Triple(tasks, prefs.first, prefs.second)
+            }.collect { snapshot ->
+                runCatching {
+                    ReminderScheduler.sync(
+                        this@KairosApp,
+                        snapshot.first,
+                        snapshot.second,
+                        snapshot.third,
+                        System.currentTimeMillis(),
+                    )
+                }
             }
         }
     }

@@ -1,5 +1,6 @@
 package com.kairos.app.ui.editor
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.foundation.background
@@ -24,21 +25,21 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.ArrowBack
 import androidx.compose.material.icons.rounded.Add
+import androidx.compose.material.icons.rounded.AutoAwesome
 import androidx.compose.material.icons.rounded.Bolt
-import androidx.compose.material.icons.rounded.CheckBox
-import androidx.compose.material.icons.rounded.CheckBoxOutlineBlank
 import androidx.compose.material.icons.rounded.Close
-import androidx.compose.material.icons.rounded.Delete
+import androidx.compose.material.icons.rounded.Inventory2
 import androidx.compose.material.icons.rounded.Event
 import androidx.compose.material.icons.rounded.PriorityHigh
 import androidx.compose.material.icons.rounded.Timer
 import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.DatePicker
 import androidx.compose.material3.DatePickerDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.Icon
+import androidx.compose.material3.LoadingIndicator
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
@@ -54,6 +55,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.toMutableStateList
 import androidx.compose.ui.Alignment
@@ -69,14 +71,18 @@ import com.kairos.app.data.model.Label
 import com.kairos.app.data.model.Quadrant
 import com.kairos.app.data.model.Subtask
 import com.kairos.app.data.model.Task
+import com.kairos.app.domain.ai.Classification
+import com.kairos.app.domain.ai.EnhancedTask
 import com.kairos.app.domain.recurrence.Recurrence
 import com.kairos.app.ui.components.KairosAssistChip
 import com.kairos.app.ui.components.KairosFilterChip
+import com.kairos.app.ui.components.MorphingCheckbox
 import com.kairos.app.ui.components.MorphingIconPill
 import com.kairos.app.ui.components.DueStatus
 import com.kairos.app.ui.components.dueStatus
 import com.kairos.app.ui.components.formatDue
 import com.kairos.app.ui.components.quadrantVisual
+import kotlinx.coroutines.launch
 import java.time.Instant
 import java.time.LocalDate
 import java.time.LocalDateTime
@@ -97,7 +103,7 @@ private class SubtaskField(val key: Int, title: String, done: Boolean) {
  * [defaultQuadrant]). Contenu en **LazyColumn** (+ imePadding) : scroll fluide, clavier ouvert.
  * Une page dédiée (plutôt qu'un ModalBottomSheet) évite le saccadement du volet en plein écran.
  */
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 fun TaskEditorScreen(
     task: Task?,
@@ -107,6 +113,13 @@ fun TaskEditorScreen(
     now: Long,
     initialTitle: String = "",
     initialSubtasks: List<Subtask> = emptyList(),
+    aiEnabled: Boolean = false,
+    onReformulateTask: suspend (title: String, note: String, subtasks: List<String>) -> Result<EnhancedTask> =
+        { title, note, subs -> Result.success(EnhancedTask(title, note, subs)) },
+    onSuggestClassify: suspend (title: String, note: String) -> Result<Classification> =
+        { _, _ -> Result.failure(IllegalStateException()) },
+    onSuggestSubtasks: suspend (title: String, note: String) -> Result<List<String>> =
+        { _, _ -> Result.failure(IllegalStateException()) },
     onBack: () -> Unit,
     onSave: (Task, List<Subtask>) -> Unit,
     onDelete: (Task) -> Unit,
@@ -130,9 +143,46 @@ fun TaskEditorScreen(
     var showTimePicker by remember { mutableStateOf(false) }
     var confirmDelete by remember { mutableStateOf(false) }
 
+    // Reformulation IA de la note (optionnelle).
+    val scope = rememberCoroutineScope()
+    var reformulating by remember { mutableStateOf(false) }
+    var beforeAi by remember { mutableStateOf<EnhancedTask?>(null) }
+    var aiError by remember { mutableStateOf<String?>(null) }
+    // Suggestions IA : classement (axes) et découpage en sous-tâches.
+    var classifying by remember { mutableStateOf(false) }
+    var decomposing by remember { mutableStateOf(false) }
+
     val quadrant = Quadrant.of(important, urgent)
     val visual = quadrantVisual(quadrant)
     val status = dueStatus(dueAt, now, urgencyThresholdHours, completed = false)
+
+    // Enregistrement **automatique** à la sortie : plus besoin de penser à « Enregistrer » (le
+    // bouton était loin en bas). En création, un titre vide n'enregistre rien (pas de tâche fantôme).
+    fun commitAndExit() {
+        if (title.isBlank()) {
+            onBack()
+            return
+        }
+        val base = task ?: Task(title = "")
+        val subtasks = subtaskFields
+            .filter { it.title.isNotBlank() }
+            .map { Subtask(taskId = base.id, title = it.title.trim(), done = it.done) }
+        onSave(
+            base.copy(
+                title = title.trim(),
+                note = note.trim(),
+                important = important,
+                urgent = urgent,
+                dueAt = dueAt,
+                labelId = labelId,
+                recurrence = recurrence,
+            ),
+            subtasks,
+        )
+    }
+
+    // Geste retour système → même chemin (enregistre puis quitte).
+    BackHandler { commitAndExit() }
 
     Scaffold(
         topBar = {
@@ -144,7 +194,7 @@ fun TaskEditorScreen(
                     )
                 },
                 navigationIcon = {
-                    IconButton(onClick = onBack) {
+                    IconButton(onClick = { commitAndExit() }) {
                         Icon(Icons.AutoMirrored.Rounded.ArrowBack, contentDescription = stringResource(R.string.cd_back))
                     }
                 },
@@ -176,16 +226,83 @@ fun TaskEditorScreen(
             }
 
             item {
-                TextField(
-                    value = note,
-                    onValueChange = { note = it },
-                    label = { Text(stringResource(R.string.field_note)) },
-                    shape = com.kairos.app.ui.components.KairosFieldShape,
-                    colors = com.kairos.app.ui.components.kairosFieldColors(),
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(110.dp),
-                )
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    TextField(
+                        value = note,
+                        onValueChange = { note = it },
+                        label = { Text(stringResource(R.string.field_note)) },
+                        shape = com.kairos.app.ui.components.KairosFieldShape,
+                        colors = com.kairos.app.ui.components.kairosFieldColors(),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(110.dp),
+                    )
+                    // Reformulation IA : visible seulement si un fournisseur est configuré.
+                    if (aiEnabled) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        ) {
+                            KairosAssistChip(
+                                onClick = {
+                                    if (!reformulating && (title.isNotBlank() || note.isNotBlank())) {
+                                        val originalTitle = title
+                                        val originalNote = note
+                                        val originalSubs = subtaskFields.map { it.title }
+                                        scope.launch {
+                                            reformulating = true
+                                            aiError = null
+                                            onReformulateTask(originalTitle, originalNote, originalSubs).fold(
+                                                onSuccess = { result ->
+                                                    beforeAi = EnhancedTask(originalTitle, originalNote, originalSubs)
+                                                    title = result.title
+                                                    note = result.note
+                                                    // Applique les libellés par index (état coché préservé).
+                                                    result.subtasks.forEachIndexed { i, newTitle ->
+                                                        subtaskFields.getOrNull(i)?.let { it.title = newTitle }
+                                                    }
+                                                },
+                                                onFailure = { aiError = it.message ?: "Erreur" },
+                                            )
+                                            reformulating = false
+                                        }
+                                    }
+                                },
+                                label = stringResource(R.string.ai_reformulate),
+                                leadingIcon = {
+                                    if (reformulating) {
+                                        // LoadingIndicator M3 Expressive : forme qui morphe (pas un
+                                        // simple cercle qui tourne).
+                                        LoadingIndicator(
+                                            modifier = Modifier.size(20.dp),
+                                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                        )
+                                    } else {
+                                        Icon(Icons.Rounded.AutoAwesome, contentDescription = null)
+                                    }
+                                },
+                            )
+                            beforeAi?.let { original ->
+                                TextButton(onClick = {
+                                    title = original.title
+                                    note = original.note
+                                    original.subtasks.forEachIndexed { i, t ->
+                                        subtaskFields.getOrNull(i)?.let { it.title = t }
+                                    }
+                                    beforeAi = null
+                                    aiError = null
+                                }) { Text(stringResource(R.string.ai_revert)) }
+                            }
+                        }
+                        aiError?.let {
+                            Text(
+                                it,
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.error,
+                            )
+                        }
+                    }
+                }
             }
 
             // Axes → quadrant vivant. Deux cards morphantes (style QuickAdd) dont la couleur suit le
@@ -217,6 +334,35 @@ fun TaskEditorScreen(
                         color = visual.accent,
                         fontWeight = FontWeight.Medium,
                     )
+                    // Suggestion de classement par l'IA (renseigne les deux axes).
+                    if (aiEnabled) {
+                        KairosAssistChip(
+                            onClick = {
+                                if (!classifying && title.isNotBlank()) {
+                                    scope.launch {
+                                        classifying = true
+                                        aiError = null
+                                        onSuggestClassify(title, note).fold(
+                                            onSuccess = { important = it.important; urgent = it.urgent },
+                                            onFailure = { aiError = it.message ?: "Erreur" },
+                                        )
+                                        classifying = false
+                                    }
+                                }
+                            },
+                            label = stringResource(R.string.ai_classify),
+                            leadingIcon = {
+                                if (classifying) {
+                                    LoadingIndicator(
+                                        modifier = Modifier.size(20.dp),
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    )
+                                } else {
+                                    Icon(Icons.Rounded.AutoAwesome, contentDescription = null)
+                                }
+                            },
+                        )
+                    }
                 }
             }
 
@@ -311,17 +457,17 @@ fun TaskEditorScreen(
             item { Text(stringResource(R.string.field_subtasks), style = MaterialTheme.typography.labelLarge) }
             items(subtaskFields, key = { it.key }) { field ->
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    IconButton(onClick = { field.done = !field.done }, modifier = Modifier.size(32.dp)) {
-                        Icon(
-                            if (field.done) Icons.Rounded.CheckBox else Icons.Rounded.CheckBoxOutlineBlank,
-                            contentDescription = stringResource(
-                                if (field.done) R.string.cd_mark_active else R.string.cd_mark_done,
-                            ),
-                            tint = if (field.done) MaterialTheme.colorScheme.primary
-                            else MaterialTheme.colorScheme.onSurfaceVariant,
-                            modifier = Modifier.size(20.dp),
-                        )
-                    }
+                    // Case morphante M3 Expressive (cercle → « cookie »), teintée par l'accent du
+                    // quadrant résultant — cohérent avec les cards de classement plus haut.
+                    MorphingCheckbox(
+                        checked = field.done,
+                        accent = visual.accent,
+                        onClick = { field.done = !field.done },
+                        modifier = Modifier.size(40.dp),
+                        contentDescription = stringResource(
+                            if (field.done) R.string.cd_mark_active else R.string.cd_mark_done,
+                        ),
+                    )
                     TextField(
                         value = field.title,
                         onValueChange = { field.title = it },
@@ -341,10 +487,48 @@ fun TaskEditorScreen(
                 }
             }
             item {
-                TextButton(onClick = { subtaskFields.add(SubtaskField(nextSubtaskKey++, "", false)) }) {
-                    Icon(Icons.Rounded.Add, contentDescription = null)
-                    Spacer(Modifier.size(4.dp))
-                    Text(stringResource(R.string.subtask_add))
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                ) {
+                    TextButton(onClick = { subtaskFields.add(SubtaskField(nextSubtaskKey++, "", false)) }) {
+                        Icon(Icons.Rounded.Add, contentDescription = null)
+                        Spacer(Modifier.size(4.dp))
+                        Text(stringResource(R.string.subtask_add))
+                    }
+                    // Découpage automatique par l'IA (ajoute les sous-tâches générées à la suite).
+                    if (aiEnabled) {
+                        KairosAssistChip(
+                            onClick = {
+                                if (!decomposing && title.isNotBlank()) {
+                                    scope.launch {
+                                        decomposing = true
+                                        aiError = null
+                                        onSuggestSubtasks(title, note).fold(
+                                            onSuccess = { list ->
+                                                list.forEach {
+                                                    subtaskFields.add(SubtaskField(nextSubtaskKey++, it, false))
+                                                }
+                                            },
+                                            onFailure = { aiError = it.message ?: "Erreur" },
+                                        )
+                                        decomposing = false
+                                    }
+                                }
+                            },
+                            label = stringResource(R.string.ai_decompose),
+                            leadingIcon = {
+                                if (decomposing) {
+                                    LoadingIndicator(
+                                        modifier = Modifier.size(20.dp),
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    )
+                                } else {
+                                    Icon(Icons.Rounded.AutoAwesome, contentDescription = null)
+                                }
+                            },
+                        )
+                    }
                 }
             }
 
@@ -370,65 +554,36 @@ fun TaskEditorScreen(
                 }
             }
 
-            item {
-                Spacer(Modifier.height(4.dp))
-                // Supprimer à gauche (destructif), Enregistrer compact à droite.
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    if (task != null) {
-                        TextButton(
-                            onClick = { confirmDelete = true },
-                            colors = ButtonDefaults.textButtonColors(
-                                contentColor = MaterialTheme.colorScheme.error,
-                            ),
-                        ) {
-                            Icon(Icons.Rounded.Delete, contentDescription = null)
-                            Spacer(Modifier.size(4.dp))
-                            Text(stringResource(R.string.action_delete))
-                        }
-                    } else {
-                        Spacer(Modifier.size(1.dp))
+            // Enregistrement auto à la sortie → pas de bouton « Enregistrer ». En édition, l'action
+            // « Retirer » range la tâche à l'archive (réversible) au lieu de la supprimer durement.
+            if (task != null) {
+                item {
+                    Spacer(Modifier.height(4.dp))
+                    TextButton(
+                        onClick = { confirmDelete = true },
+                        colors = ButtonDefaults.textButtonColors(
+                            contentColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                        ),
+                    ) {
+                        Icon(Icons.Rounded.Inventory2, contentDescription = null)
+                        Spacer(Modifier.size(4.dp))
+                        Text(stringResource(R.string.action_remove))
                     }
-
-                    Button(
-                        onClick = {
-                            val base = task ?: Task(title = "")
-                            val subtasks = subtaskFields
-                                .filter { it.title.isNotBlank() }
-                                .map { Subtask(taskId = base.id, title = it.title.trim(), done = it.done) }
-                            onSave(
-                                base.copy(
-                                    title = title.trim(),
-                                    note = note.trim(),
-                                    important = important,
-                                    urgent = urgent,
-                                    dueAt = dueAt,
-                                    labelId = labelId,
-                                    recurrence = recurrence,
-                                ),
-                                subtasks,
-                            )
-                        },
-                        enabled = title.isNotBlank(),
-                    ) { Text(stringResource(R.string.action_save)) }
                 }
             }
         }
     }
 
-    // --- Confirmation de suppression -----------------------------------------------------------
+    // --- Confirmation de retrait (→ archive) ---------------------------------------------------
 
     if (confirmDelete && task != null) {
         AlertDialog(
             onDismissRequest = { confirmDelete = false },
-            title = { Text(stringResource(R.string.delete_task_title)) },
-            text = { Text(stringResource(R.string.delete_task_message, task.title)) },
+            title = { Text(stringResource(R.string.remove_task_title)) },
+            text = { Text(stringResource(R.string.remove_task_message, task.title)) },
             confirmButton = {
                 TextButton(onClick = { confirmDelete = false; onDelete(task) }) {
-                    Text(stringResource(R.string.action_delete))
+                    Text(stringResource(R.string.action_remove))
                 }
             },
             dismissButton = {

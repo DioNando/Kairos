@@ -26,9 +26,10 @@ interface TaskDao {
     @Query("SELECT COALESCE(MAX(position), -1) FROM tasks WHERE important = :important AND urgent = :urgent")
     suspend fun maxPosition(important: Boolean, urgent: Boolean): Int
 
-    /** Tâches **actives** d'un quadrant, triées par position (base du réordonnancement). */
+    /** Tâches **actives** d'un quadrant (ni terminées, ni retirées), triées par position. */
     @Query(
-        "SELECT * FROM tasks WHERE important = :important AND urgent = :urgent AND completedAt IS NULL " +
+        "SELECT * FROM tasks WHERE important = :important AND urgent = :urgent " +
+            "AND completedAt IS NULL AND removedAt IS NULL " +
             "ORDER BY position ASC, createdAt DESC",
     )
     suspend fun activeInQuadrant(important: Boolean, urgent: Boolean): List<Task>
@@ -52,13 +53,25 @@ interface TaskDao {
     @Query("DELETE FROM tasks WHERE id = :id")
     suspend fun deleteById(id: Long)
 
-    /** Vide l'archive : supprime toutes les tâches terminées. */
-    @Query("DELETE FROM tasks WHERE completedAt IS NOT NULL")
-    suspend fun clearCompleted()
+    /** Vide l'archive : supprime toutes les tâches terminées **ou** retirées. */
+    @Query("DELETE FROM tasks WHERE completedAt IS NOT NULL OR removedAt IS NOT NULL")
+    suspend fun clearArchived()
 
-    /** Purge les tâches terminées avant [cutoff] (epoch ms). */
-    @Query("DELETE FROM tasks WHERE completedAt IS NOT NULL AND completedAt < :cutoff")
-    suspend fun purgeCompletedBefore(cutoff: Long)
+    /** Purge les tâches archivées (terminées ou retirées) entrées dans l'archive avant [cutoff]. */
+    @Query(
+        "DELETE FROM tasks WHERE (completedAt IS NOT NULL AND completedAt < :cutoff) " +
+            "OR (removedAt IS NOT NULL AND removedAt < :cutoff)",
+    )
+    suspend fun purgeArchivedBefore(cutoff: Long)
+
+    /**
+     * Nettoyage unique (migration de comportement) : supprime les occurrences **récurrentes
+     * terminées** archivées par l'ancien modèle (complétion = spawn + archive). Le nouveau modèle
+     * fait avancer la récurrence sur place, donc une telle ligne est forcément un cycle périmé —
+     * la restaurer recréerait un doublon.
+     */
+    @Query("DELETE FROM tasks WHERE completedAt IS NOT NULL AND recurrence != 0")
+    suspend fun purgeLegacyRecurringCompleted()
 
     @Query("DELETE FROM tasks")
     suspend fun clear()

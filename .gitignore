@@ -9,3 +9,8 @@
 .externalNativeBuild
 .cxx
 /.kotlin
+.env
+
+# Données de test locales (générées, horodatages relatifs — pas une fixture permanente)
+/kairos-test-data.json
+

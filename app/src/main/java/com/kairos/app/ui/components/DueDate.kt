@@ -3,9 +3,9 @@ package com.kairos.app.ui.components
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.platform.LocalConfiguration
 import java.time.Instant
+import java.time.LocalDate
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
-import java.time.format.FormatStyle
 
 /** État d'échéance d'une tâche, pour la pulsation et la suggestion « passer en urgent ». */
 enum class DueStatus { NONE, UPCOMING, SOON, OVERDUE }
@@ -21,13 +21,16 @@ fun dueStatus(dueAt: Long?, now: Long, thresholdHours: Int, completed: Boolean):
     return DueStatus.UPCOMING
 }
 
-/** Formate une échéance en date + heure localisées (locale système courante). */
+/**
+ * Formate une échéance **compacte** : « 30 juil. · 09:00 » (l'année n'apparaît que si elle diffère de
+ * l'année courante). Bien plus lisible qu'une date longue dans une carte étroite.
+ */
 @Composable
 fun formatDue(dueAt: Long): String {
     val locale = LocalConfiguration.current.locales[0]
-    val formatter = DateTimeFormatter
-        .ofLocalizedDateTime(FormatStyle.MEDIUM, FormatStyle.SHORT)
-        .withLocale(locale)
-        .withZone(ZoneId.systemDefault())
-    return formatter.format(Instant.ofEpochMilli(dueAt))
+    val zone = ZoneId.systemDefault()
+    val date = Instant.ofEpochMilli(dueAt).atZone(zone)
+    val sameYear = date.year == LocalDate.now(zone).year
+    val pattern = if (sameYear) "d MMM · HH:mm" else "d MMM yyyy · HH:mm"
+    return DateTimeFormatter.ofPattern(pattern, locale).format(date)
 }

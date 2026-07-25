@@ -5,6 +5,25 @@ plugins {
     alias(libs.plugins.ksp)
 }
 
+/**
+ * Lit une variable du fichier `.env` (racine du projet, gitignoré). Sert de repli aux clés API IA
+ * (Gemini, OpenRouter) quand aucune clé n'est saisie dans l'app. Retourne "" si absent.
+ */
+fun readEnv(key: String): String {
+    val envFile = rootProject.file(".env")
+    if (!envFile.exists()) return ""
+    envFile.readLines().forEach { line ->
+        val trimmed = line.trim()
+        if (trimmed.isEmpty() || trimmed.startsWith("#")) return@forEach
+        val idx = trimmed.indexOf('=')
+        if (idx <= 0) return@forEach
+        if (trimmed.substring(0, idx).trim() == key) {
+            return trimmed.substring(idx + 1).trim().trim('"', '\'')
+        }
+    }
+    return ""
+}
+
 android {
     namespace = "com.kairos.app"
     // compileSdk 37 requis par Compose 1.12.0-alpha03 (tiré par material3 1.5.0-alpha — M3 Expressive).
@@ -19,6 +38,18 @@ android {
         versionName = "1.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+
+        // Clés API IA de repli : local.properties prioritaire, sinon .env. Absente -> "" -> repli
+        // inactif (l'utilisateur peut toujours saisir une clé dans les réglages, prioritaire).
+        val geminiKey = (project.findProperty("gemini.api.key") as String?)
+            ?.takeIf { it.isNotBlank() }
+            ?: readEnv("GEMINI_API_KEY")
+        buildConfigField("String", "GEMINI_API_KEY", "\"${geminiKey.replace("\\", "\\\\").replace("\"", "\\\"")}\"")
+
+        val openRouterKey = (project.findProperty("openrouter.api.key") as String?)
+            ?.takeIf { it.isNotBlank() }
+            ?: readEnv("OPENROUTER_API_KEY")
+        buildConfigField("String", "OPENROUTER_API_KEY", "\"${openRouterKey.replace("\\", "\\\\").replace("\"", "\\\"")}\"")
     }
 
     buildTypes {
@@ -44,6 +75,8 @@ android {
 
     buildFeatures {
         compose = true
+        // Expose GEMINI_API_KEY / OPENROUTER_API_KEY (repli .env) via BuildConfig.
+        buildConfig = true
     }
 
     testOptions {
@@ -74,6 +107,17 @@ dependencies {
     ksp(libs.androidx.room.compiler)
 
     implementation(libs.androidx.datastore.preferences)
+
+    // Rappels d'échéance : planification différée résiliente au redémarrage.
+    implementation(libs.androidx.work.runtime.ktx)
+
+    // Widget écran d'accueil (matrice 2×2) via Glance (Compose pour App Widgets).
+    implementation(libs.androidx.glance.appwidget)
+    implementation(libs.androidx.glance.material3)
+
+    // Reformulation IA des notes (optionnelle) : HTTP + stockage chiffré de la clé API.
+    implementation(libs.okhttp)
+    implementation(libs.androidx.security.crypto)
 
     testImplementation(libs.junit)
     testImplementation(libs.robolectric)

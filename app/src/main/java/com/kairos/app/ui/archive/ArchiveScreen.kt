@@ -16,8 +16,10 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.ArrowBack
+import androidx.compose.material.icons.rounded.CheckCircle
 import androidx.compose.material.icons.rounded.DeleteForever
 import androidx.compose.material.icons.rounded.DeleteSweep
+import androidx.compose.material.icons.rounded.Inventory2
 import androidx.compose.material.icons.rounded.Restore
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -46,9 +48,10 @@ import com.kairos.app.ui.components.quadrantVisual
 import com.kairos.app.ui.components.toColor
 
 /**
- * Archive : les tâches terminées, rangées pour ne plus encombrer la matrice (utile surtout pour
- * « Supprimer »). On peut les **restaurer** (elles reviennent dans leur quadrant) ou les
- * **supprimer définitivement** (avec confirmation).
+ * Archive : les tâches sorties du board, qu'elles soient **terminées** (accomplies ✓) ou
+ * **retirées** (glissées hors sans être faites 🗄). Un badge distingue les deux. On peut les
+ * **restaurer** (elles reviennent dans leur quadrant) ou les **supprimer définitivement** (avec
+ * confirmation) — c'est le **seul** endroit où une suppression est irréversible.
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -61,7 +64,7 @@ fun ArchiveScreen(
     onClearAll: () -> Unit,
 ) {
     val archived = remember(tasks) {
-        tasks.filter { it.isCompleted }.sortedByDescending { it.completedAt ?: 0L }
+        tasks.filter { it.isArchived }.sortedByDescending { it.archivedAt ?: 0L }
     }
     val labelsById = remember(labels) { labels.associateBy { it.id } }
     var pendingDelete by remember { mutableStateOf<Task?>(null) }
@@ -115,6 +118,7 @@ fun ArchiveScreen(
                 items(archived, key = { it.id }) { task ->
                     val visual = quadrantVisual(task.quadrant)
                     val label = task.labelId?.let { labelsById[it] }
+                    val done = task.isCompleted
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
@@ -128,12 +132,15 @@ fun ArchiveScreen(
                             Text(
                                 task.title,
                                 style = MaterialTheme.typography.bodyLarge,
-                                textDecoration = TextDecoration.LineThrough,
+                                // Barré uniquement si accomplie ; une tâche retirée n'a pas été faite.
+                                textDecoration = if (done) TextDecoration.LineThrough else TextDecoration.None,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                                 maxLines = 1,
                                 overflow = TextOverflow.Ellipsis,
                             )
                             Row(verticalAlignment = Alignment.CenterVertically) {
+                                StatusBadge(done = done)
+                                Spacer(Modifier.size(8.dp))
                                 Text(
                                     visual.verb,
                                     style = MaterialTheme.typography.labelSmall,
@@ -205,5 +212,25 @@ fun ArchiveScreen(
                 }
             },
         )
+    }
+}
+
+/**
+ * Petit badge distinguant une tâche **terminée** (coche, teinte primaire) d'une tâche **retirée**
+ * (archive, teinte neutre) dans la liste de l'archive.
+ */
+@Composable
+private fun StatusBadge(done: Boolean) {
+    val (icon, tint, textRes) = if (done) {
+        Triple(Icons.Rounded.CheckCircle, MaterialTheme.colorScheme.primary, R.string.archive_status_done)
+    } else {
+        Triple(Icons.Rounded.Inventory2, MaterialTheme.colorScheme.onSurfaceVariant, R.string.archive_status_removed)
+    }
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(3.dp),
+    ) {
+        Icon(icon, contentDescription = null, tint = tint, modifier = Modifier.size(13.dp))
+        Text(stringResource(textRes), style = MaterialTheme.typography.labelSmall, color = tint)
     }
 }

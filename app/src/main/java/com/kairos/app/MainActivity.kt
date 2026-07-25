@@ -1,10 +1,12 @@
 package com.kairos.app
 
 import android.content.Intent
+import android.content.res.Configuration
 import android.net.Uri
 import android.os.Bundle
 import android.widget.Toast
 import androidx.activity.ComponentActivity
+import androidx.activity.compose.LocalActivityResultRegistryOwner
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
@@ -17,11 +19,18 @@ import androidx.compose.material3.Surface
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableLongStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.platform.LocalContext
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import java.util.Locale
 import com.kairos.app.data.model.AppSettings
+import com.kairos.app.data.reminder.ReminderNotifications
 import com.kairos.app.pomodoro.PomodoroNotifications
 import com.kairos.app.ui.ViewModelFactory
 import com.kairos.app.ui.components.toColor
@@ -40,6 +49,10 @@ class MainActivity : ComponentActivity() {
     /** Compteur incrémenté à chaque intent « ouvrir le Pomodoro » (notification). */
     private val pomodoroLaunch = mutableIntStateOf(0)
 
+    /** Tâche à ouvrir depuis un rappel : son id + un compteur pour redéclencher la navigation. */
+    private val openTaskId = mutableLongStateOf(0L)
+    private val openTaskLaunch = mutableIntStateOf(0)
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
@@ -53,6 +66,29 @@ class MainActivity : ComponentActivity() {
             val scope = rememberCoroutineScope()
             val loaded by settingsRepository.settings.collectAsStateWithLifecycle(initialValue = null)
             val settings = loaded ?: AppSettings()
+
+            // IA : un compteur bumpé à chaque changement de clé force le recalcul de la dispo et du
+            // préremplissage (les clés vivent dans le store chiffré, hors du Flow des réglages).
+            var aiKeysVersion by remember { mutableIntStateOf(0) }
+            val aiEnabled = remember(aiKeysVersion) { app.noteEnhancer.isEnabled }
+            val geminiKey = remember(aiKeysVersion) { app.aiKey(AppSettings.AI_GEMINI) }
+            val openRouterKey = remember(aiKeysVersion) { app.aiKey(AppSettings.AI_OPENROUTER) }
+
+            // Langue de l'app : override de la locale (Système = pas d'override → suit le téléphone).
+            val langTag = when (settings.language) {
+                AppSettings.LANG_FR -> "fr"
+                AppSettings.LANG_EN -> "en"
+                else -> null
+            }
+            val baseContext = LocalContext.current
+            val localizedContext = remember(baseContext, langTag) {
+                if (langTag == null) baseContext
+                else baseContext.createConfigurationContext(
+                    Configuration(baseContext.resources.configuration).apply {
+                        setLocale(Locale.forLanguageTag(langTag))
+                    },
+                )
+            }
 
             // Système de fichiers (SAF) : choisir un fichier de sortie / d'entrée pour la sauvegarde.
             val exportLauncher = rememberLauncherForActivityResult(
@@ -89,7 +125,16 @@ class MainActivity : ComponentActivity() {
             val palette = AccentPalette(target.name, doC, schedC, delC, elimC)
 
             KairosTheme(darkTheme = darkTheme, dynamicColor = settings.dynamicColor) {
-                CompositionLocalProvider(LocalAccentPalette provides palette) {
+                CompositionLocalProvider(
+                    LocalAccentPalette provides palette,
+                    LocalContext provides localizedContext,
+                    LocalConfiguration provides localizedContext.resources.configuration,
+                    // L'override de LocalContext (langue) casse la résolution par défaut du
+                    // propriétaire ActivityResult (il remonte la chaîne de contexte, qui ne mène plus
+                    // à l'Activity via createConfigurationContext). On le re-fournit explicitement —
+                    // sinon rememberLauncherForActivityResult (écran Pomodoro) plante.
+                    LocalActivityResultRegistryOwner provides this@MainActivity,
+                ) {
                     Surface(modifier = Modifier.fillMaxSize()) {
                         if (loaded != null && !settings.onboardingDone) {
                             OnboardingScreen(
@@ -99,7 +144,16 @@ class MainActivity : ComponentActivity() {
                             KairosNavHost(
                                 factory = factory,
                                 settings = settings,
+                                aiEnabled = aiEnabled,
+                                geminiKey = geminiKey,
+                                openRouterKey = openRouterKey,
+                                reformulateTask = { title, note, subs -> app.noteEnhancer.enhance(title, note, subs) },
+                                suggestClassify = { title, note -> app.noteEnhancer.suggestClassification(title, note) },
+                                suggestSubtasks = { title, note -> app.noteEnhancer.suggestSubtasks(title, note) },
+                                onSetAiProvider = { scope.launch { settingsRepository.setAiProvider(it) } },
+                                onSetAiKey = { provider, key -> app.setAiKey(provider, key); aiKeysVersion++ },
                                 onSetThemeMode = { scope.launch { settingsRepository.setThemeMode(it) } },
+                                onSetLanguage = { scope.launch { settingsRepository.setLanguage(it) } },
                                 onSetDynamicColor = { scope.launch { settingsRepository.setDynamicColor(it) } },
                                 onSetPalette = { scope.launch { settingsRepository.setPalette(it) } },
                                 onSetCustomPalette = { d, s, dg, e ->
@@ -108,6 +162,7 @@ class MainActivity : ComponentActivity() {
                                 onSetUrgencyThreshold = { scope.launch { settingsRepository.setUrgencyThreshold(it) } },
                                 onSetSwimLanes = { scope.launch { settingsRepository.setSwimLanes(it) } },
                                 onSetArchivePurgeDays = { scope.launch { settingsRepository.setArchivePurgeDays(it) } },
+                                onSetShowGuide = { scope.launch { settingsRepository.setShowGuide(it) } },
                                 onSetPomodoroStyle = { scope.launch { settingsRepository.setPomodoroStyle(it) } },
                                 onSetPomodoroDurations = { f, s, l, c ->
                                     scope.launch { settingsRepository.setPomodoroDurations(f, s, l, c) }
@@ -115,6 +170,10 @@ class MainActivity : ComponentActivity() {
                                 onExport = { exportLauncher.launch("kairos-backup.json") },
                                 onImport = { importLauncher.launch(arrayOf("application/json")) },
                                 pomodoroLaunch = pomodoroLaunch.intValue,
+                                openTaskId = openTaskId.longValue,
+                                openTaskLaunch = openTaskLaunch.intValue,
+                                onSetRemindersEnabled = { scope.launch { settingsRepository.setRemindersEnabled(it) } },
+                                onSetReminderLead = { scope.launch { settingsRepository.setReminderLeadMinutes(it) } },
                             )
                         }
                     }
@@ -129,10 +188,17 @@ class MainActivity : ComponentActivity() {
         handleIntent(intent)
     }
 
-    /** Une notification Pomodoro demande d'ouvrir l'écran : on incrémente le signal observé. */
+    /** Une notification demande d'ouvrir un écran : on incrémente le signal observé. */
     private fun handleIntent(intent: Intent?) {
-        if (intent?.action == PomodoroNotifications.ACTION_OPEN_POMODORO) {
-            pomodoroLaunch.intValue++
+        when (intent?.action) {
+            PomodoroNotifications.ACTION_OPEN_POMODORO -> pomodoroLaunch.intValue++
+            ReminderNotifications.ACTION_OPEN_TASK -> {
+                val id = intent.getLongExtra(ReminderNotifications.EXTRA_TASK_ID, 0L)
+                if (id > 0L) {
+                    openTaskId.longValue = id
+                    openTaskLaunch.intValue++
+                }
+            }
         }
     }
 

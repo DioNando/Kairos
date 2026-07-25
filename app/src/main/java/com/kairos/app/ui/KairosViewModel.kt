@@ -39,13 +39,6 @@ class KairosViewModel(private val repository: KairosRepository) : ViewModel() {
 
     private fun now() = System.currentTimeMillis()
 
-    /** Occurrence régénérée à la dernière complétion d'une tâche récurrente : (idTâcheParent, idOccurrence). */
-    private var lastSpawn: Pair<Long, Long>? = null
-
-    /** Sous-tâches de la dernière tâche supprimée (pour les restaurer à l'annulation). */
-    private var lastDeletedTaskId: Long? = null
-    private var lastDeletedSubtasks: List<Subtask> = emptyList()
-
     fun saveTask(task: Task) = viewModelScope.launch { repository.saveTask(task, now()) }
 
     fun saveTask(task: Task, subtasks: List<Subtask>) =
@@ -57,36 +50,22 @@ class KairosViewModel(private val repository: KairosRepository) : ViewModel() {
 
     fun setUrgent(taskId: Long, urgent: Boolean) = viewModelScope.launch { repository.setUrgent(taskId, urgent) }
 
-    fun setCompleted(taskId: Long, completed: Boolean) = viewModelScope.launch {
-        val spawnedId = repository.setCompleted(taskId, if (completed) now() else null, now())
-        lastSpawn = if (completed && spawnedId != null) taskId to spawnedId else null
-    }
-
     /**
-     * Annule une complétion : réactive la tâche et, si sa complétion avait régénéré une occurrence
-     * (tâche récurrente), supprime cette occurrence pour éviter un doublon.
+     * Marque terminée ou réactive. Pour une tâche récurrente, la complétion l'**avance sur place**
+     * (échéance suivante, sous-tâches décochées) au lieu de l'archiver → une seule occurrence vivante.
      */
-    fun undoComplete(task: Task) = viewModelScope.launch {
-        repository.setCompleted(task.id, null, now())
-        lastSpawn?.let { (parentId, spawnedId) ->
-            if (parentId == task.id) {
-                repository.deleteTask(spawnedId)
-                lastSpawn = null
-            }
-        }
+    fun setCompleted(taskId: Long, completed: Boolean) = viewModelScope.launch {
+        repository.setCompleted(taskId, if (completed) now() else null)
     }
 
-    fun deleteTask(taskId: Long) = viewModelScope.launch {
-        // Capture la checklist avant la suppression (cascade FK) pour pouvoir l'annuler.
-        lastDeletedSubtasks = repository.getSubtasks(taskId)
-        lastDeletedTaskId = taskId
-        repository.deleteTask(taskId)
-    }
+    /** Retire une tâche du board → archive (réversible depuis l'archive, sans récurrence). */
+    fun removeTask(taskId: Long) = viewModelScope.launch { repository.setRemoved(taskId, now()) }
 
-    fun restoreTask(task: Task) = viewModelScope.launch {
-        val subtasks = if (lastDeletedTaskId == task.id) lastDeletedSubtasks else emptyList()
-        repository.restoreTask(task, subtasks)
-    }
+    /** Restaure une tâche archivée (terminée ou retirée) : elle revient sur le board. */
+    fun restoreFromArchive(taskId: Long) = viewModelScope.launch { repository.restoreFromArchive(taskId) }
+
+    /** Suppression **définitive** (uniquement depuis l'archive). */
+    fun deleteTask(taskId: Long) = viewModelScope.launch { repository.deleteTask(taskId) }
 
     fun clearArchive() = viewModelScope.launch { repository.clearArchive() }
 

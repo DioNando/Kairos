@@ -155,7 +155,7 @@ fun PomodoroScreen(
 
             // Lien vers une tâche : le temps des focus terminés lui est crédité.
             LinkedTaskSelector(
-                tasks = tasks.filter { !it.isCompleted },
+                tasks = tasks.filter { it.isActive },
                 linkedTaskId = linkedTaskId,
                 onSelect = { viewModel.setLinkedTask(it) },
             )
@@ -257,10 +257,12 @@ private fun PhaseSelector(
     onSelect: (PomodoroPhase) -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    // Libellés courts : les 3 segments sont étroits, « Pause courte/longue » y serait tronqué à
+    // « Pause » (indistinguable). On utilise des libellés compacts dédiés au sélecteur.
     val options = listOf(
-        PomodoroPhase.FOCUS to R.string.pomo_focus,
-        PomodoroPhase.SHORT_BREAK to R.string.pomo_short,
-        PomodoroPhase.LONG_BREAK to R.string.pomo_long,
+        PomodoroPhase.FOCUS to R.string.pomo_seg_focus,
+        PomodoroPhase.SHORT_BREAK to R.string.pomo_seg_short,
+        PomodoroPhase.LONG_BREAK to R.string.pomo_seg_long,
     )
     val colors = ToggleButtonDefaults.toggleButtonColors(
         containerColor = MaterialTheme.colorScheme.surfaceContainerHighest,

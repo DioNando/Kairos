@@ -4,8 +4,8 @@ import java.time.Instant
 import java.time.ZoneId
 
 /**
- * Récurrence d'une tâche. Une tâche récurrente **régénère** une nouvelle occurrence à sa complétion
- * (la tâche terminée part à l'archive, une copie active est recréée avec l'échéance avancée).
+ * Récurrence d'une tâche. À la complétion, une tâche récurrente **avance sur place** : elle reste
+ * active sur le board, son échéance passe au pas suivant (via [next]) — elle ne va pas à l'archive.
  */
 enum class Recurrence {
     NONE,

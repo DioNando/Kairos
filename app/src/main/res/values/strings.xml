@@ -12,21 +12,28 @@
     <string name="quadrant_delegate_sub">urgent, pas important</string>
     <string name="quadrant_eliminate_sub">ni urgent ni important</string>
     <string name="quadrant_empty">Rien ici</string>
+    <string name="quadrant_empty_do">Aucune urgence brûlante 🎉</string>
+    <string name="quadrant_empty_schedule">Bloque du temps pour l\'important</string>
+    <string name="quadrant_empty_delegate">Rien à déléguer</string>
+    <string name="quadrant_empty_eliminate">Rien à écarter</string>
+    <string name="quadrant_add">Ajouter</string>
     <string name="move_to">Déplacer vers</string>
+
+    <!-- Recherche & filtre -->
+    <string name="search_hint">Rechercher…</string>
+    <string name="search_clear">Effacer</string>
+    <string name="filter_all">Toutes</string>
+    <string name="cd_search">Rechercher</string>
 
     <!-- Actions génériques -->
     <string name="action_save">Enregistrer</string>
     <string name="action_delete">Supprimer</string>
+    <string name="action_remove">Retirer</string>
     <string name="action_cancel">Annuler</string>
     <string name="action_ok">OK</string>
     <string name="action_next">Suivant</string>
     <string name="action_export">Exporter</string>
     <string name="action_import">Importer</string>
-    <string name="action_undo">Annuler</string>
-
-    <!-- Annulation (snackbar) -->
-    <string name="snack_task_completed">Tâche terminée</string>
-    <string name="snack_task_deleted">Tâche supprimée</string>
 
     <!-- Récurrence -->
     <string name="field_recurrence">Récurrence</string>
@@ -85,14 +92,18 @@
     <!-- Confirmations de suppression -->
     <string name="delete_task_title">Supprimer la tâche ?</string>
     <string name="delete_task_message">« %1$s » sera définitivement supprimée.</string>
+    <string name="remove_task_title">Retirer la tâche ?</string>
+    <string name="remove_task_message">« %1$s » sera rangée dans l\'archive. Tu pourras la restaurer ou la supprimer définitivement depuis là.</string>
     <string name="delete_label_title">Supprimer l\'étiquette ?</string>
     <string name="delete_label_message">« %1$s » sera retirée des tâches qui la portent.</string>
 
     <!-- Archive -->
     <string name="archive_title">Archive</string>
-    <string name="archive_empty">Aucune tâche archivée. Les tâches terminées apparaîtront ici.</string>
+    <string name="archive_empty">Aucune tâche archivée. Les tâches terminées ou retirées apparaîtront ici.</string>
+    <string name="archive_status_done">Terminée</string>
+    <string name="archive_status_removed">Retirée</string>
     <string name="clear_archive_title">Vider l\'archive ?</string>
-    <string name="clear_archive_message">Toutes les tâches terminées seront définitivement supprimées.</string>
+    <string name="clear_archive_message">Toutes les tâches archivées seront définitivement supprimées.</string>
 
     <!-- Onboarding (premier lancement) -->
     <string name="onb_skip">Passer</string>
@@ -110,6 +121,10 @@
     <string name="pomo_focus">Focus</string>
     <string name="pomo_short">Pause courte</string>
     <string name="pomo_long">Pause longue</string>
+    <!-- Libellés compacts pour le sélecteur de phase à 3 segments (étroits). -->
+    <string name="pomo_seg_focus">Focus</string>
+    <string name="pomo_seg_short">Courte</string>
+    <string name="pomo_seg_long">Longue</string>
     <string name="pomo_start">Démarrer</string>
     <string name="pomo_pause">Pause</string>
     <string name="pomo_running">En cours</string>
@@ -138,6 +153,10 @@
     <string name="theme_system">Système</string>
     <string name="theme_light">Clair</string>
     <string name="theme_dark">Sombre</string>
+    <string name="settings_language">Langue</string>
+    <string name="lang_system">Système</string>
+    <string name="lang_fr">Français</string>
+    <string name="lang_en">English</string>
     <string name="settings_dynamic">Couleurs dynamiques</string>
     <string name="settings_dynamic_desc">Material You (couleurs du système)</string>
     <string name="settings_swimlanes">Vue en listes (swim lanes)</string>
@@ -147,13 +166,119 @@
     <string name="settings_urgency">Seuil d\'urgence</string>
     <string name="settings_urgency_desc">En deçà de ce délai avant l\'échéance, la tâche pulse et propose de passer en urgent.</string>
     <string name="settings_archive_purge">Purge de l\'archive</string>
-    <string name="settings_archive_purge_desc">Supprime automatiquement les tâches terminées depuis plus longtemps que la durée choisie.</string>
+    <string name="settings_archive_purge_desc">Supprime automatiquement les tâches archivées (terminées ou retirées) depuis plus longtemps que la durée choisie.</string>
     <string name="purge_never">Jamais</string>
     <string name="purge_7">7 jours</string>
     <string name="purge_30">30 jours</string>
     <string name="purge_90">90 jours</string>
     <string name="settings_backup">Sauvegarde</string>
     <string name="settings_backup_desc">Exporte ou restaure toutes tes tâches et étiquettes dans un fichier JSON.</string>
+
+    <!-- Assistant IA (reformulation des notes) -->
+    <string name="settings_ai">Assistant IA</string>
+    <string name="settings_ai_desc">Optionnel : reformule et met au propre la note d\'une tâche. Renseigne une clé API (Gemini ou OpenRouter) ; sans clé, la fonction reste masquée. Les clés sont stockées chiffrées sur l\'appareil et jamais incluses dans les sauvegardes.</string>
+    <string name="ai_provider_gemini">Gemini</string>
+    <string name="ai_provider_openrouter">OpenRouter</string>
+    <string name="ai_key_gemini">Clé API Gemini</string>
+    <string name="ai_key_openrouter">Clé API OpenRouter</string>
+    <string name="ai_reformulate">Reformuler (IA)</string>
+    <string name="ai_revert">Rétablir l\'original</string>
+    <string name="ai_classify">Suggérer le classement (IA)</string>
+    <string name="ai_decompose">Découper (IA)</string>
+    <string name="cd_key_show">Afficher la clé</string>
+    <string name="cd_key_hide">Masquer la clé</string>
+
+    <!-- Guide / Aide -->
+    <string name="cd_guide">Guide</string>
+    <string name="guide_title">Guide</string>
+    <string name="guide_open">Ouvrir le guide</string>
+    <string name="settings_help">Aide</string>
+    <string name="settings_show_guide">Raccourci guide</string>
+    <string name="settings_show_guide_desc">Affiche l\'icône du guide en haut de la matrice.</string>
+    <string name="guide_intro">Kairós t\'aide à distinguer ce qui compte vraiment de ce qui n\'est qu\'urgent, puis à passer à l\'action. Touche un thème pour en savoir plus.</string>
+
+    <!-- Hub : titres + sous-titres -->
+    <string name="guide_matrix_title">La matrice d\'Eisenhower</string>
+    <string name="guide_matrix_sub">Le principe : trier par importance et urgence</string>
+    <string name="guide_create_title">Créer une tâche</string>
+    <string name="guide_create_sub">Toutes les options de l\'éditeur</string>
+    <string name="guide_daily_title">Au quotidien</string>
+    <string name="guide_daily_sub">Déplacer, terminer, archiver</string>
+    <string name="guide_focus_title">Focus &amp; Pomodoro</string>
+    <string name="guide_focus_sub">Se concentrer sur l\'essentiel</string>
+    <string name="guide_ai_title">Assistant IA</string>
+    <string name="guide_ai_sub">Reformuler tes tâches</string>
+    <string name="guide_settings_title">Thème &amp; sauvegarde</string>
+    <string name="guide_settings_sub">Personnaliser et sauvegarder</string>
+
+    <!-- Sous-page : matrice -->
+    <string name="guide_matrix_p1">La matrice d\'Eisenhower vient d\'une idée attribuée au président américain Dwight D. Eisenhower : « Ce qui est important est rarement urgent, et ce qui est urgent est rarement important. » Elle aide à décider quoi faire — et surtout quoi ne pas faire tout de suite.</string>
+    <string name="guide_matrix_p2">Elle croise deux questions. Est-ce important ? (est-ce que ça sert vraiment mes objectifs, mes valeurs ?) et Est-ce urgent ? (y a-t-il une pression de temps, une échéance ?). Les réponses placent la tâche dans l\'un des 4 quadrants.</string>
+    <string name="guide_matrix_do">Crises et échéances imminentes, à traiter en premier. Ex. : rendre un dossier dû ce soir, rappeler un client mécontent.</string>
+    <string name="guide_matrix_schedule">Le cœur du travail de fond : objectifs, projets, prévention. Bloque-lui du temps — c\'est le quadrant à cultiver. Ex. : préparer un examen dans 3 semaines, faire du sport, planifier un voyage.</string>
+    <string name="guide_matrix_delegate">Urgent mais à faible valeur pour toi : à confier si possible. Ex. : répondre à un mail que quelqu\'un d\'autre peut traiter, réserver un taxi.</string>
+    <string name="guide_matrix_eliminate">Ni important ni urgent : distractions et temps perdu, à abandonner sans culpabilité. Ex. : scroller sans but, réunions inutiles.</string>
+    <string name="guide_matrix_tip">Le piège est de passer sa journée dans l\'urgent (Faire et Déléguer) et de négliger Planifier. C\'est pourtant en cultivant Planifier qu\'on réduit les urgences de demain.</string>
+
+    <!-- Sous-page : créer une tâche -->
+    <string name="guide_create_p1">Le bouton + capture une tâche en un instant (un titre, un quadrant). « Plus d\'options » ouvre l\'éditeur complet. L\'éditeur s\'enregistre automatiquement quand tu le quittes — aucun bouton à oublier.</string>
+    <string name="guide_create_classify_t">Important &amp; Urgent</string>
+    <string name="guide_create_classify_b">Les deux seuls réglages qui déterminent le quadrant. Ex. : « Important » seul → Planifier ; les deux → Faire. La carte prend la couleur du quadrant en direct.</string>
+    <string name="guide_create_due_t">Échéance</string>
+    <string name="guide_create_due_b">Une date et une heure facultatives. L\'échéance ne déplace jamais la tâche : quand elle approche, la tâche « pulse » et propose de la passer en urgent — c\'est toi qui décides. Ex. : « Rapport » dû vendredi 17 h.</string>
+    <string name="guide_create_label_t">Étiquette</string>
+    <string name="guide_create_label_b">Une catégorie de couleur, transversale aux quadrants, pour filtrer d\'un coup d\'œil. Ex. : Perso, Boulot, Maison. Gère-les depuis l\'écran Étiquettes.</string>
+    <string name="guide_create_rec_t">Récurrence</string>
+    <string name="guide_create_rec_b">Quotidienne, hebdomadaire ou mensuelle. À la complétion, la tâche reste sur le board : son échéance passe automatiquement à la suivante et ses sous-tâches se décochent (elle ne va donc pas à l\'archive). Ex. : « Arroser les plantes » chaque semaine.</string>
+    <string name="guide_create_sub_t">Sous-tâches</string>
+    <string name="guide_create_sub_b">Une checklist dans la tâche ; la carte affiche l\'avancement (ex. 2/5). Idéal pour découper. Ex. : « Organiser l\'anniversaire » → gâteau, invitations, déco.</string>
+    <string name="guide_create_ai_t">Reformuler (IA)</string>
+    <string name="guide_create_ai_b">Met au propre le titre, la note et les sous-tâches d\'un seul geste. Apparaît si une clé API est configurée (Réglages → Assistant IA).</string>
+
+    <!-- Sous-page : au quotidien -->
+    <string name="guide_daily_views_t">Grille ou listes</string>
+    <string name="guide_daily_views_b">Bascule entre la grille 2×2 et une vue en listes verticales par quadrant (dans les Réglages).</string>
+    <string name="guide_daily_search_t">Rechercher &amp; filtrer</string>
+    <string name="guide_daily_search_b">L\'icône loupe en haut ouvre une barre de recherche (titre et note) et des filtres par étiquette — pratique pour retrouver une tâche parmi beaucoup.</string>
+    <string name="guide_daily_move_t">Déplacer une tâche</string>
+    <string name="guide_daily_move_b">Appui long puis glissement vers un autre quadrant (ou pour réordonner). Le menu ⋮ « Déplacer vers » fait la même chose et reste accessible avec TalkBack.</string>
+    <string name="guide_daily_swipe_t">Terminer / retirer</string>
+    <string name="guide_daily_swipe_b">Glisse à droite pour marquer terminée, à gauche pour retirer la tâche du board. Dans les deux cas elle part dans l\'archive — rien n\'est perdu, tu peux la restaurer depuis là.</string>
+    <string name="guide_daily_remind_t">Rappels d\'échéance</string>
+    <string name="guide_daily_remind_b">Une tâche avec une échéance déclenche une notification à l\'approche du moment (délai d\'anticipation réglable dans Réglages → Rappels). Touche la notification pour ouvrir la tâche.</string>
+    <string name="guide_daily_widget_t">Widget d\'accueil</string>
+    <string name="guide_daily_widget_b">Ajoute le widget Kairós à ton écran d\'accueil pour voir d\'un coup d\'œil le nombre de tâches par quadrant. Un appui ouvre l\'app.</string>
+    <string name="guide_daily_archive_t">Archive</string>
+    <string name="guide_daily_archive_b">Toutes les tâches sorties du board sont rangées ici, avec un badge « Terminée » ou « Retirée ». C\'est le seul endroit où supprimer définitivement : restaure une tâche, supprime-la pour de bon, vide tout, ou active une purge automatique après N jours.</string>
+
+    <!-- Sous-page : focus &amp; pomodoro -->
+    <string name="guide_focus_focus_t">Mode Focus</string>
+    <string name="guide_focus_focus_b">« Et maintenant ? » agrège importance et échéance pour faire ressortir LA tâche à faire maintenant, avec un aperçu de la suite.</string>
+    <string name="guide_focus_pomo_t">Pomodoro</string>
+    <string name="guide_focus_pomo_b">Un minuteur focus/pause (ex. 25 min de focus, 5 min de pause) qui survit à la fermeture de l\'app, avec notification. Lie une session à une tâche pour lui créditer le temps de concentration.</string>
+
+    <!-- Sous-page : assistant IA -->
+    <string name="guide_ai_p1">Optionnel. Kairós peut t\'assister via un modèle d\'IA — pratique pour clarifier, classer ou découper une tâche. Chaque action apparaît dans l\'éditeur si une clé API est configurée.</string>
+    <string name="guide_ai_reformulate_t">Reformuler</string>
+    <string name="guide_ai_reformulate_b">Met au propre le titre, la note et les sous-tâches d\'un seul geste (orthographe, clarté, concision), sans rien inventer. Un bouton « Rétablir l\'original » annule.</string>
+    <string name="guide_ai_classify_t">Suggérer le classement</string>
+    <string name="guide_ai_classify_b">À partir du titre et de la note, l\'IA propose les axes Important / Urgent — donc le quadrant. Tu gardes la main : c\'est une suggestion, ajustable d\'un tap.</string>
+    <string name="guide_ai_decompose_t">Découper en sous-tâches</string>
+    <string name="guide_ai_decompose_b">Transforme une tâche en une checklist d\'étapes concrètes, ajoutées à la suite des sous-tâches existantes. Idéal pour démarrer un gros sujet.</string>
+    <string name="guide_ai_keys_t">Fournisseurs &amp; clés</string>
+    <string name="guide_ai_keys_b">Gemini (Google) ou OpenRouter, avec repli automatique de l\'un sur l\'autre. Saisis une clé dans Réglages → Assistant IA (des offres gratuites existent).</string>
+    <string name="guide_ai_privacy_t">Confidentialité</string>
+    <string name="guide_ai_privacy_b">Les clés sont stockées chiffrées sur l\'appareil et jamais incluses dans les sauvegardes. Le texte n\'est envoyé au fournisseur que lorsque tu lances une reformulation.</string>
+
+    <!-- Sous-page : thème &amp; sauvegarde -->
+    <string name="guide_set_theme_t">Thème</string>
+    <string name="guide_set_theme_b">Clair, sombre ou selon le système. Sur Android 12+, Material You reprend les couleurs de ton fond d\'écran.</string>
+    <string name="guide_set_palette_t">Palettes</string>
+    <string name="guide_set_palette_b">Choisis la palette des couleurs de quadrants, ou crée la tienne (4 couleurs personnalisées).</string>
+    <string name="guide_set_backup_t">Sauvegarde</string>
+    <string name="guide_set_backup_b">Exporte toutes tes données (tâches, sous-tâches, étiquettes, réglages) en JSON, et réimporte-les sur un autre appareil.</string>
+    <string name="guide_set_guide_t">Ce guide</string>
+    <string name="guide_set_guide_b">Tu peux masquer le raccourci du guide (l\'icône en haut) depuis Réglages → Aide ; il reste accessible via « Ouvrir le guide ».</string>
     <string name="settings_pomodoro_style">Minuteur « cercle liquide »</string>
     <string name="settings_pomodoro_style_sub">Sinon, un anneau de progression classique.</string>
 
@@ -186,4 +311,19 @@
     <string name="cd_clear_archive">Vider l\'archive</string>
     <string name="cd_recurring">Tâche récurrente</string>
     <string name="cd_remove_subtask">Retirer la sous-tâche</string>
+
+    <!-- Rappels d'échéance -->
+    <string name="settings_reminders">Rappels</string>
+    <string name="reminders_enable">Rappels d\'échéance</string>
+    <string name="reminders_enable_desc">Reçois une notification à l\'approche de l\'échéance des tâches qui en ont une.</string>
+    <string name="reminders_lead">Quand notifier</string>
+    <string name="reminder_lead_now">À l\'heure</string>
+    <string name="reminder_lead_5">5 min avant</string>
+    <string name="reminder_lead_15">15 min avant</string>
+    <string name="reminder_lead_30">30 min avant</string>
+    <string name="reminder_lead_60">1 h avant</string>
+    <string name="reminder_channel">Rappels de tâches</string>
+
+    <!-- Widget écran d'accueil -->
+    <string name="widget_description">Matrice Kairós : nombre de tâches actives par quadrant.</string>
 </resources>

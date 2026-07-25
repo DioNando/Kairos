@@ -57,6 +57,7 @@ class BackupManager(
                 put("position", t.position)
                 put("createdAt", t.createdAt)
                 if (t.completedAt != null) put("completedAt", t.completedAt)
+                if (t.removedAt != null) put("removedAt", t.removedAt)
                 put("recurrence", t.recurrence)
                 put("focusSeconds", t.focusSeconds)
             }
@@ -103,6 +104,7 @@ class BackupManager(
                 position = o.optInt("position"),
                 createdAt = o.optLong("createdAt"),
                 completedAt = if (o.has("completedAt") && !o.isNull("completedAt")) o.getLong("completedAt") else null,
+                removedAt = if (o.has("removedAt") && !o.isNull("removedAt")) o.getLong("removedAt") else null,
                 recurrence = o.optInt("recurrence"),
                 focusSeconds = o.optInt("focusSeconds"),
             )
@@ -134,12 +136,14 @@ class BackupManager(
 
     private fun AppSettings.toJson(): JSONObject = JSONObject().apply {
         put("themeMode", themeMode)
+        put("language", language)
         put("dynamicColor", dynamicColor)
         put("paletteId", paletteId)
         put("urgencyThresholdHours", urgencyThresholdHours)
         put("swimLanes", swimLanes)
         put("archivePurgeDays", archivePurgeDays)
         put("onboardingDone", onboardingDone)
+        put("showGuide", showGuide)
         put("customDoColor", customDoColor)
         put("customScheduleColor", customScheduleColor)
         put("customDelegateColor", customDelegateColor)
@@ -149,16 +153,21 @@ class BackupManager(
         put("shortBreakMinutes", shortBreakMinutes)
         put("longBreakMinutes", longBreakMinutes)
         put("cyclesBeforeLongBreak", cyclesBeforeLongBreak)
+        put("aiProvider", aiProvider)
+        put("remindersEnabled", remindersEnabled)
+        put("reminderLeadMinutes", reminderLeadMinutes)
     }
 
     private fun JSONObject.toSettings(): AppSettings = AppSettings(
         themeMode = optInt("themeMode"),
+        language = optInt("language"),
         dynamicColor = optBoolean("dynamicColor"),
         paletteId = optInt("paletteId"),
         urgencyThresholdHours = optInt("urgencyThresholdHours", 48),
         swimLanes = optBoolean("swimLanes"),
         archivePurgeDays = optInt("archivePurgeDays"),
         onboardingDone = optBoolean("onboardingDone"),
+        showGuide = optBoolean("showGuide", true),
         customDoColor = optString("customDoColor", "#E5645A"),
         customScheduleColor = optString("customScheduleColor", "#4FA5A0"),
         customDelegateColor = optString("customDelegateColor", "#E0A24E"),
@@ -168,6 +177,9 @@ class BackupManager(
         shortBreakMinutes = optInt("shortBreakMinutes", 5),
         longBreakMinutes = optInt("longBreakMinutes", 15),
         cyclesBeforeLongBreak = optInt("cyclesBeforeLongBreak", 4),
+        aiProvider = optInt("aiProvider"),
+        remindersEnabled = optBoolean("remindersEnabled", true),
+        reminderLeadMinutes = optInt("reminderLeadMinutes", 0),
     )
 
     private companion object {

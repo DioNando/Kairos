@@ -12,21 +12,28 @@
     <string name="quadrant_delegate_sub">urgent, not important</string>
     <string name="quadrant_eliminate_sub">neither urgent nor important</string>
     <string name="quadrant_empty">Nothing here</string>
+    <string name="quadrant_empty_do">No burning urgency 🎉</string>
+    <string name="quadrant_empty_schedule">Block time for what matters</string>
+    <string name="quadrant_empty_delegate">Nothing to delegate</string>
+    <string name="quadrant_empty_eliminate">Nothing to drop</string>
+    <string name="quadrant_add">Add</string>
     <string name="move_to">Move to</string>
+
+    <!-- Search & filter -->
+    <string name="search_hint">Search…</string>
+    <string name="search_clear">Clear</string>
+    <string name="filter_all">All</string>
+    <string name="cd_search">Search</string>
 
     <!-- Generic actions -->
     <string name="action_save">Save</string>
     <string name="action_delete">Delete</string>
+    <string name="action_remove">Remove</string>
     <string name="action_cancel">Cancel</string>
     <string name="action_ok">OK</string>
     <string name="action_next">Next</string>
     <string name="action_export">Export</string>
     <string name="action_import">Import</string>
-    <string name="action_undo">Undo</string>
-
-    <!-- Undo (snackbar) -->
-    <string name="snack_task_completed">Task completed</string>
-    <string name="snack_task_deleted">Task deleted</string>
 
     <!-- Recurrence -->
     <string name="field_recurrence">Recurrence</string>
@@ -85,14 +92,18 @@
     <!-- Delete confirmations -->
     <string name="delete_task_title">Delete task?</string>
     <string name="delete_task_message">“%1$s” will be permanently deleted.</string>
+    <string name="remove_task_title">Remove task?</string>
+    <string name="remove_task_message">“%1$s” will be moved to the archive. You can restore it or permanently delete it from there.</string>
     <string name="delete_label_title">Delete label?</string>
     <string name="delete_label_message">“%1$s” will be removed from the tasks that use it.</string>
 
     <!-- Archive -->
     <string name="archive_title">Archive</string>
-    <string name="archive_empty">No archived tasks. Completed tasks will show up here.</string>
+    <string name="archive_empty">No archived tasks. Completed or removed tasks will show up here.</string>
+    <string name="archive_status_done">Done</string>
+    <string name="archive_status_removed">Removed</string>
     <string name="clear_archive_title">Clear the archive?</string>
-    <string name="clear_archive_message">All completed tasks will be permanently deleted.</string>
+    <string name="clear_archive_message">All archived tasks will be permanently deleted.</string>
 
     <!-- Onboarding (first launch) -->
     <string name="onb_skip">Skip</string>
@@ -110,6 +121,10 @@
     <string name="pomo_focus">Focus</string>
     <string name="pomo_short">Short break</string>
     <string name="pomo_long">Long break</string>
+    <!-- Compact labels for the 3-segment (narrow) phase selector. -->
+    <string name="pomo_seg_focus">Focus</string>
+    <string name="pomo_seg_short">Short</string>
+    <string name="pomo_seg_long">Long</string>
     <string name="pomo_start">Start</string>
     <string name="pomo_pause">Pause</string>
     <string name="pomo_running">Running</string>
@@ -138,6 +153,10 @@
     <string name="theme_system">System</string>
     <string name="theme_light">Light</string>
     <string name="theme_dark">Dark</string>
+    <string name="settings_language">Language</string>
+    <string name="lang_system">System</string>
+    <string name="lang_fr">Français</string>
+    <string name="lang_en">English</string>
     <string name="settings_dynamic">Dynamic colors</string>
     <string name="settings_dynamic_desc">Material You (system colors)</string>
     <string name="settings_swimlanes">List view (swim lanes)</string>
@@ -147,13 +166,119 @@
     <string name="settings_urgency">Urgency threshold</string>
     <string name="settings_urgency_desc">Within this window before the due date, the task pulses and offers to mark it urgent.</string>
     <string name="settings_archive_purge">Archive purge</string>
-    <string name="settings_archive_purge_desc">Automatically deletes tasks completed longer ago than the chosen duration.</string>
+    <string name="settings_archive_purge_desc">Automatically deletes archived tasks (completed or removed) older than the chosen duration.</string>
     <string name="purge_never">Never</string>
     <string name="purge_7">7 days</string>
     <string name="purge_30">30 days</string>
     <string name="purge_90">90 days</string>
     <string name="settings_backup">Backup</string>
     <string name="settings_backup_desc">Export or restore all your tasks and labels in a JSON file.</string>
+
+    <!-- AI assistant (note reformulation) -->
+    <string name="settings_ai">AI assistant</string>
+    <string name="settings_ai_desc">Optional: reformulate and tidy up a task\'s note. Enter an API key (Gemini or OpenRouter); without a key the feature stays hidden. Keys are stored encrypted on the device and never included in backups.</string>
+    <string name="ai_provider_gemini">Gemini</string>
+    <string name="ai_provider_openrouter">OpenRouter</string>
+    <string name="ai_key_gemini">Gemini API key</string>
+    <string name="ai_key_openrouter">OpenRouter API key</string>
+    <string name="ai_reformulate">Reformulate (AI)</string>
+    <string name="ai_revert">Restore original</string>
+    <string name="ai_classify">Suggest classification (AI)</string>
+    <string name="ai_decompose">Break down (AI)</string>
+    <string name="cd_key_show">Show key</string>
+    <string name="cd_key_hide">Hide key</string>
+
+    <!-- Guide / Help -->
+    <string name="cd_guide">Guide</string>
+    <string name="guide_title">Guide</string>
+    <string name="guide_open">Open the guide</string>
+    <string name="settings_help">Help</string>
+    <string name="settings_show_guide">Guide shortcut</string>
+    <string name="settings_show_guide_desc">Show the guide icon at the top of the matrix.</string>
+    <string name="guide_intro">Kairós helps you tell what truly matters from what is merely urgent, then take action. Tap a topic to learn more.</string>
+
+    <!-- Hub: titles + subtitles -->
+    <string name="guide_matrix_title">The Eisenhower matrix</string>
+    <string name="guide_matrix_sub">The principle: sort by importance and urgency</string>
+    <string name="guide_create_title">Creating a task</string>
+    <string name="guide_create_sub">All the editor options</string>
+    <string name="guide_daily_title">Day to day</string>
+    <string name="guide_daily_sub">Move, complete, archive</string>
+    <string name="guide_focus_title">Focus &amp; Pomodoro</string>
+    <string name="guide_focus_sub">Focus on what matters</string>
+    <string name="guide_ai_title">AI assistant</string>
+    <string name="guide_ai_sub">Reformulate your tasks</string>
+    <string name="guide_settings_title">Theme &amp; backup</string>
+    <string name="guide_settings_sub">Personalize and back up</string>
+
+    <!-- Sub-page: matrix -->
+    <string name="guide_matrix_p1">The Eisenhower matrix comes from an idea attributed to US president Dwight D. Eisenhower: “What is important is seldom urgent, and what is urgent is seldom important.” It helps you decide what to do — and above all what not to do right now.</string>
+    <string name="guide_matrix_p2">It crosses two questions. Is it important? (does it truly serve my goals and values?) and Is it urgent? (is there time pressure, a deadline?). The answers place the task in one of the 4 quadrants.</string>
+    <string name="guide_matrix_do">Crises and imminent deadlines, to handle first. E.g. hand in a file due tonight, call back an upset client.</string>
+    <string name="guide_matrix_schedule">The core of meaningful work: goals, projects, prevention. Block time for it — this is the quadrant to cultivate. E.g. prepare an exam in 3 weeks, exercise, plan a trip.</string>
+    <string name="guide_matrix_delegate">Urgent but low value to you: hand it off when possible. E.g. answer an email someone else can handle, book a taxi.</string>
+    <string name="guide_matrix_eliminate">Neither important nor urgent: distractions and wasted time, to drop without guilt. E.g. aimless scrolling, pointless meetings.</string>
+    <string name="guide_matrix_tip">The trap is spending your day in the urgent (Do and Delegate) while neglecting Schedule. Yet it is by cultivating Schedule that you reduce tomorrow\'s emergencies.</string>
+
+    <!-- Sub-page: creating a task -->
+    <string name="guide_create_p1">The + button captures a task in an instant (a title, a quadrant). “More options” opens the full editor. The editor saves automatically when you leave it — no button to forget.</string>
+    <string name="guide_create_classify_t">Important &amp; Urgent</string>
+    <string name="guide_create_classify_b">The only two toggles that set the quadrant. E.g. “Important” alone → Schedule; both → Do. The card takes the quadrant color live.</string>
+    <string name="guide_create_due_t">Due date</string>
+    <string name="guide_create_due_b">An optional date and time. The due date never moves the task: as it approaches, the task “pulses” and offers to make it urgent — your call. E.g. “Report” due Friday 5pm.</string>
+    <string name="guide_create_label_t">Label</string>
+    <string name="guide_create_label_b">A colored category, cutting across quadrants, to filter at a glance. E.g. Personal, Work, Home. Manage them from the Labels screen.</string>
+    <string name="guide_create_rec_t">Recurrence</string>
+    <string name="guide_create_rec_b">Daily, weekly or monthly. On completion the task stays on the board: its due date rolls forward to the next one and its subtasks get unchecked (so it doesn’t go to the archive). E.g. “Water the plants” every week.</string>
+    <string name="guide_create_sub_t">Subtasks</string>
+    <string name="guide_create_sub_b">A checklist within the task; the card shows progress (e.g. 2/5). Great for breaking things down. E.g. “Plan the birthday” → cake, invitations, decorations.</string>
+    <string name="guide_create_ai_t">Reformulate (AI)</string>
+    <string name="guide_create_ai_b">Tidies up the title, note and subtasks in one tap. Appears if an API key is configured (Settings → AI assistant).</string>
+
+    <!-- Sub-page: day to day -->
+    <string name="guide_daily_views_t">Grid or lists</string>
+    <string name="guide_daily_views_b">Switch between the 2×2 grid and a vertical list per quadrant (in Settings).</string>
+    <string name="guide_daily_search_t">Search &amp; filter</string>
+    <string name="guide_daily_search_b">The magnifier icon at the top opens a search bar (title and note) and label filters — handy to find a task among many.</string>
+    <string name="guide_daily_move_t">Moving a task</string>
+    <string name="guide_daily_move_b">Long-press then drag to another quadrant (or to reorder). The ⋮ “Move to” menu does the same and stays accessible with TalkBack.</string>
+    <string name="guide_daily_swipe_t">Complete / remove</string>
+    <string name="guide_daily_swipe_b">Swipe right to mark done, left to remove the task from the board. Either way it goes to the archive — nothing is lost, you can restore it from there.</string>
+    <string name="guide_daily_remind_t">Due-date reminders</string>
+    <string name="guide_daily_remind_b">A task with a due date fires a notification as the time approaches (lead time adjustable in Settings → Reminders). Tap the notification to open the task.</string>
+    <string name="guide_daily_widget_t">Home-screen widget</string>
+    <string name="guide_daily_widget_b">Add the Kairós widget to your home screen to see the task count per quadrant at a glance. Tap it to open the app.</string>
+    <string name="guide_daily_archive_t">Archive</string>
+    <string name="guide_daily_archive_b">Every task that leaves the board is kept here, tagged “Done” or “Removed”. It is the only place to delete for good: restore a task, delete it permanently, clear all, or enable auto-purge after N days.</string>
+
+    <!-- Sub-page: focus &amp; pomodoro -->
+    <string name="guide_focus_focus_t">Focus mode</string>
+    <string name="guide_focus_focus_b">“What now?” blends importance and due date to surface THE task to do now, plus a preview of what\'s next.</string>
+    <string name="guide_focus_pomo_t">Pomodoro</string>
+    <string name="guide_focus_pomo_b">A focus/break timer (e.g. 25 min focus, 5 min break) that survives closing the app, with a notification. Link a session to a task to credit its focus time.</string>
+
+    <!-- Sub-page: AI assistant -->
+    <string name="guide_ai_p1">Optional. Kairós can assist you via an AI model — handy to clarify, classify or break down a task. Each action appears in the editor when an API key is configured.</string>
+    <string name="guide_ai_reformulate_t">Reformulate</string>
+    <string name="guide_ai_reformulate_b">Tidies up the title, note and subtasks in one go (spelling, clarity, concision), without inventing anything. A “Restore original” button undoes it.</string>
+    <string name="guide_ai_classify_t">Suggest classification</string>
+    <string name="guide_ai_classify_b">From the title and note, the AI proposes the Important / Urgent axes — hence the quadrant. You stay in control: it\'s a suggestion, adjustable with one tap.</string>
+    <string name="guide_ai_decompose_t">Break into subtasks</string>
+    <string name="guide_ai_decompose_b">Turns a task into a checklist of concrete steps, appended after existing subtasks. Great to kick off a big topic.</string>
+    <string name="guide_ai_keys_t">Providers &amp; keys</string>
+    <string name="guide_ai_keys_b">Gemini (Google) or OpenRouter, with automatic fallback from one to the other. Enter a key in Settings → AI assistant (free tiers exist).</string>
+    <string name="guide_ai_privacy_t">Privacy</string>
+    <string name="guide_ai_privacy_b">Keys are stored encrypted on the device and never included in backups. Text is sent to the provider only when you trigger a reformulation.</string>
+
+    <!-- Sub-page: theme &amp; backup -->
+    <string name="guide_set_theme_t">Theme</string>
+    <string name="guide_set_theme_b">Light, dark or system. On Android 12+, Material You picks up your wallpaper colors.</string>
+    <string name="guide_set_palette_t">Palettes</string>
+    <string name="guide_set_palette_b">Choose the quadrant color palette, or create your own (4 custom colors).</string>
+    <string name="guide_set_backup_t">Backup</string>
+    <string name="guide_set_backup_b">Export all your data (tasks, subtasks, labels, settings) as JSON, and re-import it on another device.</string>
+    <string name="guide_set_guide_t">This guide</string>
+    <string name="guide_set_guide_b">You can hide the guide shortcut (the top icon) from Settings → Help; it stays reachable via “Open the guide”.</string>
     <string name="settings_pomodoro_style">“Liquid circle” timer</string>
     <string name="settings_pomodoro_style_sub">Otherwise, a classic progress ring.</string>
 
@@ -186,4 +311,19 @@
     <string name="cd_clear_archive">Clear the archive</string>
     <string name="cd_recurring">Recurring task</string>
     <string name="cd_remove_subtask">Remove subtask</string>
+
+    <!-- Due-date reminders -->
+    <string name="settings_reminders">Reminders</string>
+    <string name="reminders_enable">Due-date reminders</string>
+    <string name="reminders_enable_desc">Get a notification as the due date of a task approaches.</string>
+    <string name="reminders_lead">When to notify</string>
+    <string name="reminder_lead_now">On time</string>
+    <string name="reminder_lead_5">5 min before</string>
+    <string name="reminder_lead_15">15 min before</string>
+    <string name="reminder_lead_30">30 min before</string>
+    <string name="reminder_lead_60">1 hr before</string>
+    <string name="reminder_channel">Task reminders</string>
+
+    <!-- Home-screen widget -->
+    <string name="widget_description">Kairós matrix: active task count per quadrant.</string>
 </resources>

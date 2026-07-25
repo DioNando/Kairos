@@ -12,7 +12,7 @@ import com.kairos.app.data.model.Task
 
 @Database(
     entities = [Task::class, Label::class, Subtask::class],
-    version = 2,
+    version = 3,
     exportSchema = false,
 )
 abstract class KairosDatabase : RoomDatabase() {
@@ -47,13 +47,24 @@ abstract class KairosDatabase : RoomDatabase() {
             }
         }
 
+        /**
+         * v2 → v3 : ajoute `removedAt` (colonne nullable) pour distinguer les tâches **retirées**
+         * (glissées hors du board) des tâches **terminées** (`completedAt`). Une colonne nullable
+         * n'a pas besoin de DEFAULT : elle vaut NULL pour les lignes existantes (= non retirées).
+         */
+        val MIGRATION_2_3 = object : Migration(2, 3) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("ALTER TABLE `tasks` ADD COLUMN `removedAt` INTEGER")
+            }
+        }
+
         fun getInstance(context: Context): KairosDatabase =
             INSTANCE ?: synchronized(this) {
                 INSTANCE ?: Room.databaseBuilder(
                     context.applicationContext,
                     KairosDatabase::class.java,
                     "kairos.db",
-                ).addMigrations(MIGRATION_1_2).build().also { INSTANCE = it }
+                ).addMigrations(MIGRATION_1_2, MIGRATION_2_3).build().also { INSTANCE = it }
             }
     }
 }

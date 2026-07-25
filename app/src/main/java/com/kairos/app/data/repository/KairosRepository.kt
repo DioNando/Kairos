@@ -45,18 +45,6 @@ class KairosRepository(
         return id
     }
 
-    /** Sous-tâches d'une tâche (pour capturer avant suppression / annulation). */
-    suspend fun getSubtasks(taskId: Long): List<Subtask> = subtaskDao.forTask(taskId)
-
-    /**
-     * Ré-insère une tâche supprimée en conservant son id (annulation d'une suppression), et
-     * restaure ses sous-tâches (perdues par la cascade FK à la suppression).
-     */
-    suspend fun restoreTask(task: Task, subtasks: List<Subtask> = emptyList()) {
-        taskDao.insert(task)
-        subtasks.forEach { subtaskDao.insert(it) }
-    }
-
     /** Déplace une tâche dans un quadrant (menu accessible « Déplacer vers… » ou glisser). */
     suspend fun moveTo(taskId: Long, quadrant: Quadrant) {
         val task = taskDao.getById(taskId) ?: return
@@ -89,44 +77,57 @@ class KairosRepository(
     }
 
     /**
-     * Marque une tâche terminée ([completedAt] renseignée) ou active (null). À la **complétion**
-     * d'une tâche récurrente, régénère une occurrence active : échéance avancée, temps de focus
-     * remis à zéro, sous-tâches recopiées non cochées. L'occurrence terminée part à l'archive.
+     * Marque une tâche terminée ([completedAt] renseignée) ou active (null).
      *
-     * @return l'id de l'occurrence régénérée (pour pouvoir l'annuler), ou `null` s'il n'y en a pas.
+     * Pour une tâche **récurrente**, la complétion ne l'archive **pas** : elle **avance sur place**
+     * (échéance passée à la suivante, temps de focus remis à zéro, sous-tâches décochées) et reste
+     * active sur le board. Il n'y a donc **jamais** qu'une seule occurrence vivante d'une récurrence
+     * — pas d'accumulation dans l'archive, pas de doublon possible via restauration. Pour arrêter la
+     * répétition, on retire la tâche à la main.
      */
-    suspend fun setCompleted(taskId: Long, completedAt: Long?, now: Long): Long? {
-        val task = taskDao.getById(taskId) ?: return null
-        taskDao.update(task.copy(completedAt = completedAt))
-        if (completedAt == null || task.recurrenceType == Recurrence.NONE) return null
-        val nextDue = task.recurrenceType.next(task.dueAt ?: completedAt)
-        val position = taskDao.maxPosition(task.important, task.urgent) + 1
-        val nextId = taskDao.insert(
-            task.copy(
-                id = 0,
-                dueAt = nextDue,
-                completedAt = null,
-                focusSeconds = 0,
-                position = position,
-                createdAt = now,
-            ),
-        )
-        subtaskDao.forTask(task.id).forEachIndexed { index, sub ->
-            subtaskDao.insert(sub.copy(id = 0, taskId = nextId, done = false, position = index))
+    suspend fun setCompleted(taskId: Long, completedAt: Long?) {
+        val task = taskDao.getById(taskId) ?: return
+        if (completedAt != null && task.recurrenceType != Recurrence.NONE) {
+            val nextDue = task.recurrenceType.next(task.dueAt ?: completedAt)
+            taskDao.update(task.copy(dueAt = nextDue, completedAt = null, focusSeconds = 0))
+            subtaskDao.forTask(task.id).forEach { sub ->
+                if (sub.done) subtaskDao.update(sub.copy(done = false))
+            }
+            return
         }
-        return nextId
+        taskDao.update(task.copy(completedAt = completedAt))
     }
 
+    /**
+     * **Retire** une tâche du board (glissée hors, sans être faite) : elle part à l'archive avec
+     * [removedAt]. Contrairement à la complétion, un retrait ne régénère **jamais** d'occurrence
+     * récurrente. Passer `null` la réactive.
+     */
+    suspend fun setRemoved(taskId: Long, removedAt: Long?) {
+        val task = taskDao.getById(taskId) ?: return
+        taskDao.update(task.copy(removedAt = removedAt))
+    }
+
+    /** Restaure une tâche depuis l'archive (terminée **ou** retirée) : elle revient sur le board. */
+    suspend fun restoreFromArchive(taskId: Long) {
+        val task = taskDao.getById(taskId) ?: return
+        taskDao.update(task.copy(completedAt = null, removedAt = null))
+    }
+
+    /** Suppression **définitive** (uniquement depuis l'archive). */
     suspend fun deleteTask(taskId: Long) = taskDao.deleteById(taskId)
 
-    /** Vide l'archive (toutes les tâches terminées). */
-    suspend fun clearArchive() = taskDao.clearCompleted()
+    /** Vide l'archive (toutes les tâches terminées ou retirées). */
+    suspend fun clearArchive() = taskDao.clearArchived()
 
-    /** Purge automatique : supprime les tâches terminées depuis plus de [days] jours (0 = jamais). */
+    /** Purge automatique : supprime les tâches archivées depuis plus de [days] jours (0 = jamais). */
     suspend fun purgeArchive(days: Int, now: Long) {
         if (days <= 0) return
-        taskDao.purgeCompletedBefore(now - days * MILLIS_PER_DAY)
+        taskDao.purgeArchivedBefore(now - days * MILLIS_PER_DAY)
     }
+
+    /** Nettoyage unique : purge les occurrences récurrentes terminées héritées de l'ancien modèle. */
+    suspend fun purgeLegacyRecurringArchive() = taskDao.purgeLegacyRecurringCompleted()
 
     /** Cumule du temps de concentration (Pomodoro lié à une tâche). */
     suspend fun addFocusTime(taskId: Long, seconds: Int) {

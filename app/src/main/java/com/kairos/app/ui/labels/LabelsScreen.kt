@@ -26,7 +26,6 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -113,7 +112,7 @@ fun LabelsScreen(
                         .padding(top = 4.dp, bottom = 16.dp),
                     horizontalArrangement = Arrangement.Center,
                 ) {
-                    FilledTonalButton(onClick = { editing = null; showEditor = true }) {
+                    TextButton(onClick = { editing = null; showEditor = true }) {
                         Icon(Icons.Rounded.Add, contentDescription = null)
                         Spacer(Modifier.size(8.dp))
                         Text(stringResource(R.string.label_add))

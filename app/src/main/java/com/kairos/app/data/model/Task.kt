@@ -30,14 +30,34 @@ data class Task(
     /** Ordre au sein d'un quadrant (drag/réordonnancement). */
     val position: Int = 0,
     val createdAt: Long = 0,
-    /** Null = active ; renseignée = terminée/archivée. */
+    /** Null = pas terminée ; renseignée = **terminée** (accomplie) → archive. */
     val completedAt: Long? = null,
-    /** Récurrence (ordinal de [Recurrence]) : 0 = aucune. À la complétion, régénère l'occurrence. */
+    /**
+     * Null = pas retirée ; renseignée = **retirée** (glissée hors du board sans être faite) → archive.
+     * Distinct de [completedAt] : un retrait ne régénère jamais d'occurrence récurrente.
+     */
+    val removedAt: Long? = null,
+    /** Récurrence (ordinal de [Recurrence]) : 0 = aucune. À la complétion, avance l'échéance sur place. */
     @ColumnInfo(defaultValue = "0") val recurrence: Int = 0,
     /** Temps de concentration cumulé (secondes) via les sessions Pomodoro liées. */
     @ColumnInfo(defaultValue = "0") val focusSeconds: Int = 0,
 ) {
     val quadrant: Quadrant get() = Quadrant.of(important, urgent)
+
+    /** Terminée (accomplie). */
     val isCompleted: Boolean get() = completedAt != null
+
+    /** Retirée (glissée hors du board sans être faite). */
+    val isRemoved: Boolean get() = removedAt != null
+
+    /** Sur le board : ni terminée, ni retirée. */
+    val isActive: Boolean get() = completedAt == null && removedAt == null
+
+    /** Dans l'archive : terminée **ou** retirée. */
+    val isArchived: Boolean get() = !isActive
+
+    /** Horodatage d'entrée dans l'archive (pour le tri), ou null si active. */
+    val archivedAt: Long? get() = completedAt ?: removedAt
+
     val recurrenceType: Recurrence get() = Recurrence.of(recurrence)
 }

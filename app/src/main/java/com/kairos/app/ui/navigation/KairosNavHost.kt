@@ -18,10 +18,13 @@ import androidx.navigation.navArgument
 import com.kairos.app.data.model.AppSettings
 import com.kairos.app.data.model.Quadrant
 import com.kairos.app.data.model.Task
+import com.kairos.app.domain.ai.Classification
+import com.kairos.app.domain.ai.EnhancedTask
 import com.kairos.app.ui.KairosViewModel
 import com.kairos.app.ui.archive.ArchiveScreen
 import com.kairos.app.ui.editor.TaskEditorScreen
 import com.kairos.app.ui.focus.FocusScreen
+import com.kairos.app.ui.guide.GuideScreen
 import com.kairos.app.ui.labels.LabelsScreen
 import com.kairos.app.ui.matrix.MatrixScreen
 import com.kairos.app.ui.pomodoro.PomodoroViewModel
@@ -35,6 +38,7 @@ private object Routes {
     const val SETTINGS = "settings"
     const val POMODORO = "pomodoro"
     const val ARCHIVE = "archive"
+    const val GUIDE = "guide"
     const val EDITOR = "editor?taskId={taskId}&quadrant={quadrant}&title={title}"
 }
 
@@ -42,19 +46,34 @@ private object Routes {
 fun KairosNavHost(
     factory: ViewModelProvider.Factory,
     settings: AppSettings,
+    aiEnabled: Boolean,
+    geminiKey: String,
+    openRouterKey: String,
+    reformulateTask: suspend (title: String, note: String, subtasks: List<String>) -> Result<EnhancedTask>,
+    suggestClassify: suspend (title: String, note: String) -> Result<Classification>,
+    suggestSubtasks: suspend (title: String, note: String) -> Result<List<String>>,
+    onSetAiProvider: (Int) -> Unit,
+    onSetAiKey: (provider: Int, key: String) -> Unit,
     onSetThemeMode: (Int) -> Unit,
+    onSetLanguage: (Int) -> Unit,
     onSetDynamicColor: (Boolean) -> Unit,
     onSetPalette: (Int) -> Unit,
     onSetCustomPalette: (doColor: String, schedule: String, delegate: String, eliminate: String) -> Unit,
     onSetUrgencyThreshold: (Int) -> Unit,
     onSetSwimLanes: (Boolean) -> Unit,
     onSetArchivePurgeDays: (Int) -> Unit,
+    onSetShowGuide: (Boolean) -> Unit,
     onSetPomodoroStyle: (Boolean) -> Unit,
     onSetPomodoroDurations: (focus: Int, shortBreak: Int, longBreak: Int, cycles: Int) -> Unit,
+    onSetRemindersEnabled: (Boolean) -> Unit,
+    onSetReminderLead: (Int) -> Unit,
     onExport: () -> Unit,
     onImport: () -> Unit,
     /** Signal (compteur) d'ouverture directe du Pomodoro depuis une notification. */
     pomodoroLaunch: Int = 0,
+    /** Tâche à ouvrir depuis un rappel (id + compteur déclencheur). */
+    openTaskId: Long = 0L,
+    openTaskLaunch: Int = 0,
 ) {
     val viewModel: KairosViewModel = viewModel(factory = factory)
     val tasks by viewModel.tasks.collectAsStateWithLifecycle()
@@ -69,6 +88,13 @@ fun KairosNavHost(
     // Ouvre l'écran Pomodoro quand une notification le demande (chaque nouvel intent incrémente).
     LaunchedEffect(pomodoroLaunch) {
         if (pomodoroLaunch > 0) navController.navigate(Routes.POMODORO)
+    }
+
+    // Ouvre l'éditeur d'une tâche depuis un rappel d'échéance.
+    LaunchedEffect(openTaskLaunch) {
+        if (openTaskLaunch > 0 && openTaskId > 0L) {
+            navController.navigate("editor?taskId=$openTaskId")
+        }
     }
 
     // L'éditeur est une **page** dédiée (route EDITOR) : nav = retour natif + pas de saccadement.
@@ -104,16 +130,16 @@ fun KairosNavHost(
                 onOpenEditor = { q, title -> openNew(q, title) },
                 onOpenTask = { openExisting(it) },
                 onComplete = { viewModel.setCompleted(it.id, true) },
-                onUndoComplete = { viewModel.undoComplete(it) },
                 onMove = { task, quadrant -> viewModel.moveTo(task.id, quadrant) },
                 onReorder = { task, index -> viewModel.reorder(task.id, index) },
-                onDelete = { viewModel.deleteTask(it.id) },
-                onRestore = { viewModel.restoreTask(it) },
+                onRemove = { viewModel.removeTask(it.id) },
                 onOpenFocus = { navController.navigate(Routes.FOCUS) },
                 onOpenLabels = { navController.navigate(Routes.LABELS) },
                 onOpenSettings = { navController.navigate(Routes.SETTINGS) },
                 onOpenPomodoro = { navController.navigate(Routes.POMODORO) },
                 onOpenArchive = { navController.navigate(Routes.ARCHIVE) },
+                showGuide = settings.showGuide,
+                onOpenGuide = { navController.navigate(Routes.GUIDE) },
             )
         }
         composable(Routes.FOCUS) {
@@ -137,14 +163,24 @@ fun KairosNavHost(
             SettingsScreen(
                 settings = settings,
                 onSetThemeMode = onSetThemeMode,
+                onSetLanguage = onSetLanguage,
                 onSetDynamicColor = onSetDynamicColor,
                 onSetPalette = onSetPalette,
                 onSetCustomPalette = onSetCustomPalette,
                 onSetUrgencyThreshold = onSetUrgencyThreshold,
                 onSetSwimLanes = onSetSwimLanes,
                 onSetArchivePurgeDays = onSetArchivePurgeDays,
+                showGuide = settings.showGuide,
+                onSetShowGuide = onSetShowGuide,
+                onOpenGuide = { navController.navigate(Routes.GUIDE) },
                 onSetPomodoroStyle = onSetPomodoroStyle,
                 onSetPomodoroDurations = onSetPomodoroDurations,
+                onSetRemindersEnabled = onSetRemindersEnabled,
+                onSetReminderLead = onSetReminderLead,
+                geminiKey = geminiKey,
+                openRouterKey = openRouterKey,
+                onSetAiProvider = onSetAiProvider,
+                onSetAiKey = onSetAiKey,
                 onExport = onExport,
                 onImport = onImport,
                 onBack = { navController.popBackStack() },
@@ -158,12 +194,15 @@ fun KairosNavHost(
                 onBack = { navController.popBackStack() },
             )
         }
+        composable(Routes.GUIDE) {
+            GuideScreen(onBack = { navController.popBackStack() })
+        }
         composable(Routes.ARCHIVE) {
             ArchiveScreen(
                 tasks = tasks,
                 labels = labels,
                 onBack = { navController.popBackStack() },
-                onRestore = { viewModel.setCompleted(it.id, false) },
+                onRestore = { viewModel.restoreFromArchive(it.id) },
                 onDelete = { viewModel.deleteTask(it.id) },
                 onClearAll = { viewModel.clearArchive() },
             )
@@ -191,9 +230,14 @@ fun KairosNavHost(
                 now = System.currentTimeMillis(),
                 initialTitle = initialTitle,
                 initialSubtasks = editorSubtasks,
+                aiEnabled = aiEnabled,
+                onReformulateTask = reformulateTask,
+                onSuggestClassify = suggestClassify,
+                onSuggestSubtasks = suggestSubtasks,
                 onBack = { navController.popBackStack() },
                 onSave = { task, subs -> viewModel.saveTask(task, subs); navController.popBackStack() },
-                onDelete = { viewModel.deleteTask(it.id); navController.popBackStack() },
+                // Depuis l'éditeur, « retirer » = archiver (réversible), pas de suppression dure.
+                onDelete = { viewModel.removeTask(it.id); navController.popBackStack() },
             )
         }
     }
