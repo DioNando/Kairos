@@ -2,6 +2,8 @@ package com.kairos.app.ui.theme
 
 import androidx.compose.runtime.compositionLocalOf
 import androidx.compose.ui.graphics.Color
+import com.kairos.app.data.model.AppSettings
+import com.kairos.app.ui.components.toColor
 
 /**
  * Couleurs des 4 quadrants de la matrice d'Eisenhower :
@@ -54,3 +56,21 @@ val AppPalettes: List<AccentPalette> = listOf(
 
 /** Palette d'accent courante, fournie au niveau racine selon les réglages. */
 val LocalAccentPalette = compositionLocalOf { AppPalettes[0] }
+
+/**
+ * Palette d'accent effective pour ces [AppSettings] : un preset de [AppPalettes] si `paletteId` est dans
+ * la plage, sinon la palette **personnalisée** construite depuis les 4 couleurs hex. Source unique de
+ * vérité partagée par l'app ([com.kairos.app.MainActivity]) ET les widgets ([com.kairos.app.widget]).
+ */
+fun AppSettings.toAccentPalette(): AccentPalette =
+    if (paletteId in AppPalettes.indices) {
+        AppPalettes[paletteId]
+    } else {
+        AccentPalette(
+            name = "Personnalisée",
+            doColor = customDoColor.toColor(),
+            scheduleColor = customScheduleColor.toColor(),
+            delegateColor = customDelegateColor.toColor(),
+            eliminateColor = customEliminateColor.toColor(),
+        )
+    }

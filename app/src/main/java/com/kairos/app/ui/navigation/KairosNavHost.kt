@@ -69,8 +69,11 @@ fun KairosNavHost(
     onSetReminderLead: (Int) -> Unit,
     onExport: () -> Unit,
     onImport: () -> Unit,
-    /** Signal (compteur) d'ouverture directe du Pomodoro depuis une notification. */
+    /** Signal (compteur) d'ouverture directe du Pomodoro depuis une notification ou un raccourci. */
     pomodoroLaunch: Int = 0,
+    /** Raccourcis d'application : compteurs déclencheurs (nouvelle tâche / Focus). */
+    newTaskLaunch: Int = 0,
+    focusLaunch: Int = 0,
     /** Tâche à ouvrir depuis un rappel (id + compteur déclencheur). */
     openTaskId: Long = 0L,
     openTaskLaunch: Int = 0,
@@ -85,9 +88,21 @@ fun KairosNavHost(
     val pomodoroState by pomodoroViewModel.state.collectAsStateWithLifecycle()
     val navController = rememberNavController()
 
-    // Ouvre l'écran Pomodoro quand une notification le demande (chaque nouvel intent incrémente).
+    // Ouvre l'écran Pomodoro quand une notification/un raccourci le demande (chaque intent incrémente).
     LaunchedEffect(pomodoroLaunch) {
         if (pomodoroLaunch > 0) navController.navigate(Routes.POMODORO)
+    }
+
+    // Raccourci « Nouvelle tâche » : ouvre l'éditeur de création (quadrant Faire par défaut).
+    LaunchedEffect(newTaskLaunch) {
+        if (newTaskLaunch > 0) {
+            navController.navigate("editor?taskId=0&quadrant=${Quadrant.DO.ordinal}&title=")
+        }
+    }
+
+    // Raccourci « Focus » : ouvre l'écran « Et maintenant ? ».
+    LaunchedEffect(focusLaunch) {
+        if (focusLaunch > 0) navController.navigate(Routes.FOCUS)
     }
 
     // Ouvre l'éditeur d'une tâche depuis un rappel d'échéance.

@@ -2,4 +2,6 @@
 <resources>
     <!-- Fond de l'icône adaptative : crème doux (marque Kairós). -->
     <color name="ic_launcher_background">#FBEFE9</color>
+    <!-- Fond des widgets / aperçus : crème en clair (variante nuit dans values-night). -->
+    <color name="widget_bg">#FBEFE9</color>
 </resources>

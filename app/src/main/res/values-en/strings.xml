@@ -146,6 +146,7 @@
     <string name="pomo_long_label">Long break</string>
     <string name="pomo_cycles_label">Cycles before long break</string>
     <string name="pomo_link_none">No linked task</string>
+    <string name="pomo_link_title">Link a task</string>
 
     <!-- Settings -->
     <string name="settings_title">Settings</string>
@@ -326,4 +327,13 @@
 
     <!-- Home-screen widget -->
     <string name="widget_description">Kairós matrix: active task count per quadrant.</string>
+    <string name="widget_row_description">Kairós (slim): the 4 quadrant counters in one row.</string>
+
+    <!-- App shortcuts (long-press on the icon) -->
+    <string name="shortcut_new_task_short">New task</string>
+    <string name="shortcut_new_task_long">Create a new task</string>
+    <string name="shortcut_focus_short">Focus</string>
+    <string name="shortcut_focus_long">Focus: what now?</string>
+    <string name="shortcut_pomodoro_short">Pomodoro</string>
+    <string name="shortcut_pomodoro_long">Open the Pomodoro</string>
 </resources>

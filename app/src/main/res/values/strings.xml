@@ -146,6 +146,7 @@
     <string name="pomo_long_label">Pause longue</string>
     <string name="pomo_cycles_label">Cycles avant pause longue</string>
     <string name="pomo_link_none">Aucune tâche liée</string>
+    <string name="pomo_link_title">Lier une tâche</string>
 
     <!-- Réglages -->
     <string name="settings_title">Réglages</string>
@@ -326,4 +327,13 @@
 
     <!-- Widget écran d'accueil -->
     <string name="widget_description">Matrice Kairós : nombre de tâches actives par quadrant.</string>
+    <string name="widget_row_description">Kairós (fin) : compteurs des 4 quadrants sur une rangée.</string>
+
+    <!-- Raccourcis d'application (appui long sur l'icône) -->
+    <string name="shortcut_new_task_short">Nouvelle tâche</string>
+    <string name="shortcut_new_task_long">Créer une nouvelle tâche</string>
+    <string name="shortcut_focus_short">Focus</string>
+    <string name="shortcut_focus_long">Focus : et maintenant ?</string>
+    <string name="shortcut_pomodoro_short">Pomodoro</string>
+    <string name="shortcut_pomodoro_long">Ouvrir le Pomodoro</string>
 </resources>

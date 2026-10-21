@@ -20,6 +20,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -65,6 +66,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.unit.dp
 import com.kairos.app.R
 import com.kairos.app.data.model.Label
@@ -76,6 +78,7 @@ import com.kairos.app.domain.ai.EnhancedTask
 import com.kairos.app.domain.recurrence.Recurrence
 import com.kairos.app.ui.components.KairosAssistChip
 import com.kairos.app.ui.components.KairosFilterChip
+import com.kairos.app.ui.theme.LocalizedOverlay
 import com.kairos.app.ui.components.MorphingCheckbox
 import com.kairos.app.ui.components.MorphingIconPill
 import com.kairos.app.ui.components.DueStatus
@@ -221,6 +224,7 @@ fun TaskEditorScreen(
                     singleLine = true,
                     shape = com.kairos.app.ui.components.KairosFieldShape,
                     colors = com.kairos.app.ui.components.kairosFieldColors(),
+                    keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Sentences),
                     modifier = Modifier.fillMaxWidth(),
                 )
             }
@@ -577,19 +581,20 @@ fun TaskEditorScreen(
     // --- Confirmation de retrait (→ archive) ---------------------------------------------------
 
     if (confirmDelete && task != null) {
+        // Strings résolues hors du dialog (fenêtre détachée qui perd l'override de langue in-app).
+        val title = stringResource(R.string.remove_task_title)
+        val message = stringResource(R.string.remove_task_message, task.title)
+        val confirm = stringResource(R.string.action_remove)
+        val cancel = stringResource(R.string.action_cancel)
         AlertDialog(
             onDismissRequest = { confirmDelete = false },
-            title = { Text(stringResource(R.string.remove_task_title)) },
-            text = { Text(stringResource(R.string.remove_task_message, task.title)) },
+            title = { Text(title) },
+            text = { Text(message) },
             confirmButton = {
-                TextButton(onClick = { confirmDelete = false; onDelete(task) }) {
-                    Text(stringResource(R.string.action_remove))
-                }
+                TextButton(onClick = { confirmDelete = false; onDelete(task) }) { Text(confirm) }
             },
             dismissButton = {
-                TextButton(onClick = { confirmDelete = false }) {
-                    Text(stringResource(R.string.action_cancel))
-                }
+                TextButton(onClick = { confirmDelete = false }) { Text(cancel) }
             },
         )
     }
@@ -600,6 +605,8 @@ fun TaskEditorScreen(
         val dateState = rememberDatePickerState(
             initialSelectedDateMillis = dueAt ?: now,
         )
+        val nextLabel = stringResource(R.string.action_next)
+        val cancelLabel = stringResource(R.string.action_cancel)
         DatePickerDialog(
             onDismissRequest = { showDatePicker = false },
             confirmButton = {
@@ -607,12 +614,15 @@ fun TaskEditorScreen(
                     pendingDate = dateState.selectedDateMillis
                     showDatePicker = false
                     showTimePicker = true
-                }) { Text(stringResource(R.string.action_next)) }
+                }) { Text(nextLabel) }
             },
             dismissButton = {
-                TextButton(onClick = { showDatePicker = false }) { Text(stringResource(R.string.action_cancel)) }
+                TextButton(onClick = { showDatePicker = false }) { Text(cancelLabel) }
             },
-        ) { DatePicker(state = dateState) }
+        ) {
+            // Les libellés internes du DatePicker (mois, jours) suivent aussi la langue in-app.
+            LocalizedOverlay { DatePicker(state = dateState) }
+        }
     }
 
     if (showTimePicker) {
@@ -624,6 +634,8 @@ fun TaskEditorScreen(
             initialMinute = existing?.minute ?: 0,
             is24Hour = true,
         )
+        val okLabel = stringResource(R.string.action_ok)
+        val cancelLabel = stringResource(R.string.action_cancel)
         AlertDialog(
             onDismissRequest = { showTimePicker = false },
             confirmButton = {
@@ -636,12 +648,12 @@ fun TaskEditorScreen(
                     )
                     dueAt = dt.atZone(ZoneId.systemDefault()).toInstant().toEpochMilli()
                     showTimePicker = false
-                }) { Text(stringResource(R.string.action_ok)) }
+                }) { Text(okLabel) }
             },
             dismissButton = {
-                TextButton(onClick = { showTimePicker = false }) { Text(stringResource(R.string.action_cancel)) }
+                TextButton(onClick = { showTimePicker = false }) { Text(cancelLabel) }
             },
-            text = { TimePicker(state = timeState) },
+            text = { LocalizedOverlay { TimePicker(state = timeState) } },
         )
     }
 }

@@ -35,6 +35,7 @@ import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.unit.dp
 import androidx.compose.runtime.LaunchedEffect
 import com.kairos.app.R
@@ -43,6 +44,7 @@ import com.kairos.app.ui.components.KairosFieldShape
 import com.kairos.app.ui.components.MorphingIconPill
 import com.kairos.app.ui.components.kairosFieldColors
 import com.kairos.app.ui.components.quadrantVisual
+import com.kairos.app.ui.theme.LocalizedOverlay
 
 /**
  * Saisie rapide sans friction : un champ titre + le choix du quadrant (grille 2×2 de cards), avec le
@@ -76,6 +78,7 @@ fun QuickAddSheet(
     }
 
     ModalBottomSheet(onDismissRequest = onDismiss, sheetState = sheetState) {
+      LocalizedOverlay {
         Column(
             modifier = Modifier
                 .fillMaxWidth()
@@ -96,7 +99,10 @@ fun QuickAddSheet(
                 singleLine = true,
                 shape = KairosFieldShape,
                 colors = kairosFieldColors(),
-                keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
+                keyboardOptions = KeyboardOptions(
+                    capitalization = KeyboardCapitalization.Sentences,
+                    imeAction = ImeAction.Done,
+                ),
                 keyboardActions = KeyboardActions(onDone = { submit() }),
                 modifier = Modifier
                     .fillMaxWidth()
@@ -129,6 +135,7 @@ fun QuickAddSheet(
             }
             Spacer(Modifier.size(2.dp))
         }
+      }
     }
 }
 

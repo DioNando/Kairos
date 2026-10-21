@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Une tâche « à suivre » : puce colorée (quadrant) + titre. Inflatée par KairosLauncherActivity. -->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:layout_marginTop="6dp"
+    android:background="@drawable/bg_upnext"
+    android:gravity="center_vertical"
+    android:orientation="horizontal"
+    android:paddingHorizontal="12dp"
+    android:paddingVertical="9dp">
+
+    <View
+        android:id="@+id/dot"
+        android:layout_width="8dp"
+        android:layout_height="8dp"
+        android:background="@drawable/dot" />
+
+    <TextView
+        android:id="@+id/upnext_title"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="10dp"
+        android:layout_weight="1"
+        android:ellipsize="end"
+        android:maxLines="1"
+        android:textColor="@color/wear_on_bg"
+        android:textSize="13sp" />
+</LinearLayout>

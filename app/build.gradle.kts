@@ -119,6 +119,9 @@ dependencies {
     implementation(libs.okhttp)
     implementation(libs.androidx.security.crypto)
 
+    // Wear OS : pousse les compteurs de quadrants vers la montre (Data Layer) pour la tuile.
+    implementation(libs.play.services.wearable)
+
     testImplementation(libs.junit)
     testImplementation(libs.robolectric)
     testImplementation(libs.androidx.test.core)

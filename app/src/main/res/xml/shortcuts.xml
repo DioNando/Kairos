@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="utf-8"?>
+<shortcuts xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <!-- Nouvelle tâche : ouvre directement l'éditeur de création. -->
+    <shortcut
+        android:shortcutId="new_task"
+        android:enabled="true"
+        android:icon="@drawable/sc_add"
+        android:shortcutShortLabel="@string/shortcut_new_task_short"
+        android:shortcutLongLabel="@string/shortcut_new_task_long">
+        <intent
+            android:action="com.kairos.app.action.NEW_TASK"
+            android:targetPackage="com.kairos.app"
+            android:targetClass="com.kairos.app.MainActivity" />
+    </shortcut>
+
+    <!-- Focus « Et maintenant ? » : sort LA tâche du moment. -->
+    <shortcut
+        android:shortcutId="focus"
+        android:enabled="true"
+        android:icon="@drawable/sc_focus"
+        android:shortcutShortLabel="@string/shortcut_focus_short"
+        android:shortcutLongLabel="@string/shortcut_focus_long">
+        <intent
+            android:action="com.kairos.app.action.FOCUS"
+            android:targetPackage="com.kairos.app"
+            android:targetClass="com.kairos.app.MainActivity" />
+    </shortcut>
+
+    <!-- Pomodoro : ouvre le minuteur de concentration. -->
+    <shortcut
+        android:shortcutId="pomodoro"
+        android:enabled="true"
+        android:icon="@drawable/sc_pomodoro"
+        android:shortcutShortLabel="@string/shortcut_pomodoro_short"
+        android:shortcutLongLabel="@string/shortcut_pomodoro_long">
+        <intent
+            android:action="com.kairos.app.action.POMODORO"
+            android:targetPackage="com.kairos.app"
+            android:targetClass="com.kairos.app.MainActivity" />
+    </shortcut>
+
+</shortcuts>

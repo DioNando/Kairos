@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Fond des widgets / aperçus en mode nuit : brun sombre (accord palette « Douce »). -->
+    <color name="widget_bg">#241C19</color>
+</resources>

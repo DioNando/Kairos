@@ -1,0 +1,241 @@
+1<?xml version="1.0" encoding="utf-8"?>
+2<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+3    package="com.kairos.app"
+4    android:versionCode="1"
+5    android:versionName="1.0" >
+6
+7    <uses-sdk
+7-->INJECTED
+8        android:minSdkVersion="30"
+8-->INJECTED
+9        android:targetSdkVersion="34" />
+9-->INJECTED
+10
+11    <uses-feature android:name="android.hardware.type.watch" />
+11-->C:\Users\mahef\OneDrive\Documents\Android\Kairos\wear\src\main\AndroidManifest.xml:4:5-64
+11-->C:\Users\mahef\OneDrive\Documents\Android\Kairos\wear\src\main\AndroidManifest.xml:4:19-61
+12
+13    <uses-permission android:name="android.permission.WAKE_LOCK" />
+13-->C:\Users\mahef\OneDrive\Documents\Android\Kairos\wear\src\main\AndroidManifest.xml:5:5-68
+13-->C:\Users\mahef\OneDrive\Documents\Android\Kairos\wear\src\main\AndroidManifest.xml:5:22-65
+14
+15    <permission
+15-->[androidx.core:core:1.13.1] C:\Users\mahef\.gradle\caches\9.4.1\transforms\f0a7a5112e34c82d5d2f39b0bf0da17b\transformed\core-1.13.1\AndroidManifest.xml:22:5-24:47
+16        android:name="com.kairos.app.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION"
+16-->[androidx.core:core:1.13.1] C:\Users\mahef\.gradle\caches\9.4.1\transforms\f0a7a5112e34c82d5d2f39b0bf0da17b\transformed\core-1.13.1\AndroidManifest.xml:23:9-81
+17        android:protectionLevel="signature" />
+17-->[androidx.core:core:1.13.1] C:\Users\mahef\.gradle\caches\9.4.1\transforms\f0a7a5112e34c82d5d2f39b0bf0da17b\transformed\core-1.13.1\AndroidManifest.xml:24:9-44
+18
+19    <uses-permission android:name="com.kairos.app.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION" />
+19-->[androidx.core:core:1.13.1] C:\Users\mahef\.gradle\caches\9.4.1\transforms\f0a7a5112e34c82d5d2f39b0bf0da17b\transformed\core-1.13.1\AndroidManifest.xml:26:5-97
+19-->[androidx.core:core:1.13.1] C:\Users\mahef\.gradle\caches\9.4.1\transforms\f0a7a5112e34c82d5d2f39b0bf0da17b\transformed\core-1.13.1\AndroidManifest.xml:26:22-94
+20
+21    <queries>
+21-->[androidx.wear.tiles:tiles:1.4.1] C:\Users\mahef\.gradle\caches\9.4.1\transforms\660d20b9ba3d808dfae73d60656c6b19\transformed\tiles-1.4.1\AndroidManifest.xml:7:5-11:15
+22        <intent>
+22-->[androidx.wear.tiles:tiles:1.4.1] C:\Users\mahef\.gradle\caches\9.4.1\transforms\660d20b9ba3d808dfae73d60656c6b19\transformed\tiles-1.4.1\AndroidManifest.xml:8:9-10:18
+23            <action android:name="androidx.wear.tiles.action.BIND_UPDATE_REQUESTER" />
+23-->[androidx.wear.tiles:tiles:1.4.1] C:\Users\mahef\.gradle\caches\9.4.1\transforms\660d20b9ba3d808dfae73d60656c6b19\transformed\tiles-1.4.1\AndroidManifest.xml:9:13-87
+23-->[androidx.wear.tiles:tiles:1.4.1] C:\Users\mahef\.gradle\caches\9.4.1\transforms\660d20b9ba3d808dfae73d60656c6b19\transformed\tiles-1.4.1\AndroidManifest.xml:9:21-84
+24        </intent>
+25    </queries>
+26
+27    <application
+27-->C:\Users\mahef\OneDrive\Documents\Android\Kairos\wear\src\main\AndroidManifest.xml:7:5-68:19
+28        android:allowBackup="true"
+28-->C:\Users\mahef\OneDrive\Documents\Android\Kairos\wear\src\main\AndroidManifest.xml:8:9-35
+29        android:appComponentFactory="androidx.core.app.CoreComponentFactory"
+29-->[androidx.core:core:1.13.1] C:\Users\mahef\.gradle\caches\9.4.1\transforms\f0a7a5112e34c82d5d2f39b0bf0da17b\transformed\core-1.13.1\AndroidManifest.xml:28:18-86
+30        android:debuggable="true"
+31        android:extractNativeLibs="false"
+31-->INJECTED
+32        android:icon="@mipmap/ic_launcher"
+32-->C:\Users\mahef\OneDrive\Documents\Android\Kairos\wear\src\main\AndroidManifest.xml:9:9-43
+33        android:label="@string/app_name"
+33-->C:\Users\mahef\OneDrive\Documents\Android\Kairos\wear\src\main\AndroidManifest.xml:11:9-41
+34        android:roundIcon="@mipmap/ic_launcher_round"
+34-->C:\Users\mahef\OneDrive\Documents\Android\Kairos\wear\src\main\AndroidManifest.xml:10:9-54
+35        android:supportsRtl="true"
+35-->C:\Users\mahef\OneDrive\Documents\Android\Kairos\wear\src\main\AndroidManifest.xml:12:9-35
+36        android:testOnly="true"
+37        android:theme="@android:style/Theme.DeviceDefault" >
+37-->C:\Users\mahef\OneDrive\Documents\Android\Kairos\wear\src\main\AndroidManifest.xml:13:9-59
+38        <uses-library
+38-->C:\Users\mahef\OneDrive\Documents\Android\Kairos\wear\src\main\AndroidManifest.xml:15:9-17:40
+39            android:name="com.google.android.wearable"
+39-->C:\Users\mahef\OneDrive\Documents\Android\Kairos\wear\src\main\AndroidManifest.xml:16:13-55
+40            android:required="false" />
+40-->C:\Users\mahef\OneDrive\Documents\Android\Kairos\wear\src\main\AndroidManifest.xml:17:13-37
+41        <!-- L'app montre dépend du téléphone (les données viennent du Data Layer) : non autonome. -->
+42        <meta-data
+42-->C:\Users\mahef\OneDrive\Documents\Android\Kairos\wear\src\main\AndroidManifest.xml:19:9-21:37
+43            android:name="com.google.android.wearable.standalone"
+43-->C:\Users\mahef\OneDrive\Documents\Android\Kairos\wear\src\main\AndroidManifest.xml:20:13-66
+44            android:value="false" />
+44-->C:\Users\mahef\OneDrive\Documents\Android\Kairos\wear\src\main\AndroidManifest.xml:21:13-34
+45
+46        <!--
+47             Écran d'app minimal : donne une ICÔNE dans la grille d'applis (gestion/désinstallation
+48             normales depuis la montre, sans adb). Affiche les compteurs + ouvrir-sur-le-téléphone.
+49        -->
+50        <activity
+50-->C:\Users\mahef\OneDrive\Documents\Android\Kairos\wear\src\main\AndroidManifest.xml:25:9-33:20
+51            android:name="com.kairos.wear.KairosLauncherActivity"
+51-->C:\Users\mahef\OneDrive\Documents\Android\Kairos\wear\src\main\AndroidManifest.xml:26:13-51
+52            android:exported="true"
+52-->C:\Users\mahef\OneDrive\Documents\Android\Kairos\wear\src\main\AndroidManifest.xml:27:13-36
+53            android:label="@string/app_name" >
+53-->C:\Users\mahef\OneDrive\Documents\Android\Kairos\wear\src\main\AndroidManifest.xml:28:13-45
+54            <intent-filter>
+54-->C:\Users\mahef\OneDrive\Documents\Android\Kairos\wear\src\main\AndroidManifest.xml:29:13-32:29
+55                <action android:name="android.intent.action.MAIN" />
+55-->C:\Users\mahef\OneDrive\Documents\Android\Kairos\wear\src\main\AndroidManifest.xml:30:17-69
+55-->C:\Users\mahef\OneDrive\Documents\Android\Kairos\wear\src\main\AndroidManifest.xml:30:25-66
+56
+57                <category android:name="android.intent.category.LAUNCHER" />
+57-->C:\Users\mahef\OneDrive\Documents\Android\Kairos\wear\src\main\AndroidManifest.xml:31:17-77
+57-->C:\Users\mahef\OneDrive\Documents\Android\Kairos\wear\src\main\AndroidManifest.xml:31:27-74
+58            </intent-filter>
+59        </activity>
+60
+61        <!-- Cible de l'appui sur la tuile : ouvre Kairós sur le téléphone puis se ferme. -->
+62        <activity
+62-->C:\Users\mahef\OneDrive\Documents\Android\Kairos\wear\src\main\AndroidManifest.xml:36:9-39:75
+63            android:name="com.kairos.wear.OpenOnPhoneActivity"
+63-->C:\Users\mahef\OneDrive\Documents\Android\Kairos\wear\src\main\AndroidManifest.xml:37:13-48
+64            android:exported="true"
+64-->C:\Users\mahef\OneDrive\Documents\Android\Kairos\wear\src\main\AndroidManifest.xml:38:13-36
+65            android:theme="@android:style/Theme.Translucent.NoTitleBar" />
+65-->C:\Users\mahef\OneDrive\Documents\Android\Kairos\wear\src\main\AndroidManifest.xml:39:13-72
+66
+67        <!-- La tuile : matrice 2×2 des compteurs de quadrants. -->
+68        <service
+68-->C:\Users\mahef\OneDrive\Documents\Android\Kairos\wear\src\main\AndroidManifest.xml:42:9-54:19
+69            android:name="com.kairos.wear.KairosTileService"
+69-->C:\Users\mahef\OneDrive\Documents\Android\Kairos\wear\src\main\AndroidManifest.xml:43:13-46
+70            android:exported="true"
+70-->C:\Users\mahef\OneDrive\Documents\Android\Kairos\wear\src\main\AndroidManifest.xml:44:13-36
+71            android:icon="@mipmap/ic_launcher"
+71-->C:\Users\mahef\OneDrive\Documents\Android\Kairos\wear\src\main\AndroidManifest.xml:45:13-47
+72            android:label="@string/tile_label"
+72-->C:\Users\mahef\OneDrive\Documents\Android\Kairos\wear\src\main\AndroidManifest.xml:46:13-47
+73            android:permission="com.google.android.wearable.permission.BIND_TILE_PROVIDER" >
+73-->C:\Users\mahef\OneDrive\Documents\Android\Kairos\wear\src\main\AndroidManifest.xml:47:13-91
+74            <intent-filter>
+74-->C:\Users\mahef\OneDrive\Documents\Android\Kairos\wear\src\main\AndroidManifest.xml:48:13-50:29
+75                <action android:name="androidx.wear.tiles.action.BIND_TILE_PROVIDER" />
+75-->C:\Users\mahef\OneDrive\Documents\Android\Kairos\wear\src\main\AndroidManifest.xml:49:17-88
+75-->C:\Users\mahef\OneDrive\Documents\Android\Kairos\wear\src\main\AndroidManifest.xml:49:25-85
+76            </intent-filter>
+77
+78            <meta-data
+78-->C:\Users\mahef\OneDrive\Documents\Android\Kairos\wear\src\main\AndroidManifest.xml:51:13-53:61
+79                android:name="androidx.wear.tiles.PREVIEW"
+79-->C:\Users\mahef\OneDrive\Documents\Android\Kairos\wear\src\main\AndroidManifest.xml:52:17-59
+80                android:resource="@drawable/tile_preview" />
+80-->C:\Users\mahef\OneDrive\Documents\Android\Kairos\wear\src\main\AndroidManifest.xml:53:17-58
+81        </service>
+82
+83        <!-- Réception des compteurs poussés par le téléphone (Data Layer). -->
+84        <service
+84-->C:\Users\mahef\OneDrive\Documents\Android\Kairos\wear\src\main\AndroidManifest.xml:57:9-67:19
+85            android:name="com.kairos.wear.WearDataListenerService"
+85-->C:\Users\mahef\OneDrive\Documents\Android\Kairos\wear\src\main\AndroidManifest.xml:58:13-52
+86            android:exported="true" >
+86-->C:\Users\mahef\OneDrive\Documents\Android\Kairos\wear\src\main\AndroidManifest.xml:59:13-36
+87            <intent-filter>
+87-->C:\Users\mahef\OneDrive\Documents\Android\Kairos\wear\src\main\AndroidManifest.xml:60:13-66:29
+88                <action android:name="com.google.android.gms.wearable.DATA_CHANGED" />
+88-->C:\Users\mahef\OneDrive\Documents\Android\Kairos\wear\src\main\AndroidManifest.xml:61:17-87
+88-->C:\Users\mahef\OneDrive\Documents\Android\Kairos\wear\src\main\AndroidManifest.xml:61:25-84
+89
+90                <data
+90-->C:\Users\mahef\OneDrive\Documents\Android\Kairos\wear\src\main\AndroidManifest.xml:62:17-65:52
+91                    android:host="*"
+91-->C:\Users\mahef\OneDrive\Documents\Android\Kairos\wear\src\main\AndroidManifest.xml:64:21-37
+92                    android:pathPrefix="/kairos"
+92-->C:\Users\mahef\OneDrive\Documents\Android\Kairos\wear\src\main\AndroidManifest.xml:65:21-49
+93                    android:scheme="wear" />
+93-->C:\Users\mahef\OneDrive\Documents\Android\Kairos\wear\src\main\AndroidManifest.xml:63:21-42
+94            </intent-filter>
+95        </service>
+96
+97        <uses-library
+97-->[androidx.wear:wear-remote-interactions:1.1.0] C:\Users\mahef\.gradle\caches\9.4.1\transforms\d6510e7a2410b1acefb06c25a527c0f2\transformed\wear-remote-interactions-1.1.0\AndroidManifest.xml:23:9-25:40
+98            android:name="wear-sdk"
+98-->[androidx.wear:wear-remote-interactions:1.1.0] C:\Users\mahef\.gradle\caches\9.4.1\transforms\d6510e7a2410b1acefb06c25a527c0f2\transformed\wear-remote-interactions-1.1.0\AndroidManifest.xml:24:13-36
+99            android:required="false" />
+99-->[androidx.wear:wear-remote-interactions:1.1.0] C:\Users\mahef\.gradle\caches\9.4.1\transforms\d6510e7a2410b1acefb06c25a527c0f2\transformed\wear-remote-interactions-1.1.0\AndroidManifest.xml:25:13-37
+100
+101        <activity
+101-->[com.google.android.gms:play-services-base:18.5.0] C:\Users\mahef\.gradle\caches\9.4.1\transforms\882bbd9bbe49ae94761a80ea032f372c\transformed\play-services-base-18.5.0\AndroidManifest.xml:5:9-173
+102            android:name="com.google.android.gms.common.api.GoogleApiActivity"
+102-->[com.google.android.gms:play-services-base:18.5.0] C:\Users\mahef\.gradle\caches\9.4.1\transforms\882bbd9bbe49ae94761a80ea032f372c\transformed\play-services-base-18.5.0\AndroidManifest.xml:5:19-85
+103            android:exported="false"
+103-->[com.google.android.gms:play-services-base:18.5.0] C:\Users\mahef\.gradle\caches\9.4.1\transforms\882bbd9bbe49ae94761a80ea032f372c\transformed\play-services-base-18.5.0\AndroidManifest.xml:5:146-170
+104            android:theme="@android:style/Theme.Translucent.NoTitleBar" />
+104-->[com.google.android.gms:play-services-base:18.5.0] C:\Users\mahef\.gradle\caches\9.4.1\transforms\882bbd9bbe49ae94761a80ea032f372c\transformed\play-services-base-18.5.0\AndroidManifest.xml:5:86-145
+105
+106        <meta-data
+106-->[com.google.android.gms:play-services-basement:18.4.0] C:\Users\mahef\.gradle\caches\9.4.1\transforms\b9cf8119debdf6884a77222458a42237\transformed\play-services-basement-18.4.0\AndroidManifest.xml:6:9-122
+107            android:name="com.google.android.gms.version"
+107-->[com.google.android.gms:play-services-basement:18.4.0] C:\Users\mahef\.gradle\caches\9.4.1\transforms\b9cf8119debdf6884a77222458a42237\transformed\play-services-basement-18.4.0\AndroidManifest.xml:6:20-65
+108            android:value="@integer/google_play_services_version" />
+108-->[com.google.android.gms:play-services-basement:18.4.0] C:\Users\mahef\.gradle\caches\9.4.1\transforms\b9cf8119debdf6884a77222458a42237\transformed\play-services-basement-18.4.0\AndroidManifest.xml:6:66-119
+109
+110        <provider
+110-->[androidx.profileinstaller:profileinstaller:1.3.0] C:\Users\mahef\.gradle\caches\9.4.1\transforms\d5f6dd3484ebd645814f40517431d92d\transformed\profileinstaller-1.3.0\AndroidManifest.xml:24:9-32:20
+111            android:name="androidx.startup.InitializationProvider"
+111-->[androidx.profileinstaller:profileinstaller:1.3.0] C:\Users\mahef\.gradle\caches\9.4.1\transforms\d5f6dd3484ebd645814f40517431d92d\transformed\profileinstaller-1.3.0\AndroidManifest.xml:25:13-67
+112            android:authorities="com.kairos.app.androidx-startup"
+112-->[androidx.profileinstaller:profileinstaller:1.3.0] C:\Users\mahef\.gradle\caches\9.4.1\transforms\d5f6dd3484ebd645814f40517431d92d\transformed\profileinstaller-1.3.0\AndroidManifest.xml:26:13-68
+113            android:exported="false" >
+113-->[androidx.profileinstaller:profileinstaller:1.3.0] C:\Users\mahef\.gradle\caches\9.4.1\transforms\d5f6dd3484ebd645814f40517431d92d\transformed\profileinstaller-1.3.0\AndroidManifest.xml:27:13-37
+114            <meta-data
+114-->[androidx.profileinstaller:profileinstaller:1.3.0] C:\Users\mahef\.gradle\caches\9.4.1\transforms\d5f6dd3484ebd645814f40517431d92d\transformed\profileinstaller-1.3.0\AndroidManifest.xml:29:13-31:52
+115                android:name="androidx.profileinstaller.ProfileInstallerInitializer"
+115-->[androidx.profileinstaller:profileinstaller:1.3.0] C:\Users\mahef\.gradle\caches\9.4.1\transforms\d5f6dd3484ebd645814f40517431d92d\transformed\profileinstaller-1.3.0\AndroidManifest.xml:30:17-85
+116                android:value="androidx.startup" />
+116-->[androidx.profileinstaller:profileinstaller:1.3.0] C:\Users\mahef\.gradle\caches\9.4.1\transforms\d5f6dd3484ebd645814f40517431d92d\transformed\profileinstaller-1.3.0\AndroidManifest.xml:31:17-49
+117        </provider>
+118
+119        <receiver
+119-->[androidx.profileinstaller:profileinstaller:1.3.0] C:\Users\mahef\.gradle\caches\9.4.1\transforms\d5f6dd3484ebd645814f40517431d92d\transformed\profileinstaller-1.3.0\AndroidManifest.xml:34:9-52:20
+120            android:name="androidx.profileinstaller.ProfileInstallReceiver"
+120-->[androidx.profileinstaller:profileinstaller:1.3.0] C:\Users\mahef\.gradle\caches\9.4.1\transforms\d5f6dd3484ebd645814f40517431d92d\transformed\profileinstaller-1.3.0\AndroidManifest.xml:35:13-76
+121            android:directBootAware="false"
+121-->[androidx.profileinstaller:profileinstaller:1.3.0] C:\Users\mahef\.gradle\caches\9.4.1\transforms\d5f6dd3484ebd645814f40517431d92d\transformed\profileinstaller-1.3.0\AndroidManifest.xml:36:13-44
+122            android:enabled="true"
+122-->[androidx.profileinstaller:profileinstaller:1.3.0] C:\Users\mahef\.gradle\caches\9.4.1\transforms\d5f6dd3484ebd645814f40517431d92d\transformed\profileinstaller-1.3.0\AndroidManifest.xml:37:13-35
+123            android:exported="true"
+123-->[androidx.profileinstaller:profileinstaller:1.3.0] C:\Users\mahef\.gradle\caches\9.4.1\transforms\d5f6dd3484ebd645814f40517431d92d\transformed\profileinstaller-1.3.0\AndroidManifest.xml:38:13-36
+124            android:permission="android.permission.DUMP" >
+124-->[androidx.profileinstaller:profileinstaller:1.3.0] C:\Users\mahef\.gradle\caches\9.4.1\transforms\d5f6dd3484ebd645814f40517431d92d\transformed\profileinstaller-1.3.0\AndroidManifest.xml:39:13-57
+125            <intent-filter>
+125-->[androidx.profileinstaller:profileinstaller:1.3.0] C:\Users\mahef\.gradle\caches\9.4.1\transforms\d5f6dd3484ebd645814f40517431d92d\transformed\profileinstaller-1.3.0\AndroidManifest.xml:40:13-42:29
+126                <action android:name="androidx.profileinstaller.action.INSTALL_PROFILE" />
+126-->[androidx.profileinstaller:profileinstaller:1.3.0] C:\Users\mahef\.gradle\caches\9.4.1\transforms\d5f6dd3484ebd645814f40517431d92d\transformed\profileinstaller-1.3.0\AndroidManifest.xml:41:17-91
+126-->[androidx.profileinstaller:profileinstaller:1.3.0] C:\Users\mahef\.gradle\caches\9.4.1\transforms\d5f6dd3484ebd645814f40517431d92d\transformed\profileinstaller-1.3.0\AndroidManifest.xml:41:25-88
+127            </intent-filter>
+128            <intent-filter>
+128-->[androidx.profileinstaller:profileinstaller:1.3.0] C:\Users\mahef\.gradle\caches\9.4.1\transforms\d5f6dd3484ebd645814f40517431d92d\transformed\profileinstaller-1.3.0\AndroidManifest.xml:43:13-45:29
+129                <action android:name="androidx.profileinstaller.action.SKIP_FILE" />
+129-->[androidx.profileinstaller:profileinstaller:1.3.0] C:\Users\mahef\.gradle\caches\9.4.1\transforms\d5f6dd3484ebd645814f40517431d92d\transformed\profileinstaller-1.3.0\AndroidManifest.xml:44:17-85
+129-->[androidx.profileinstaller:profileinstaller:1.3.0] C:\Users\mahef\.gradle\caches\9.4.1\transforms\d5f6dd3484ebd645814f40517431d92d\transformed\profileinstaller-1.3.0\AndroidManifest.xml:44:25-82
+130            </intent-filter>
+131            <intent-filter>
+131-->[androidx.profileinstaller:profileinstaller:1.3.0] C:\Users\mahef\.gradle\caches\9.4.1\transforms\d5f6dd3484ebd645814f40517431d92d\transformed\profileinstaller-1.3.0\AndroidManifest.xml:46:13-48:29
+132                <action android:name="androidx.profileinstaller.action.SAVE_PROFILE" />
+132-->[androidx.profileinstaller:profileinstaller:1.3.0] C:\Users\mahef\.gradle\caches\9.4.1\transforms\d5f6dd3484ebd645814f40517431d92d\transformed\profileinstaller-1.3.0\AndroidManifest.xml:47:17-88
+132-->[androidx.profileinstaller:profileinstaller:1.3.0] C:\Users\mahef\.gradle\caches\9.4.1\transforms\d5f6dd3484ebd645814f40517431d92d\transformed\profileinstaller-1.3.0\AndroidManifest.xml:47:25-85
+133            </intent-filter>
+134            <intent-filter>
+134-->[androidx.profileinstaller:profileinstaller:1.3.0] C:\Users\mahef\.gradle\caches\9.4.1\transforms\d5f6dd3484ebd645814f40517431d92d\transformed\profileinstaller-1.3.0\AndroidManifest.xml:49:13-51:29
+135                <action android:name="androidx.profileinstaller.action.BENCHMARK_OPERATION" />
+135-->[androidx.profileinstaller:profileinstaller:1.3.0] C:\Users\mahef\.gradle\caches\9.4.1\transforms\d5f6dd3484ebd645814f40517431d92d\transformed\profileinstaller-1.3.0\AndroidManifest.xml:50:17-95
+135-->[androidx.profileinstaller:profileinstaller:1.3.0] C:\Users\mahef\.gradle\caches\9.4.1\transforms\d5f6dd3484ebd645814f40517431d92d\transformed\profileinstaller-1.3.0\AndroidManifest.xml:50:25-92
+136            </intent-filter>
+137        </receiver>
+138    </application>
+139
+140</manifest>

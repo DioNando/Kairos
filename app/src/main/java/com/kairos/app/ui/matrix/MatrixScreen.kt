@@ -84,6 +84,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.compositeOver
+import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.input.pointer.pointerInput
@@ -117,6 +118,7 @@ import com.kairos.app.ui.components.formatDue
 import com.kairos.app.ui.components.quadrantEmptyRes
 import com.kairos.app.ui.components.quadrantVisual
 import com.kairos.app.ui.components.toColor
+import com.kairos.app.ui.theme.LocalizedOverlay
 import com.kairos.app.ui.editor.QuickAddSheet
 import kotlinx.coroutines.launch
 import kotlin.math.roundToInt
@@ -812,11 +814,17 @@ private fun TaskRowContent(
     // Profondeur tonale : ligne = surfaceContainerHigh ; pulsation d'accent si échéance proche.
     val pulse = status == DueStatus.SOON || status == DueStatus.OVERDUE
     val surface = MaterialTheme.colorScheme.surfaceContainerHigh
+    // Sur une surface **claire** l'accent translucide se délave (rose pâle qui ne ressort pas) ; sur
+    // une surface **sombre** un alpha modéré suffit déjà à trancher. On monte donc l'alpha en clair
+    // pour que la surbrillance « pousse » la tâche en avant dans les deux thèmes. Le thème est
+    // déduit de la luminance de la surface (robuste au forçage clair/sombre in-app).
+    val darkTheme = surface.luminance() < 0.5f
+    val pulseAlpha = if (darkTheme) 0.22f else 0.40f
     val containerColor by animateColorAsState(
         // Surbrillance rendue **opaque** : on compose l'accent translucide SUR la surface, au lieu
-        // d'un simple alpha 0.22 qui laissait le fond du swipe (et son icône) transparaître à
-        // travers la ligne pendant le glissement (icônes superposées au contenu).
-        if (pulse) accent.copy(alpha = 0.22f).compositeOver(surface) else surface,
+        // d'un simple alpha qui laissait le fond du swipe (et son icône) transparaître à travers la
+        // ligne pendant le glissement (icônes superposées au contenu).
+        if (pulse) accent.copy(alpha = pulseAlpha).compositeOver(surface) else surface,
         animationSpec = MaterialTheme.motionScheme.defaultEffectsSpec(),
         label = "task-pulse",
     )
@@ -944,6 +952,7 @@ private fun TaskRowContent(
                 onDismissRequest = { menuOpen = false },
                 modifier = Modifier.widthIn(min = 220.dp),
             ) {
+              LocalizedOverlay {
                 Text(
                     stringResource(R.string.move_to),
                     style = MaterialTheme.typography.labelSmall,
@@ -993,6 +1002,7 @@ private fun TaskRowContent(
                         onRemove()
                     },
                 )
+              }
             }
         }
     }

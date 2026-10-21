@@ -1,0 +1,5 @@
+<!-- Petite puce ronde devant une tâche « à suivre » (teintée par quadrant en code). -->
+<shape xmlns:android="http://schemas.android.com/apk/res/android"
+    android:shape="oval">
+    <solid android:color="#FFFFFFFF" />
+</shape>

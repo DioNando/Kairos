@@ -1,0 +1,82 @@
+[
+    {
+        "merged": "com.kairos.wear-debug-20:/drawable_bg_upnext.xml.flat",
+        "source": "com.kairos.wear-main-22:/drawable/bg_upnext.xml"
+    },
+    {
+        "merged": "C:\\Users\\mahef\\.gradle\\daemon\\9.4.1\\com.kairos.wear-debug-20:\\drawable_wear_do.xml.flat",
+        "source": "C:\\Users\\mahef\\.gradle\\daemon\\9.4.1\\com.kairos.wear-main-22:\\drawable\\wear_do.xml"
+    },
+    {
+        "merged": "C:\\Users\\mahef\\.gradle\\daemon\\9.4.1\\com.kairos.wear-debug-20:\\mipmap-anydpi-v26_ic_launcher.xml.flat",
+        "source": "C:\\Users\\mahef\\.gradle\\daemon\\9.4.1\\com.kairos.wear-main-22:\\mipmap-anydpi-v26\\ic_launcher.xml"
+    },
+    {
+        "merged": "C:\\Users\\mahef\\.gradle\\daemon\\9.4.1\\com.kairos.wear-debug-20:\\drawable_ic_launcher_monochrome.xml.flat",
+        "source": "C:\\Users\\mahef\\.gradle\\daemon\\9.4.1\\com.kairos.wear-main-22:\\drawable\\ic_launcher_monochrome.xml"
+    },
+    {
+        "merged": "C:\\Users\\mahef\\.gradle\\daemon\\9.4.1\\com.kairos.wear-debug-20:\\drawable_wear_schedule.xml.flat",
+        "source": "C:\\Users\\mahef\\.gradle\\daemon\\9.4.1\\com.kairos.wear-main-22:\\drawable\\wear_schedule.xml"
+    },
+    {
+        "merged": "C:\\Users\\mahef\\.gradle\\daemon\\9.4.1\\com.kairos.wear-debug-20:\\drawable_bg_tile.xml.flat",
+        "source": "C:\\Users\\mahef\\.gradle\\daemon\\9.4.1\\com.kairos.wear-main-22:\\drawable\\bg_tile.xml"
+    },
+    {
+        "merged": "C:\\Users\\mahef\\.gradle\\daemon\\9.4.1\\com.kairos.wear-debug-20:\\drawable_bg_button.xml.flat",
+        "source": "C:\\Users\\mahef\\.gradle\\daemon\\9.4.1\\com.kairos.wear-main-22:\\drawable\\bg_button.xml"
+    },
+    {
+        "merged": "C:\\Users\\mahef\\.gradle\\daemon\\9.4.1\\com.kairos.wear-debug-20:\\layout_activity_launcher.xml.flat",
+        "source": "C:\\Users\\mahef\\.gradle\\daemon\\9.4.1\\com.kairos.wear-main-22:\\layout\\activity_launcher.xml"
+    },
+    {
+        "merged": "C:\\Users\\mahef\\.gradle\\daemon\\9.4.1\\com.kairos.wear-debug-20:\\mipmap-anydpi-v26_ic_launcher_round.xml.flat",
+        "source": "C:\\Users\\mahef\\.gradle\\daemon\\9.4.1\\com.kairos.wear-main-22:\\mipmap-anydpi-v26\\ic_launcher_round.xml"
+    },
+    {
+        "merged": "com.kairos.wear-debug-20:/layout_item_upnext.xml.flat",
+        "source": "com.kairos.wear-main-22:/layout/item_upnext.xml"
+    },
+    {
+        "merged": "C:\\Users\\mahef\\.gradle\\daemon\\9.4.1\\com.kairos.wear-debug-20:\\drawable_ic_launcher_foreground.xml.flat",
+        "source": "C:\\Users\\mahef\\.gradle\\daemon\\9.4.1\\com.kairos.wear-main-22:\\drawable\\ic_launcher_foreground.xml"
+    },
+    {
+        "merged": "com.kairos.wear-debug-20:/drawable_bg_circle.xml.flat",
+        "source": "com.kairos.wear-main-22:/drawable/bg_circle.xml"
+    },
+    {
+        "merged": "C:\\Users\\mahef\\.gradle\\daemon\\9.4.1\\com.kairos.wear-debug-20:\\drawable_wear_eliminate.xml.flat",
+        "source": "C:\\Users\\mahef\\.gradle\\daemon\\9.4.1\\com.kairos.wear-main-22:\\drawable\\wear_eliminate.xml"
+    },
+    {
+        "merged": "com.kairos.wear-debug-20:/layout_activity_launcher.xml.flat",
+        "source": "com.kairos.wear-main-22:/layout/activity_launcher.xml"
+    },
+    {
+        "merged": "com.kairos.wear-debug-20:/drawable_ic_open_phone.xml.flat",
+        "source": "com.kairos.wear-main-22:/drawable/ic_open_phone.xml"
+    },
+    {
+        "merged": "C:\\Users\\mahef\\.gradle\\daemon\\9.4.1\\com.kairos.wear-debug-20:\\drawable_ic_wear_launcher.xml.flat",
+        "source": "C:\\Users\\mahef\\.gradle\\daemon\\9.4.1\\com.kairos.wear-main-22:\\drawable\\ic_wear_launcher.xml"
+    },
+    {
+        "merged": "C:\\Users\\mahef\\.gradle\\daemon\\9.4.1\\com.kairos.wear-debug-20:\\drawable_tile_preview.xml.flat",
+        "source": "C:\\Users\\mahef\\.gradle\\daemon\\9.4.1\\com.kairos.wear-main-22:\\drawable\\tile_preview.xml"
+    },
+    {
+        "merged": "com.kairos.wear-debug-20:/drawable_ic_add.xml.flat",
+        "source": "com.kairos.wear-main-22:/drawable/ic_add.xml"
+    },
+    {
+        "merged": "C:\\Users\\mahef\\.gradle\\daemon\\9.4.1\\com.kairos.wear-debug-20:\\drawable_wear_delegate.xml.flat",
+        "source": "C:\\Users\\mahef\\.gradle\\daemon\\9.4.1\\com.kairos.wear-main-22:\\drawable\\wear_delegate.xml"
+    },
+    {
+        "merged": "com.kairos.wear-debug-20:/drawable_dot.xml.flat",
+        "source": "com.kairos.wear-main-22:/drawable/dot.xml"
+    }
+]

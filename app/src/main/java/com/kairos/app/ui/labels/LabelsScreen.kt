@@ -45,6 +45,7 @@ import com.kairos.app.ui.components.KairosFieldShape
 import com.kairos.app.ui.components.kairosFieldColors
 import com.kairos.app.ui.components.onAccent
 import com.kairos.app.ui.components.toColor
+import com.kairos.app.ui.theme.LocalizedOverlay
 
 private val LabelColors = listOf(
     "#E5645A", "#4FA5A0", "#E0A24E", "#9C9AA6",
@@ -131,19 +132,20 @@ fun LabelsScreen(
     }
 
     pendingDelete?.let { label ->
+        // Strings résolues hors du dialog (fenêtre détachée qui perd l'override de langue in-app).
+        val title = stringResource(R.string.delete_label_title)
+        val message = stringResource(R.string.delete_label_message, label.name)
+        val confirm = stringResource(R.string.action_delete)
+        val cancel = stringResource(R.string.action_cancel)
         AlertDialog(
             onDismissRequest = { pendingDelete = null },
-            title = { Text(stringResource(R.string.delete_label_title)) },
-            text = { Text(stringResource(R.string.delete_label_message, label.name)) },
+            title = { Text(title) },
+            text = { Text(message) },
             confirmButton = {
-                TextButton(onClick = { pendingDelete = null; onDelete(label.id) }) {
-                    Text(stringResource(R.string.action_delete))
-                }
+                TextButton(onClick = { pendingDelete = null; onDelete(label.id) }) { Text(confirm) }
             },
             dismissButton = {
-                TextButton(onClick = { pendingDelete = null }) {
-                    Text(stringResource(R.string.action_cancel))
-                }
+                TextButton(onClick = { pendingDelete = null }) { Text(cancel) }
             },
         )
     }
@@ -158,10 +160,15 @@ private fun LabelEditorDialog(
     var name by remember { mutableStateOf(label?.name ?: "") }
     var colorHex by remember { mutableStateOf(label?.colorHex ?: LabelColors.first()) }
 
+    // Strings/contenu résolus hors du dialog (fenêtre détachée qui perd l'override de langue in-app).
+    val titleText = stringResource(if (label == null) R.string.label_new else R.string.label_edit)
+    val saveLabel = stringResource(R.string.action_save)
+    val cancelLabel = stringResource(R.string.action_cancel)
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text(stringResource(if (label == null) R.string.label_new else R.string.label_edit)) },
+        title = { Text(titleText) },
         text = {
+          LocalizedOverlay {
             Column(verticalArrangement = Arrangement.spacedBy(14.dp)) {
                 TextField(
                     value = name,
@@ -200,6 +207,7 @@ private fun LabelEditorDialog(
                     }
                 }
             }
+          }
         },
         confirmButton = {
             TextButton(
@@ -208,8 +216,8 @@ private fun LabelEditorDialog(
                     val base = label ?: Label(name = "", colorHex = colorHex)
                     onConfirm(base.copy(name = name.trim(), colorHex = colorHex))
                 },
-            ) { Text(stringResource(R.string.action_save)) }
+            ) { Text(saveLabel) }
         },
-        dismissButton = { TextButton(onClick = onDismiss) { Text(stringResource(R.string.action_cancel)) } },
+        dismissButton = { TextButton(onClick = onDismiss) { Text(cancelLabel) } },
     )
 }

@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Aperçu du widget fin 2×1 : 4 pastilles, icône seule centrée (pas de chiffre — trop serré à
+     cette taille). Rendu à la volée = net à toute taille. -->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="180dp"
+    android:layout_height="48dp"
+    android:orientation="horizontal"
+    android:background="@drawable/widget_preview_bg"
+    android:padding="6dp">
+
+    <!-- Faire (rouge) -->
+    <ImageView
+        android:layout_width="0dp"
+        android:layout_height="match_parent"
+        android:layout_weight="1"
+        android:layout_marginEnd="6dp"
+        android:padding="8dp"
+        android:scaleType="fitCenter"
+        android:src="@drawable/widget_do"
+        android:tint="#FFFFFF"
+        android:background="@drawable/widget_preview_tile"
+        android:backgroundTint="#E5645A" />
+
+    <!-- Planifier (teal) -->
+    <ImageView
+        android:layout_width="0dp"
+        android:layout_height="match_parent"
+        android:layout_weight="1"
+        android:layout_marginEnd="6dp"
+        android:padding="8dp"
+        android:scaleType="fitCenter"
+        android:src="@drawable/widget_schedule"
+        android:tint="#FFFFFF"
+        android:background="@drawable/widget_preview_tile"
+        android:backgroundTint="#4FA5A0" />
+
+    <!-- Déléguer (ambre) -->
+    <ImageView
+        android:layout_width="0dp"
+        android:layout_height="match_parent"
+        android:layout_weight="1"
+        android:layout_marginEnd="6dp"
+        android:padding="8dp"
+        android:scaleType="fitCenter"
+        android:src="@drawable/widget_delegate"
+        android:tint="#FFFFFF"
+        android:background="@drawable/widget_preview_tile"
+        android:backgroundTint="#E0A24E" />
+
+    <!-- Supprimer (gris) -->
+    <ImageView
+        android:layout_width="0dp"
+        android:layout_height="match_parent"
+        android:layout_weight="1"
+        android:padding="8dp"
+        android:scaleType="fitCenter"
+        android:src="@drawable/widget_eliminate"
+        android:tint="#FFFFFF"
+        android:background="@drawable/widget_preview_tile"
+        android:backgroundTint="#9C9AA6" />
+</LinearLayout>

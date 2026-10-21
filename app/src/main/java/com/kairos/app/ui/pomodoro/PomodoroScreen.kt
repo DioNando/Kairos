@@ -18,32 +18,41 @@ import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.ArrowBack
 import androidx.compose.material.icons.rounded.ArrowDropDown
+import androidx.compose.material.icons.rounded.Check
 import androidx.compose.material.icons.rounded.Link
+import androidx.compose.material.icons.rounded.LinkOff
 import androidx.compose.material.icons.rounded.Pause
 import androidx.compose.material.icons.rounded.PlayArrow
 import androidx.compose.material.icons.rounded.Refresh
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonGroupDefaults
 import androidx.compose.material3.CircularWavyProgressIndicator
-import androidx.compose.material3.DropdownMenu
-import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
@@ -51,6 +60,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.ToggleButton
 import androidx.compose.material3.ToggleButtonDefaults
 import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -59,8 +69,10 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Rect
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
@@ -75,8 +87,11 @@ import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.kairos.app.R
+import com.kairos.app.data.model.Quadrant
 import com.kairos.app.data.model.Task
 import com.kairos.app.ui.components.KairosAssistChip
+import com.kairos.app.ui.components.quadrantVisual
+import com.kairos.app.ui.theme.LocalizedOverlay
 import java.util.Locale
 import kotlin.math.PI
 import kotlin.math.sin
@@ -211,7 +226,10 @@ fun PomodoroScreen(
 }
 
 /**
- * Sélecteur de tâche liée : une puce déroulante. « Aucune » délie la session. Le temps de chaque
+ * Sélecteur de tâche liée : une puce ouvre un **bottom sheet** listant les tâches actives
+ * **groupées par quadrant** (chacune préfixée d'une barre à l'accent de son quadrant). « Aucune »
+ * délie la session. La tâche liée est surlignée par un **fond tonal à l'accent du quadrant** (jamais
+ * un assombrissement) + une coche — visible et coloré en clair comme en sombre. Le temps de chaque
  * focus terminé est ensuite crédité à la tâche choisie (cumul dans son temps de concentration).
  */
 @OptIn(ExperimentalMaterial3Api::class)
@@ -223,25 +241,161 @@ private fun LinkedTaskSelector(
 ) {
     var expanded by remember { mutableStateOf(false) }
     val linked = tasks.firstOrNull { it.id == linkedTaskId }
-    Box {
-        KairosAssistChip(
-            onClick = { expanded = true },
-            label = linked?.title ?: stringResource(R.string.pomo_link_none),
-            leadingIcon = { Icon(Icons.Rounded.Link, contentDescription = null) },
-            trailingIcon = { Icon(Icons.Rounded.ArrowDropDown, contentDescription = null) },
+    KairosAssistChip(
+        onClick = { expanded = true },
+        label = linked?.title ?: stringResource(R.string.pomo_link_none),
+        leadingIcon = { Icon(Icons.Rounded.Link, contentDescription = null) },
+        trailingIcon = { Icon(Icons.Rounded.ArrowDropDown, contentDescription = null) },
+    )
+    if (expanded) {
+        LinkedTaskSheet(
+            tasks = tasks,
+            linkedTaskId = linkedTaskId,
+            onSelect = { onSelect(it); expanded = false },
+            onDismiss = { expanded = false },
         )
-        DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
-            DropdownMenuItem(
-                text = { Text(stringResource(R.string.pomo_link_none)) },
-                onClick = { onSelect(null); expanded = false },
-            )
-            tasks.forEach { task ->
-                DropdownMenuItem(
-                    text = { Text(task.title, maxLines = 1) },
-                    onClick = { onSelect(task.id); expanded = false },
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun LinkedTaskSheet(
+    tasks: List<Task>,
+    linkedTaskId: Long?,
+    onSelect: (Long?) -> Unit,
+    onDismiss: () -> Unit,
+) {
+    val sheetState = rememberModalBottomSheetState()
+    // Groupé par quadrant dans l'ordre de la matrice (Faire → Planifier → Déléguer → Supprimer) :
+    // les tâches les plus prioritaires remontent en tête, naturel pour choisir sur quoi se concentrer.
+    val groups = Quadrant.entries
+        .map { q -> q to tasks.filter { it.quadrant == q } }
+        .filter { it.second.isNotEmpty() }
+
+    ModalBottomSheet(onDismissRequest = onDismiss, sheetState = sheetState) {
+        // Le sheet est rendu dans une fenêtre détachée qui perd l'override de langue in-app :
+        // LocalizedOverlay le ré-applique (cf. LocalizedOverlay.kt).
+        LocalizedOverlay {
+        LazyColumn(
+            modifier = Modifier
+                .fillMaxWidth()
+                .heightIn(max = 520.dp)
+                .navigationBarsPadding(),
+            contentPadding = androidx.compose.foundation.layout.PaddingValues(
+                start = 16.dp, end = 16.dp, bottom = 16.dp,
+            ),
+        ) {
+            item(key = "title") {
+                Text(
+                    text = stringResource(R.string.pomo_link_title),
+                    style = MaterialTheme.typography.titleLarge,
+                    fontWeight = FontWeight.Bold,
+                    modifier = Modifier.padding(bottom = 8.dp),
                 )
             }
+            item(key = "none") {
+                NoneRow(
+                    selected = linkedTaskId == null,
+                    onClick = { onSelect(null) },
+                )
+            }
+            groups.forEach { (quadrant, quadrantTasks) ->
+                item(key = "header-${quadrant.name}") {
+                    QuadrantHeader(quadrant)
+                }
+                items(quadrantTasks, key = { it.id }) { task ->
+                    LinkedTaskRow(
+                        task = task,
+                        selected = task.id == linkedTaskId,
+                        onClick = { onSelect(task.id) },
+                    )
+                }
+            }
         }
+        }
+    }
+}
+
+/** En-tête de groupe : pastille d'icône + verbe du quadrant, à son accent. */
+@Composable
+private fun QuadrantHeader(quadrant: Quadrant) {
+    val visual = quadrantVisual(quadrant)
+    Row(
+        modifier = Modifier.padding(top = 16.dp, bottom = 6.dp, start = 4.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+    ) {
+        Icon(visual.icon, contentDescription = null, tint = visual.accent, modifier = Modifier.size(18.dp))
+        Text(
+            text = visual.verb.uppercase(Locale.getDefault()),
+            style = MaterialTheme.typography.labelLarge,
+            fontWeight = FontWeight.Bold,
+            color = visual.accent,
+        )
+    }
+}
+
+/** Ligne « Aucune tâche liée » : icône lien-coupé, surlignée quand la session n'est liée à rien. */
+@Composable
+private fun NoneRow(selected: Boolean, onClick: () -> Unit) {
+    val highlight = MaterialTheme.colorScheme.primary
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(14.dp))
+            .background(if (selected) highlight.copy(alpha = 0.14f) else Color.Transparent)
+            .clickable(onClick = onClick)
+            .padding(horizontal = 12.dp, vertical = 14.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(12.dp),
+    ) {
+        Icon(
+            Icons.Rounded.LinkOff,
+            contentDescription = null,
+            tint = if (selected) highlight else MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+        Text(
+            text = stringResource(R.string.pomo_link_none),
+            style = MaterialTheme.typography.bodyLarge,
+            color = if (selected) highlight else MaterialTheme.colorScheme.onSurface,
+            modifier = Modifier.weight(1f),
+        )
+        if (selected) Icon(Icons.Rounded.Check, contentDescription = null, tint = highlight)
+    }
+}
+
+/**
+ * Ligne de tâche : barre verticale à l'accent du quadrant + titre. Sélectionnée = fond tonal
+ * (accent alpha) + coche à l'accent, jamais un assombrissement.
+ */
+@Composable
+private fun LinkedTaskRow(task: Task, selected: Boolean, onClick: () -> Unit) {
+    val accent = quadrantVisual(task.quadrant).accent
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(14.dp))
+            .background(if (selected) accent.copy(alpha = 0.16f) else Color.Transparent)
+            .clickable(onClick = onClick)
+            .padding(horizontal = 12.dp, vertical = 12.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(12.dp),
+    ) {
+        Box(
+            modifier = Modifier
+                .size(width = 4.dp, height = 26.dp)
+                .clip(CircleShape)
+                .background(accent),
+        )
+        Text(
+            text = task.title,
+            style = MaterialTheme.typography.bodyLarge,
+            fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Normal,
+            color = MaterialTheme.colorScheme.onSurface,
+            maxLines = 1,
+            modifier = Modifier.weight(1f),
+        )
+        if (selected) Icon(Icons.Rounded.Check, contentDescription = null, tint = accent)
     }
 }
 

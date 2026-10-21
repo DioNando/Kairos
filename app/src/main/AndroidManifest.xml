@@ -27,6 +27,19 @@
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
+            <!-- Deep links Wear OS (RemoteActivityHelper) : « ouvrir sur le téléphone » (kairos://open)
+                 et « ajout rapide » (kairos://new → éditeur de nouvelle tâche). -->
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="kairos" android:host="open" />
+                <data android:scheme="kairos" android:host="new" />
+            </intent-filter>
+            <!-- Raccourcis d'application (appui long sur l'icône) : nouvelle tâche / Focus / Pomodoro. -->
+            <meta-data
+                android:name="android.app.shortcuts"
+                android:resource="@xml/shortcuts" />
         </activity>
 
         <!-- Service de premier plan du Pomodoro (timer hors app + notification persistante). -->
@@ -49,6 +62,18 @@
             <meta-data
                 android:name="android.appwidget.provider"
                 android:resource="@xml/kairos_widget_info" />
+        </receiver>
+
+        <!-- Widget écran d'accueil : variante fine 2×1 (Glance). -->
+        <receiver
+            android:name=".widget.KairosRowWidgetReceiver"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/kairos_widget_row_info" />
         </receiver>
     </application>
 

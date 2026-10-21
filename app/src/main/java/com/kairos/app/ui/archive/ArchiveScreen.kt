@@ -179,37 +179,38 @@ fun ArchiveScreen(
     }
 
     pendingDelete?.let { task ->
+        // Strings résolues **hors** du dialog (fenêtre détachée qui perd l'override de langue in-app).
+        val title = stringResource(R.string.delete_task_title)
+        val message = stringResource(R.string.delete_task_message, task.title)
+        val confirm = stringResource(R.string.action_delete)
+        val cancel = stringResource(R.string.action_cancel)
         AlertDialog(
             onDismissRequest = { pendingDelete = null },
-            title = { Text(stringResource(R.string.delete_task_title)) },
-            text = { Text(stringResource(R.string.delete_task_message, task.title)) },
+            title = { Text(title) },
+            text = { Text(message) },
             confirmButton = {
-                TextButton(onClick = { pendingDelete = null; onDelete(task) }) {
-                    Text(stringResource(R.string.action_delete))
-                }
+                TextButton(onClick = { pendingDelete = null; onDelete(task) }) { Text(confirm) }
             },
             dismissButton = {
-                TextButton(onClick = { pendingDelete = null }) {
-                    Text(stringResource(R.string.action_cancel))
-                }
+                TextButton(onClick = { pendingDelete = null }) { Text(cancel) }
             },
         )
     }
 
     if (confirmClearAll) {
+        val title = stringResource(R.string.clear_archive_title)
+        val message = stringResource(R.string.clear_archive_message)
+        val confirm = stringResource(R.string.action_delete)
+        val cancel = stringResource(R.string.action_cancel)
         AlertDialog(
             onDismissRequest = { confirmClearAll = false },
-            title = { Text(stringResource(R.string.clear_archive_title)) },
-            text = { Text(stringResource(R.string.clear_archive_message)) },
+            title = { Text(title) },
+            text = { Text(message) },
             confirmButton = {
-                TextButton(onClick = { confirmClearAll = false; onClearAll() }) {
-                    Text(stringResource(R.string.action_delete))
-                }
+                TextButton(onClick = { confirmClearAll = false; onClearAll() }) { Text(confirm) }
             },
             dismissButton = {
-                TextButton(onClick = { confirmClearAll = false }) {
-                    Text(stringResource(R.string.action_cancel))
-                }
+                TextButton(onClick = { confirmClearAll = false }) { Text(cancel) }
             },
         )
     }

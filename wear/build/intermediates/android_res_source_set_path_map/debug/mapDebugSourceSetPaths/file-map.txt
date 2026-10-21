@@ -1,0 +1,9 @@
+com.kairos.wear-pngs-0 C:\Users\mahef\OneDrive\Documents\Android\Kairos\wear\build\generated\res\pngs\debug
+com.kairos.wear-resValues-1 C:\Users\mahef\OneDrive\Documents\Android\Kairos\wear\build\generated\res\resValues\debug
+com.kairos.wear-updated_navigation_xml-2 C:\Users\mahef\OneDrive\Documents\Android\Kairos\wear\build\generated\updated_navigation_xml\debug
+com.kairos.wear-packageDebugResources-3 C:\Users\mahef\OneDrive\Documents\Android\Kairos\wear\build\intermediates\incremental\debug\packageDebugResources\merged.dir
+com.kairos.wear-packageDebugResources-4 C:\Users\mahef\OneDrive\Documents\Android\Kairos\wear\build\intermediates\incremental\debug\packageDebugResources\stripped.dir
+com.kairos.wear-debug-5 C:\Users\mahef\OneDrive\Documents\Android\Kairos\wear\build\intermediates\merged_res\debug\mergeDebugResources
+com.kairos.wear-debug-6 C:\Users\mahef\OneDrive\Documents\Android\Kairos\wear\src\debug\res
+com.kairos.wear-main-7 C:\Users\mahef\OneDrive\Documents\Android\Kairos\wear\src\main\res
+gradleHome-0 C:\Users\mahef\.gradle

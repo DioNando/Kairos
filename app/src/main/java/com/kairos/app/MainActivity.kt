@@ -27,27 +27,32 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalResources
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import java.util.Locale
 import com.kairos.app.data.model.AppSettings
 import com.kairos.app.data.reminder.ReminderNotifications
 import com.kairos.app.pomodoro.PomodoroNotifications
 import com.kairos.app.ui.ViewModelFactory
-import com.kairos.app.ui.components.toColor
 import com.kairos.app.ui.navigation.KairosNavHost
 import com.kairos.app.ui.onboarding.OnboardingScreen
 import com.kairos.app.ui.theme.AccentPalette
-import com.kairos.app.ui.theme.AppPalettes
 import com.kairos.app.ui.theme.KairosTheme
 import com.kairos.app.ui.theme.LocalAccentPalette
+import com.kairos.app.ui.theme.toAccentPalette
+import com.kairos.app.ui.theme.LocalLocalizedContext
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
 class MainActivity : ComponentActivity() {
 
-    /** Compteur incrémenté à chaque intent « ouvrir le Pomodoro » (notification). */
+    /** Compteur incrémenté à chaque intent « ouvrir le Pomodoro » (notification ou raccourci). */
     private val pomodoroLaunch = mutableIntStateOf(0)
+
+    /** Raccourcis d'application (appui long sur l'icône) : compteurs déclencheurs de navigation. */
+    private val newTaskLaunch = mutableIntStateOf(0)
+    private val focusLaunch = mutableIntStateOf(0)
 
     /** Tâche à ouvrir depuis un rappel : son id + un compteur pour redéclencher la navigation. */
     private val openTaskId = mutableLongStateOf(0L)
@@ -105,18 +110,8 @@ class MainActivity : ComponentActivity() {
             }
 
             // Transition douce des couleurs de quadrants lors d'un changement de palette.
-            // paletteId == AppPalettes.size → palette « Personnalisée » construite depuis les réglages.
-            val target = if (settings.paletteId in AppPalettes.indices) {
-                AppPalettes[settings.paletteId]
-            } else {
-                AccentPalette(
-                    name = "Personnalisée",
-                    doColor = settings.customDoColor.toColor(),
-                    scheduleColor = settings.customScheduleColor.toColor(),
-                    delegateColor = settings.customDelegateColor.toColor(),
-                    eliminateColor = settings.customEliminateColor.toColor(),
-                )
-            }
+            // Résolveur partagé avec le widget (toAccentPalette) → aucune divergence possible.
+            val target = settings.toAccentPalette()
             val spec = tween<Color>(durationMillis = 450)
             val doC by animateColorAsState(target.doColor, spec, label = "accent-do")
             val schedC by animateColorAsState(target.scheduleColor, spec, label = "accent-schedule")
@@ -129,6 +124,13 @@ class MainActivity : ComponentActivity() {
                     LocalAccentPalette provides palette,
                     LocalContext provides localizedContext,
                     LocalConfiguration provides localizedContext.resources.configuration,
+                    // Compose UI 1.12 : stringResource lit LocalResources.current → on le fournit
+                    // explicitement (le default calculé ne suit pas toujours l'override de LocalContext).
+                    LocalResources provides localizedContext.resources,
+                    // Contexte localisé transporté vers les overlays (dialogs/menus/sheets), qui sont
+                    // rendus dans une fenêtre détachée où LocalContext retombe en locale système.
+                    // Un local custom traverse ces sous-compositions ; LocalizedOverlay le ré-applique.
+                    LocalLocalizedContext provides (if (langTag == null) null else localizedContext),
                     // L'override de LocalContext (langue) casse la résolution par défaut du
                     // propriétaire ActivityResult (il remonte la chaîne de contexte, qui ne mène plus
                     // à l'Activity via createConfigurationContext). On le re-fournit explicitement —
@@ -170,6 +172,8 @@ class MainActivity : ComponentActivity() {
                                 onExport = { exportLauncher.launch("kairos-backup.json") },
                                 onImport = { importLauncher.launch(arrayOf("application/json")) },
                                 pomodoroLaunch = pomodoroLaunch.intValue,
+                                newTaskLaunch = newTaskLaunch.intValue,
+                                focusLaunch = focusLaunch.intValue,
                                 openTaskId = openTaskId.longValue,
                                 openTaskLaunch = openTaskLaunch.intValue,
                                 onSetRemindersEnabled = { scope.launch { settingsRepository.setRemindersEnabled(it) } },
@@ -188,10 +192,15 @@ class MainActivity : ComponentActivity() {
         handleIntent(intent)
     }
 
-    /** Une notification demande d'ouvrir un écran : on incrémente le signal observé. */
+    /** Une notification ou un raccourci demande d'ouvrir un écran : on incrémente le signal observé. */
     private fun handleIntent(intent: Intent?) {
         when (intent?.action) {
             PomodoroNotifications.ACTION_OPEN_POMODORO -> pomodoroLaunch.intValue++
+            ACTION_NEW_TASK -> newTaskLaunch.intValue++
+            ACTION_FOCUS -> focusLaunch.intValue++
+            // Deep link « ajout rapide » depuis la montre (kairos://new). kairos://open ne fait
+            // qu'ouvrir l'app → aucun traitement spécial (la matrice s'affiche telle quelle).
+            Intent.ACTION_VIEW -> if (intent.data?.host == "new") newTaskLaunch.intValue++
             ReminderNotifications.ACTION_OPEN_TASK -> {
                 val id = intent.getLongExtra(ReminderNotifications.EXTRA_TASK_ID, 0L)
                 if (id > 0L) {
@@ -231,4 +240,10 @@ class MainActivity : ComponentActivity() {
     }
 
     private fun toast(message: String) = Toast.makeText(this, message, Toast.LENGTH_SHORT).show()
+
+    companion object {
+        /** Actions des raccourcis d'application (cf. res/xml/shortcuts.xml). */
+        const val ACTION_NEW_TASK = "com.kairos.app.action.NEW_TASK"
+        const val ACTION_FOCUS = "com.kairos.app.action.FOCUS"
+    }
 }

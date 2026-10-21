@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Kairós</string>
+    <string name="tile_label">Kairós — Matrice</string>
+    <string name="open_on_phone">Ouverture sur le téléphone…</string>
+
+    <!-- App montre : « À faire en priorité ». -->
+    <string name="focus_title">À faire en priorité</string>
+    <string name="focus_empty">Rien à faire pour l\'instant 🎉</string>
+    <string name="focus_up_next">À SUIVRE</string>
+    <string name="action_quick_add">Ajout rapide</string>
+    <string name="action_open_app">Ouvrir l\'app</string>
+
+    <!-- Verbes des quadrants (prioritaire). -->
+    <string name="verb_do">Faire</string>
+    <string name="verb_schedule">Planifier</string>
+    <string name="verb_delegate">Déléguer</string>
+    <string name="verb_eliminate">Supprimer</string>
+</resources>

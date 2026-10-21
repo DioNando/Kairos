@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Avant-plan de l'icône adaptative — repris à l'identique de l'app téléphone (:app) pour que
+     l'app montre arbore la MÊME icône. Zone sûre 66 dp, viewBox 108×108. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <!-- Faire (corail) -->
+    <path
+        android:fillColor="#E5645A"
+        android:pathData="m47.27,54.59h6.14c.98,0,1.77-.79,1.77-1.77v-16.05c0-.98-.79-1.77-1.77-1.77h-16.64c-.98,0-1.77.79-1.77,1.77v16.05c0,.98.79,1.77,1.77,1.77h10.5Z" />
+    <!-- Déléguer (ambre) -->
+    <path
+        android:fillColor="#E0A24E"
+        android:pathData="m56.71,54.59v6.14c0,.98.79,1.77,1.77,1.77h12.75c.98,0,1.77-.79,1.77-1.77v-23.96c0-.98-.79-1.77-1.77-1.77h-12.75c-.98,0-1.77.79-1.77,1.77v17.82Z" />
+    <!-- Supprimer (gris-lavande) -->
+    <path
+        android:fillColor="#9C9AA6"
+        android:pathData="m56.71,64.03h-6.14c-.98,0-1.77.79-1.77,1.77v5.43c0,.98.79,1.77,1.77,1.77h20.65c.98,0,1.77-.79,1.77-1.77v-5.43c0-.98-.79-1.77-1.77-1.77h-14.52Z" />
+    <!-- Planifier (sarcelle) -->
+    <path
+        android:fillColor="#4FA5A0"
+        android:pathData="m47.27,64.03v-6.14c0-.98-.79-1.77-1.77-1.77h-8.73c-.98,0-1.77.79-1.77,1.77v13.34c0,.98.79,1.77,1.77,1.77h8.73c.98,0,1.77-.79,1.77-1.77v-7.2Z" />
+</vector>

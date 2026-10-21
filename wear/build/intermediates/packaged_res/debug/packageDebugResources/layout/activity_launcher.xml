@@ -1,0 +1,166 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- App Kairós sur la montre : « À faire en priorité » (tâche prioritaire + à suivre, reflet de
+     l'écran Focus du téléphone) + deux boutons ronds (ajout rapide / ouvrir l'app). Les données
+     viennent du Data Layer ([FocusStore]). ScrollView + padding généreux pour l'écran rond. -->
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/wear_bg"
+    android:fillViewport="true">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:gravity="center_horizontal"
+        android:paddingHorizontal="20dp"
+        android:paddingVertical="28dp">
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:paddingBottom="12dp"
+            android:text="@string/focus_title"
+            android:textColor="@color/wear_on_bg"
+            android:textSize="15sp"
+            android:textStyle="bold" />
+
+        <!-- Aucune tâche active : message vide (masqué quand il y en a une). -->
+        <TextView
+            android:id="@+id/empty_view"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:gravity="center"
+            android:paddingVertical="20dp"
+            android:text="@string/focus_empty"
+            android:textColor="@color/wear_on_bg_variant"
+            android:textSize="14sp"
+            android:visibility="gone" />
+
+        <!-- Tâche prioritaire : fond teinté (accent du quadrant) + verbe + titre. Teintes posées en code. -->
+        <LinearLayout
+            android:id="@+id/priority_card"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:gravity="center_vertical"
+            android:orientation="horizontal"
+            android:paddingHorizontal="16dp"
+            android:paddingVertical="14dp">
+
+            <ImageView
+                android:id="@+id/priority_icon"
+                android:layout_width="22dp"
+                android:layout_height="22dp"
+                android:contentDescription="@null"
+                android:src="@drawable/wear_do" />
+
+            <LinearLayout
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="12dp"
+                android:layout_weight="1"
+                android:orientation="vertical">
+
+                <TextView
+                    android:id="@+id/priority_verb"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:textSize="11sp"
+                    android:textStyle="bold" />
+
+                <TextView
+                    android:id="@+id/priority_title"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="2dp"
+                    android:ellipsize="end"
+                    android:maxLines="3"
+                    android:textColor="@color/wear_on_bg"
+                    android:textSize="15sp"
+                    android:textStyle="bold" />
+            </LinearLayout>
+        </LinearLayout>
+
+        <!-- Aperçu « À suivre » : libellé + lignes ajoutées en code (item_upnext). -->
+        <TextView
+            android:id="@+id/upnext_label"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="16dp"
+            android:text="@string/focus_up_next"
+            android:textColor="@color/wear_on_bg_variant"
+            android:textSize="12sp"
+            android:textStyle="bold"
+            android:visibility="gone" />
+
+        <LinearLayout
+            android:id="@+id/upnext_container"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="4dp"
+            android:orientation="vertical" />
+
+        <!-- Deux boutons ronds : ajout rapide / ouvrir l'app (sur le téléphone). -->
+        <LinearLayout
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="20dp"
+            android:gravity="center"
+            android:orientation="horizontal">
+
+            <LinearLayout
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginHorizontal="12dp"
+                android:gravity="center_horizontal"
+                android:orientation="vertical">
+
+                <ImageButton
+                    android:id="@+id/btn_add"
+                    android:layout_width="52dp"
+                    android:layout_height="52dp"
+                    android:background="@drawable/bg_circle"
+                    android:backgroundTint="@color/accent_add"
+                    android:contentDescription="@string/action_quick_add"
+                    android:padding="14dp"
+                    android:scaleType="fitCenter"
+                    android:src="@drawable/ic_add" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="6dp"
+                    android:text="@string/action_quick_add"
+                    android:textColor="@color/wear_on_bg_variant"
+                    android:textSize="11sp" />
+            </LinearLayout>
+
+            <LinearLayout
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginHorizontal="12dp"
+                android:gravity="center_horizontal"
+                android:orientation="vertical">
+
+                <ImageButton
+                    android:id="@+id/btn_open"
+                    android:layout_width="52dp"
+                    android:layout_height="52dp"
+                    android:background="@drawable/bg_circle"
+                    android:backgroundTint="@color/accent_open"
+                    android:contentDescription="@string/action_open_app"
+                    android:padding="14dp"
+                    android:scaleType="fitCenter"
+                    android:src="@drawable/ic_open_phone" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="6dp"
+                    android:text="@string/action_open_app"
+                    android:textColor="@color/wear_on_bg_variant"
+                    android:textSize="11sp" />
+            </LinearLayout>
+        </LinearLayout>
+    </LinearLayout>
+</ScrollView>

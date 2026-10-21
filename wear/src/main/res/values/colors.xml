@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Fond de l'icône adaptative — même crème que l'app téléphone. -->
+    <color name="ic_launcher_background">#FBEFE9</color>
+
+    <!-- Palette « Douce » des quadrants (miroir des constantes de KairosTileService). -->
+    <color name="quadrant_do">#E5645A</color>
+    <color name="quadrant_schedule">#4FA5A0</color>
+    <color name="quadrant_delegate">#E0A24E</color>
+    <color name="quadrant_eliminate">#9C9AA6</color>
+
+    <!-- Écran d'app « À faire en priorité ». -->
+    <color name="wear_bg">#101014</color>
+    <color name="wear_on_bg">#FFFFFF</color>
+    <color name="wear_on_bg_variant">#B0AFB6</color>
+    <!-- Surface relevée des lignes « à suivre » sur le fond sombre. -->
+    <color name="wear_surface">#1E1E24</color>
+
+    <!-- Boutons ronds : ajout rapide (terracotta de la marque) / ouvrir l'app (sarcelle). -->
+    <color name="accent_add">#E5836B</color>
+    <color name="accent_open">#4FA5A0</color>
+    <color name="btn_ripple">#33FFFFFF</color>
+</resources>

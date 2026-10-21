@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Calque monochrome (icône thématique) — repris à l'identique de l'app téléphone (:app). -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <path
+        android:fillColor="#000000"
+        android:pathData="m47.27,54.59h6.14c.98,0,1.77-.79,1.77-1.77v-16.05c0-.98-.79-1.77-1.77-1.77h-16.64c-.98,0-1.77.79-1.77,1.77v16.05c0,.98.79,1.77,1.77,1.77h10.5Z" />
+    <path
+        android:fillColor="#000000"
+        android:pathData="m56.71,54.59v6.14c0,.98.79,1.77,1.77,1.77h12.75c.98,0,1.77-.79,1.77-1.77v-23.96c0-.98-.79-1.77-1.77-1.77h-12.75c-.98,0-1.77.79-1.77,1.77v17.82Z" />
+    <path
+        android:fillColor="#000000"
+        android:pathData="m56.71,64.03h-6.14c-.98,0-1.77.79-1.77,1.77v5.43c0,.98.79,1.77,1.77,1.77h20.65c.98,0,1.77-.79,1.77-1.77v-5.43c0-.98-.79-1.77-1.77-1.77h-14.52Z" />
+    <path
+        android:fillColor="#000000"
+        android:pathData="m47.27,64.03v-6.14c0-.98-.79-1.77-1.77-1.77h-8.73c-.98,0-1.77.79-1.77,1.77v13.34c0,.98.79,1.77,1.77,1.77h8.73c.98,0,1.77-.79,1.77-1.77v-7.2Z" />
+</vector>

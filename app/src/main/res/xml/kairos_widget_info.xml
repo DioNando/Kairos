@@ -10,5 +10,6 @@
     android:widgetCategory="home_screen"
     android:description="@string/widget_description"
     android:previewImage="@drawable/ic_logo"
+    android:previewLayout="@layout/widget_preview_grid"
     android:updatePeriodMillis="0"
     android:initialLayout="@layout/widget_loading" />

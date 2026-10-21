@@ -16,6 +16,7 @@ import com.kairos.app.data.repository.PomodoroSessionStore
 import com.kairos.app.data.repository.SecureCredentialStore
 import com.kairos.app.data.repository.SettingsRepository
 import com.kairos.app.widget.KairosWidget
+import com.kairos.app.widget.KairosRowWidget
 import androidx.glance.appwidget.updateAll
 import com.kairos.app.domain.ai.DynamicNoteEnhancer
 import com.kairos.app.domain.ai.LlmNoteEnhancer
@@ -25,6 +26,8 @@ import com.kairos.app.pomodoro.PomodoroNotifications
 import com.kairos.app.pomodoro.PomodoroService
 import com.kairos.app.ui.pomodoro.PomodoroDurations
 import com.kairos.app.ui.pomodoro.PomodoroEngine
+import com.kairos.app.ui.theme.toAccentPalette
+import com.kairos.app.wear.WearSync
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -176,14 +179,32 @@ class KairosApp : Application() {
                 wasActive = state.active
             }
         }
-        // Widget écran d'accueil : rafraîchi à chaque changement de la liste des tâches.
+        // Widget écran d'accueil : rafraîchi à chaque changement de la liste des tâches **et** des réglages
+        // (les tuiles suivent la **palette de quadrants** choisie → un changement de palette doit se
+        // propager au widget, pas seulement à l'app).
         applicationScope.launch {
-            repository.tasks.collect {
+            combine(repository.tasks, settingsRepository.settings) { _, _ -> }.collect {
                 try {
                     KairosWidget().updateAll(this@KairosApp)
+                    KairosRowWidget().updateAll(this@KairosApp)
                 } catch (_: Throwable) {
                     // Widget indisponible / non posé : sans conséquence.
                 }
+            }
+        }
+        // Wear OS : pousse vers la montre les compteurs (tuile), la file « À faire en priorité »
+        // (app montre) et la palette de quadrants. Combiné sur tâches **et** réglages → un changement
+        // de palette se propage même sans modification de tâche (sinon il ne partirait jamais).
+        // NB : param de combine typé explicitement (K2 ne déduit pas un paramètre déstructuré de collect).
+        applicationScope.launch {
+            combine(repository.tasks, settingsRepository.settings) { tasks: List<Task>, settings: AppSettings ->
+                tasks to settings
+            }.collect { snapshot ->
+                val tasks = snapshot.first
+                val palette = snapshot.second.toAccentPalette()
+                runCatching { WearSync.pushCounts(this@KairosApp, tasks) }
+                runCatching { WearSync.pushFocus(this@KairosApp, tasks) }
+                runCatching { WearSync.pushPalette(this@KairosApp, palette) }
             }
         }
         // Rappels d'échéance : resynchronisés à chaque changement des tâches ou des réglages de

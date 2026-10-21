@@ -1,0 +1,6 @@
+<!-- Fond arrondi d'une ligne « à suivre » (surface légèrement relevée sur le fond sombre). -->
+<shape xmlns:android="http://schemas.android.com/apk/res/android"
+    android:shape="rectangle">
+    <solid android:color="@color/wear_surface" />
+    <corners android:radius="14dp" />
+</shape>

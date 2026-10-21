@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Tuile arrondie d'aperçu (teintée par android:backgroundTint selon le quadrant). -->
+<shape xmlns:android="http://schemas.android.com/apk/res/android"
+    android:shape="rectangle">
+    <corners android:radius="19dp" />
+    <solid android:color="#FFFFFF" />
+</shape>
