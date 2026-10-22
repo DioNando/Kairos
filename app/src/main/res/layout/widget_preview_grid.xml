@@ -8,7 +8,7 @@
     android:background="@drawable/widget_preview_bg"
     android:padding="8dp">
 
-    <!-- Rangée haute : Faire (rouge) + Déléguer (ambre). -->
+    <!-- Rangée haute : Faire (rouge) + Planifier (teal). -->
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="0dp"
@@ -34,13 +34,13 @@
             android:layout_weight="1"
             android:padding="12dp"
             android:scaleType="fitCenter"
-            android:src="@drawable/widget_delegate"
+            android:src="@drawable/widget_schedule"
             android:tint="#FFFFFF"
             android:background="@drawable/widget_preview_tile_grid"
-            android:backgroundTint="#E0A24E" />
+            android:backgroundTint="#4FA5A0" />
     </LinearLayout>
 
-    <!-- Rangée basse : Planifier (teal) + Supprimer (gris). -->
+    <!-- Rangée basse : Déléguer (ambre) + Supprimer (gris). -->
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="0dp"
@@ -54,10 +54,10 @@
             android:layout_marginEnd="6dp"
             android:padding="12dp"
             android:scaleType="fitCenter"
-            android:src="@drawable/widget_schedule"
+            android:src="@drawable/widget_delegate"
             android:tint="#FFFFFF"
             android:background="@drawable/widget_preview_tile_grid"
-            android:backgroundTint="#4FA5A0" />
+            android:backgroundTint="#E0A24E" />
 
         <ImageView
             android:layout_width="0dp"

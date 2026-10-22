@@ -34,6 +34,8 @@ class WearDataListenerService : WearableListenerService() {
                     context = this,
                     titles = map.getStringArray(KEY_TITLES),
                     quadrants = map.getIntegerArrayList(KEY_QUADRANTS),
+                    labelNames = map.getStringArray(KEY_LABEL_NAMES),
+                    labelColors = map.getStringArray(KEY_LABEL_COLORS),
                 )
                 PALETTE_PATH -> {
                     PaletteStore.save(
@@ -62,6 +64,8 @@ class WearDataListenerService : WearableListenerService() {
         private const val FOCUS_PATH = "/kairos/focus"
         private const val KEY_TITLES = "titles"
         private const val KEY_QUADRANTS = "quadrants"
+        private const val KEY_LABEL_NAMES = "labelNames"
+        private const val KEY_LABEL_COLORS = "labelColors"
 
         private const val PALETTE_PATH = "/kairos/palette"
     }

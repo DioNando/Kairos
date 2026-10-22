@@ -317,8 +317,8 @@ fun MatrixScreen(
                             verticalArrangement = Arrangement.spacedBy(12.dp),
                         ) {
                             listOf(
-                                Quadrant.DO to Quadrant.DELEGATE,
-                                Quadrant.SCHEDULE to Quadrant.ELIMINATE,
+                                Quadrant.DO to Quadrant.SCHEDULE,
+                                Quadrant.DELEGATE to Quadrant.ELIMINATE,
                             ).forEach { (left, right) ->
                                 Row(
                                     modifier = Modifier.fillMaxWidth().weight(1f),

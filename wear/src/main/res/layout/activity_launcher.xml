@@ -37,47 +37,76 @@
             android:textSize="14sp"
             android:visibility="gone" />
 
-        <!-- Tâche prioritaire : fond teinté (accent du quadrant) + verbe + titre. Teintes posées en code. -->
+        <!-- Tâche prioritaire : fond teinté (accent du quadrant). Icône du quadrant en ligne devant le
+             verbe (gain de largeur) puis titre pleine largeur + pastille d'étiquette. Teintes en code. -->
         <LinearLayout
             android:id="@+id/priority_card"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:gravity="center_vertical"
-            android:orientation="horizontal"
+            android:orientation="vertical"
             android:paddingHorizontal="16dp"
             android:paddingVertical="14dp">
 
-            <ImageView
-                android:id="@+id/priority_icon"
-                android:layout_width="22dp"
-                android:layout_height="22dp"
-                android:contentDescription="@null"
-                android:src="@drawable/wear_do" />
-
+            <!-- Ligne verbe : petite icône de quadrant (ex. éclair) + verbe (« Faire »…). -->
             <LinearLayout
-                android:layout_width="0dp"
+                android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_marginStart="12dp"
-                android:layout_weight="1"
-                android:orientation="vertical">
+                android:gravity="center_vertical"
+                android:orientation="horizontal">
+
+                <ImageView
+                    android:id="@+id/priority_icon"
+                    android:layout_width="14dp"
+                    android:layout_height="14dp"
+                    android:contentDescription="@null"
+                    android:src="@drawable/wear_do" />
 
                 <TextView
                     android:id="@+id/priority_verb"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
+                    android:layout_marginStart="6dp"
                     android:textSize="11sp"
                     android:textStyle="bold" />
+            </LinearLayout>
+
+            <TextView
+                android:id="@+id/priority_title"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="3dp"
+                android:ellipsize="end"
+                android:maxLines="3"
+                android:textColor="@color/wear_on_bg"
+                android:textSize="15sp"
+                android:textStyle="bold" />
+
+            <!-- Pastille d'étiquette (point coloré + nom tronqué), masquée si la tâche n'en a pas. -->
+            <LinearLayout
+                android:id="@+id/priority_label_row"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="5dp"
+                android:gravity="center_vertical"
+                android:orientation="horizontal"
+                android:visibility="gone">
+
+                <View
+                    android:id="@+id/priority_label_dot"
+                    android:layout_width="8dp"
+                    android:layout_height="8dp"
+                    android:background="@drawable/dot" />
 
                 <TextView
-                    android:id="@+id/priority_title"
-                    android:layout_width="match_parent"
+                    android:id="@+id/priority_label_name"
+                    android:layout_width="0dp"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="2dp"
+                    android:layout_marginStart="6dp"
+                    android:layout_weight="1"
                     android:ellipsize="end"
-                    android:maxLines="3"
-                    android:textColor="@color/wear_on_bg"
-                    android:textSize="15sp"
-                    android:textStyle="bold" />
+                    android:maxLines="1"
+                    android:textColor="@color/wear_on_bg_variant"
+                    android:textSize="11sp" />
             </LinearLayout>
         </LinearLayout>
 

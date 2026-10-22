@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Une tâche « à suivre » : puce colorée (quadrant) + titre. Inflatée par KairosLauncherActivity. -->
+<!-- Une tâche « à suivre » : icône du quadrant + titre + pastille d'étiquette éventuelle
+     (point coloré + nom tronqué). Inflatée par KairosLauncherActivity. -->
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
@@ -10,11 +11,12 @@
     android:paddingHorizontal="12dp"
     android:paddingVertical="9dp">
 
-    <View
-        android:id="@+id/dot"
-        android:layout_width="8dp"
-        android:layout_height="8dp"
-        android:background="@drawable/dot" />
+    <ImageView
+        android:id="@+id/upnext_icon"
+        android:layout_width="16dp"
+        android:layout_height="16dp"
+        android:contentDescription="@null"
+        android:src="@drawable/wear_do" />
 
     <TextView
         android:id="@+id/upnext_title"
@@ -26,4 +28,12 @@
         android:maxLines="1"
         android:textColor="@color/wear_on_bg"
         android:textSize="13sp" />
+
+    <View
+        android:id="@+id/upnext_label_dot"
+        android:layout_width="8dp"
+        android:layout_height="8dp"
+        android:layout_marginStart="8dp"
+        android:background="@drawable/dot"
+        android:visibility="gone" />
 </LinearLayout>

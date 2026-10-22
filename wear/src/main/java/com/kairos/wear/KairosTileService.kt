@@ -123,7 +123,7 @@ class KairosTileService : TileService() {
             .build()
 
     /**
-     * Grille de l'app : haut (Faire, Déléguer) puis bas (Planifier, Supprimer). Couleurs = [palette]
+     * Grille de l'app : haut (Faire, Planifier) puis bas (Déléguer, Supprimer). Couleurs = [palette]
      * (ordinal 0..3), encre déterminée par la luminance de chaque accent (lisible sur clair comme foncé).
      */
     private fun grid(counts: IntArray, palette: IntArray): LayoutElement =
@@ -136,7 +136,7 @@ class KairosTileService : TileService() {
                     .setHeight(expand())
                     .addContent(cell(IC_DO, counts[0], palette[0], inkFor(palette[0])))
                     .addContent(gap())
-                    .addContent(cell(IC_DELEGATE, counts[2], palette[2], inkFor(palette[2])))
+                    .addContent(cell(IC_SCHEDULE, counts[1], palette[1], inkFor(palette[1])))
                     .build(),
             )
             .addContent(gap())
@@ -144,7 +144,7 @@ class KairosTileService : TileService() {
                 Row.Builder()
                     .setWidth(expand())
                     .setHeight(expand())
-                    .addContent(cell(IC_SCHEDULE, counts[1], palette[1], inkFor(palette[1])))
+                    .addContent(cell(IC_DELEGATE, counts[2], palette[2], inkFor(palette[2])))
                     .addContent(gap())
                     .addContent(cell(IC_ELIMINATE, counts[3], palette[3], inkFor(palette[3])))
                     .build(),

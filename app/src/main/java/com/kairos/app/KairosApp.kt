@@ -3,6 +3,7 @@ package com.kairos.app
 import android.app.Application
 import com.kairos.app.data.local.KairosDatabase
 import com.kairos.app.data.model.AppSettings
+import com.kairos.app.data.model.Label
 import com.kairos.app.data.model.LlmProvider
 import com.kairos.app.data.model.Task
 import com.kairos.app.data.remote.GeminiConfig
@@ -211,13 +212,17 @@ class KairosApp : Application() {
         // de palette se propage même sans modification de tâche (sinon il ne partirait jamais).
         // NB : param de combine typé explicitement (K2 ne déduit pas un paramètre déstructuré de collect).
         applicationScope.launch {
-            combine(repository.tasks, settingsRepository.settings) { tasks: List<Task>, settings: AppSettings ->
-                tasks to settings
-            }.collect { snapshot ->
-                val tasks = snapshot.first
-                val palette = snapshot.second.toAccentPalette()
+            combine(
+                repository.tasks,
+                repository.labels,
+                settingsRepository.settings,
+            ) { tasks: List<Task>, labels: List<Label>, settings: AppSettings ->
+                Triple(tasks, labels, settings)
+            }.collect { (tasks, labels, settings) ->
+                val palette = settings.toAccentPalette()
+                val labelsById = labels.associateBy { it.id }
                 runCatching { WearSync.pushCounts(this@KairosApp, tasks) }
-                runCatching { WearSync.pushFocus(this@KairosApp, tasks) }
+                runCatching { WearSync.pushFocus(this@KairosApp, tasks, labelsById) }
                 runCatching { WearSync.pushPalette(this@KairosApp, palette) }
             }
         }

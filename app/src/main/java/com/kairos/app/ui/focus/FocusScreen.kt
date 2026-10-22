@@ -35,6 +35,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.kairos.app.R
 import com.kairos.app.data.model.Label
@@ -174,6 +175,7 @@ fun FocusScreen(
                         )
                         upNext.forEach { task ->
                             val v = quadrantVisual(task.quadrant)
+                            val taskLabel = task.labelId?.let { labelsById[it] }
                             Row(
                                 modifier = Modifier
                                     .fillMaxWidth()
@@ -185,13 +187,21 @@ fun FocusScreen(
                                     .padding(horizontal = 14.dp, vertical = 12.dp),
                                 verticalAlignment = Alignment.CenterVertically,
                             ) {
-                                Box(modifier = Modifier.size(8.dp).background(v.accent, CircleShape))
+                                // Icône du quadrant (comme la carte prioritaire) au lieu d'une pastille.
+                                Icon(v.icon, contentDescription = null, tint = v.accent, modifier = Modifier.size(18.dp))
                                 Spacer(Modifier.size(10.dp))
                                 Text(
                                     task.title,
                                     style = MaterialTheme.typography.bodyMedium,
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis,
                                     modifier = Modifier.weight(1f),
                                 )
+                                // Étiquette éventuelle : juste la puce colorée (pas le nom).
+                                if (taskLabel != null) {
+                                    Spacer(Modifier.size(8.dp))
+                                    Box(modifier = Modifier.size(8.dp).background(taskLabel.colorHex.toColor(), CircleShape))
+                                }
                             }
                         }
                     }

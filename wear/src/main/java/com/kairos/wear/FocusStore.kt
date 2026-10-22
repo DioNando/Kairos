@@ -15,20 +15,41 @@ object FocusStore {
     private const val KEY_COUNT = "count"
     private const val KEY_TITLE = "title_"
     private const val KEY_QUADRANT = "quadrant_"
+    private const val KEY_LABEL_NAME = "label_name_"
+    private const val KEY_LABEL_COLOR = "label_color_"
 
-    /** Une tâche de la file : son titre et son quadrant (ordinal 0..3 = DO/SCHEDULE/DELEGATE/ELIMINATE). */
-    data class Item(val title: String, val quadrant: Int)
+    /**
+     * Une tâche de la file : son titre, son quadrant (ordinal 0..3 = DO/SCHEDULE/DELEGATE/ELIMINATE)
+     * et son étiquette éventuelle ([labelName] + [labelColor] hex `#RRGGBB`, vides si aucune).
+     */
+    data class Item(
+        val title: String,
+        val quadrant: Int,
+        val labelName: String,
+        val labelColor: String,
+    )
 
     fun load(context: Context): List<Item> {
         val p = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
         val n = p.getInt(KEY_COUNT, 0)
         return (0 until n).mapNotNull { i ->
             val title = p.getString(KEY_TITLE + i, null) ?: return@mapNotNull null
-            Item(title, p.getInt(KEY_QUADRANT + i, 0))
+            Item(
+                title = title,
+                quadrant = p.getInt(KEY_QUADRANT + i, 0),
+                labelName = p.getString(KEY_LABEL_NAME + i, "").orEmpty(),
+                labelColor = p.getString(KEY_LABEL_COLOR + i, "").orEmpty(),
+            )
         }
     }
 
-    fun save(context: Context, titles: Array<String>?, quadrants: List<Int>?) {
+    fun save(
+        context: Context,
+        titles: Array<String>?,
+        quadrants: List<Int>?,
+        labelNames: Array<String>?,
+        labelColors: Array<String>?,
+    ) {
         val safeTitles = titles ?: emptyArray()
         val safeQuadrants = quadrants ?: emptyList()
         val n = minOf(safeTitles.size, safeQuadrants.size)
@@ -37,6 +58,8 @@ object FocusStore {
         for (i in 0 until n) {
             editor.putString(KEY_TITLE + i, safeTitles[i])
             editor.putInt(KEY_QUADRANT + i, safeQuadrants[i])
+            editor.putString(KEY_LABEL_NAME + i, labelNames?.getOrNull(i).orEmpty())
+            editor.putString(KEY_LABEL_COLOR + i, labelColors?.getOrNull(i).orEmpty())
         }
         editor.apply()
     }

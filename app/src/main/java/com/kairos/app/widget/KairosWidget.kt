@@ -117,15 +117,15 @@ private fun GridContent(quadrants: Map<Quadrant, WidgetQuadrant>) {
             .padding(8.dp)
             .clickable(actionStartActivity(Intent(context, MainActivity::class.java))),
     ) {
-        // Disposition de la grille de l'app : haut (Faire, Déléguer) puis bas (Planifier, Supprimer).
+        // Disposition de la grille de l'app : haut (Faire, Planifier) puis bas (Déléguer, Supprimer).
         Row(modifier = GlanceModifier.fillMaxWidth().defaultWeight()) {
             Tile(quadrants.getValue(Quadrant.DO), GlanceModifier.defaultWeight().fillMaxHeight())
             Spacer(GlanceModifier.width(6.dp))
-            Tile(quadrants.getValue(Quadrant.DELEGATE), GlanceModifier.defaultWeight().fillMaxHeight())
+            Tile(quadrants.getValue(Quadrant.SCHEDULE), GlanceModifier.defaultWeight().fillMaxHeight())
         }
         Spacer(GlanceModifier.height(6.dp))
         Row(modifier = GlanceModifier.fillMaxWidth().defaultWeight()) {
-            Tile(quadrants.getValue(Quadrant.SCHEDULE), GlanceModifier.defaultWeight().fillMaxHeight())
+            Tile(quadrants.getValue(Quadrant.DELEGATE), GlanceModifier.defaultWeight().fillMaxHeight())
             Spacer(GlanceModifier.width(6.dp))
             Tile(quadrants.getValue(Quadrant.ELIMINATE), GlanceModifier.defaultWeight().fillMaxHeight())
         }

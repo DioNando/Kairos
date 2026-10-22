@@ -94,6 +94,17 @@ class KairosLauncherActivity : Activity() {
             setColor(withAlpha(accent, 0x2E))
         }
 
+        // Pastille d'étiquette (point coloré + nom), affichée seulement si la tâche en a une.
+        val labelRow = findViewById<LinearLayout>(R.id.priority_label_row)
+        if (top.labelName.isNotBlank()) {
+            labelRow.visibility = View.VISIBLE
+            findViewById<View>(R.id.priority_label_dot).backgroundTintList =
+                ColorStateList.valueOf(parseColor(top.labelColor, accent))
+            findViewById<TextView>(R.id.priority_label_name).text = top.labelName
+        } else {
+            labelRow.visibility = View.GONE
+        }
+
         // Aperçu « À suivre » : les tâches suivantes, sans les sortir de la file.
         val upNext = items.drop(1)
         if (upNext.isEmpty()) {
@@ -104,15 +115,30 @@ class KairosLauncherActivity : Activity() {
         }
     }
 
-    /** Une ligne « à suivre » : puce colorée au quadrant + titre. */
+    /** Une ligne « à suivre » : icône du quadrant (teintée) + titre + pastille d'étiquette éventuelle. */
     private fun upNextRow(item: FocusStore.Item, palette: IntArray, parent: LinearLayout): View {
         val row = layoutInflater.inflate(R.layout.item_upnext, parent, false)
         val q = item.quadrant.coerceIn(0, 3)
-        row.findViewById<View>(R.id.dot).backgroundTintList =
-            ColorStateList.valueOf(palette[q])
+        row.findViewById<ImageView>(R.id.upnext_icon).apply {
+            setImageResource(quadrantIcon[q])
+            imageTintList = ColorStateList.valueOf(palette[q])
+        }
         row.findViewById<TextView>(R.id.upnext_title).text = item.title
+
+        // Lignes « à suivre » : juste la puce colorée de l'étiquette (pas le nom), masquée si aucune.
+        val labelDot = row.findViewById<View>(R.id.upnext_label_dot)
+        if (item.labelName.isNotBlank()) {
+            labelDot.visibility = View.VISIBLE
+            labelDot.backgroundTintList = ColorStateList.valueOf(parseColor(item.labelColor, palette[q]))
+        } else {
+            labelDot.visibility = View.GONE
+        }
         return row
     }
+
+    /** Parse une couleur hex `#RRGGBB` ; replie sur [fallback] si vide ou invalide. */
+    private fun parseColor(hex: String, fallback: Int): Int =
+        runCatching { Color.parseColor(hex) }.getOrDefault(fallback)
 
     private fun dp(value: Float): Float = value * resources.displayMetrics.density
 

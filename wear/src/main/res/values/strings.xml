@@ -7,7 +7,7 @@
     <!-- App montre : « À faire en priorité ». -->
     <string name="focus_title">À faire en priorité</string>
     <string name="focus_empty">Rien à faire pour l\'instant 🎉</string>
-    <string name="focus_up_next">À SUIVRE</string>
+    <string name="focus_up_next">À suivre</string>
     <string name="action_quick_add">Ajout rapide</string>
     <string name="action_open_app">Ouvrir l\'app</string>
 
