@@ -154,6 +154,7 @@ class MainActivity : ComponentActivity() {
                                 suggestSubtasks = { title, note -> app.noteEnhancer.suggestSubtasks(title, note) },
                                 onSetAiProvider = { scope.launch { settingsRepository.setAiProvider(it) } },
                                 onSetAiKey = { provider, key -> app.setAiKey(provider, key); aiKeysVersion++ },
+                                onTestAi = { provider -> app.testAi(provider) },
                                 onSetThemeMode = { scope.launch { settingsRepository.setThemeMode(it) } },
                                 onSetLanguage = { scope.launch { settingsRepository.setLanguage(it) } },
                                 onSetDynamicColor = { scope.launch { settingsRepository.setDynamicColor(it) } },

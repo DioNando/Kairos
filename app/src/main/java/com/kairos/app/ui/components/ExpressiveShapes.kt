@@ -21,6 +21,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
@@ -40,6 +41,36 @@ fun MorphingIconPill(
     size: Dp = 40.dp,
     iconSize: Dp = 22.dp,
     contentDescription: String? = null,
+) = MorphingPill(accent, selected, modifier, size) { tint ->
+    Icon(icon, contentDescription = contentDescription, tint = tint, modifier = Modifier.size(iconSize))
+}
+
+/** Variante **drawable** : rend la même pastille morphante à partir d'un [Painter] (icônes de
+ * quadrant partagées avec le widget / la tuile Wear). */
+@OptIn(ExperimentalMaterial3ExpressiveApi::class)
+@Composable
+fun MorphingIconPill(
+    icon: Painter,
+    accent: Color,
+    selected: Boolean,
+    modifier: Modifier = Modifier,
+    size: Dp = 40.dp,
+    iconSize: Dp = 22.dp,
+    contentDescription: String? = null,
+) = MorphingPill(accent, selected, modifier, size) { tint ->
+    Icon(icon, contentDescription = contentDescription, tint = tint, modifier = Modifier.size(iconSize))
+}
+
+/** Cœur commun des deux variantes : la pastille morphante + le fond accent ; [content] rend l'icône
+ * avec la teinte contrastée calculée (onAccent si sélectionnée, accent sinon). */
+@OptIn(ExperimentalMaterial3ExpressiveApi::class)
+@Composable
+private fun MorphingPill(
+    accent: Color,
+    selected: Boolean,
+    modifier: Modifier,
+    size: Dp,
+    content: @Composable (tint: Color) -> Unit,
 ) {
     val morph = remember { Morph(MaterialShapes.Square, MaterialShapes.Cookie9Sided) }
     val progress by animateFloatAsState(
@@ -54,12 +85,7 @@ fun MorphingIconPill(
             .background(if (selected) accent else accent.copy(alpha = 0.18f)),
         contentAlignment = Alignment.Center,
     ) {
-        Icon(
-            icon,
-            contentDescription = contentDescription,
-            tint = if (selected) onAccent(accent) else accent,
-            modifier = Modifier.size(iconSize),
-        )
+        content(if (selected) onAccent(accent) else accent)
     }
 }
 

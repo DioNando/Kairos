@@ -1,14 +1,11 @@
 package com.kairos.app.ui.components
 
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.rounded.Bolt
-import androidx.compose.material.icons.rounded.DeleteOutline
-import androidx.compose.material.icons.rounded.EventAvailable
-import androidx.compose.material.icons.rounded.Groups
+import androidx.annotation.DrawableRes
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.luminance
-import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.graphics.painter.Painter
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import com.kairos.app.R
 import com.kairos.app.data.model.Quadrant
@@ -18,7 +15,7 @@ import com.kairos.app.ui.theme.LocalAccentPalette
 data class QuadrantVisual(
     val verb: String,
     val subtitle: String,
-    val icon: ImageVector,
+    val icon: Painter,
     val accent: Color,
 )
 
@@ -38,14 +35,22 @@ fun quadrantAccent(quadrant: Quadrant): Color {
 fun quadrantVisual(quadrant: Quadrant): QuadrantVisual = QuadrantVisual(
     verb = stringResource(quadrantVerbRes(quadrant)),
     subtitle = stringResource(quadrantSubtitleRes(quadrant)),
-    icon = when (quadrant) {
-        Quadrant.DO -> Icons.Rounded.Bolt
-        Quadrant.SCHEDULE -> Icons.Rounded.EventAvailable
-        Quadrant.DELEGATE -> Icons.Rounded.Groups
-        Quadrant.ELIMINATE -> Icons.Rounded.DeleteOutline
-    },
+    icon = painterResource(quadrantIconRes(quadrant)),
     accent = quadrantAccent(quadrant),
 )
+
+/**
+ * Icône du quadrant — **exactement la même ressource que le widget et la tuile Wear** (éclair /
+ * calendrier / personne / corbeille). Source unique `drawable/widget_*` : les 3 surfaces (app,
+ * widget, montre) restent harmonisées et ne peuvent plus diverger.
+ */
+@DrawableRes
+fun quadrantIconRes(quadrant: Quadrant): Int = when (quadrant) {
+    Quadrant.DO -> R.drawable.widget_do
+    Quadrant.SCHEDULE -> R.drawable.widget_schedule
+    Quadrant.DELEGATE -> R.drawable.widget_delegate
+    Quadrant.ELIMINATE -> R.drawable.widget_eliminate
+}
 
 fun quadrantVerbRes(quadrant: Quadrant): Int = when (quadrant) {
     Quadrant.DO -> R.string.quadrant_do

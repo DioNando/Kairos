@@ -90,20 +90,34 @@ class KairosApp : Application() {
         LlmProvider.OPENROUTER -> openRouterConfig.isEnabled
     }
 
+    /** Un reformulateur par fournisseur (clé lue live via la config). Réutilisé par la chaîne et le test. */
+    private val aiEnhancers: Map<LlmProvider, LlmNoteEnhancer> by lazy {
+        val client = OkHttpClient()
+        mapOf(
+            LlmProvider.GEMINI to LlmNoteEnhancer(GeminiHttpService(geminiConfig, client)),
+            LlmProvider.OPENROUTER to LlmNoteEnhancer(OpenRouterHttpService(openRouterConfig, client)),
+        )
+    }
+
     /**
      * Reformulateur de notes : chaîne Gemini/OpenRouter résolue à chaque appel (primaire choisi en
      * tête, l'autre en repli), limitée aux fournisseurs dont la clé est saisie.
      */
     val noteEnhancer: NoteEnhancer by lazy {
-        val client = OkHttpClient()
-        val enhancers = mapOf(
-            LlmProvider.GEMINI to LlmNoteEnhancer(GeminiHttpService(geminiConfig, client)),
-            LlmProvider.OPENROUTER to LlmNoteEnhancer(OpenRouterHttpService(openRouterConfig, client)),
-        )
-        DynamicNoteEnhancer(enhancers) {
+        DynamicNoteEnhancer(aiEnhancers) {
             val primary = if (aiPrimaryProvider == AppSettings.AI_OPENROUTER) LlmProvider.OPENROUTER else LlmProvider.GEMINI
             (listOf(primary) + LlmProvider.entries.filter { it != primary }).filter { providerEnabled(it) }
         }
+    }
+
+    /**
+     * Teste la connexion d'un **fournisseur précis** (clé in-app ou repli .env) par un appel minimal.
+     * Échoue d'emblée si aucune clé n'est configurée pour ce fournisseur.
+     */
+    suspend fun testAi(provider: Int): Result<Unit> {
+        val p = if (provider == AppSettings.AI_OPENROUTER) LlmProvider.OPENROUTER else LlmProvider.GEMINI
+        if (!providerEnabled(p)) return Result.failure(IllegalStateException(getString(R.string.ai_test_no_key)))
+        return aiEnhancers.getValue(p).testConnection()
     }
 
     /** Clé API courante d'un fournisseur (pour préremplir les réglages). */

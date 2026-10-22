@@ -34,6 +34,15 @@ interface NoteEnhancer {
 
 /** Reformule via un [LlmService] unique (Gemini ou OpenRouter). */
 class LlmNoteEnhancer(private val service: LlmService) {
+    /** Vérifie que le fournisseur répond (clé valide + réseau) via un appel minimal. */
+    suspend fun testConnection(): Result<Unit> =
+        try {
+            service.generate("Réponds uniquement par : OK")
+            Result.success(Unit)
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+
     suspend fun enhance(title: String, note: String, subtasks: List<String>): Result<EnhancedTask> =
         try {
             val raw = service.generate(taskPrompt(title, note, subtasks)).trim()

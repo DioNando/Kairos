@@ -150,6 +150,11 @@
 
     <!-- Réglages -->
     <string name="settings_title">Réglages</string>
+    <!-- En-têtes de groupes (cartes Material You) -->
+    <string name="settings_group_appearance">Apparence</string>
+    <string name="settings_group_behavior">Tâches &amp; priorités</string>
+    <string name="settings_group_pomodoro">Pomodoro</string>
+    <string name="settings_group_help">Aide</string>
     <string name="settings_theme">Thème</string>
     <string name="theme_system">Système</string>
     <string name="theme_light">Clair</string>
@@ -186,6 +191,11 @@
     <string name="ai_revert">Rétablir l\'original</string>
     <string name="ai_classify">Suggérer le classement (IA)</string>
     <string name="ai_decompose">Découper (IA)</string>
+    <string name="ai_test">Tester</string>
+    <string name="ai_test_running">Test en cours…</string>
+    <string name="ai_test_ok">Connexion réussie</string>
+    <string name="ai_test_failed">Échec du test</string>
+    <string name="ai_test_no_key">Renseigne d\'abord une clé pour ce fournisseur.</string>
     <string name="cd_key_show">Afficher la clé</string>
     <string name="cd_key_hide">Masquer la clé</string>
 
