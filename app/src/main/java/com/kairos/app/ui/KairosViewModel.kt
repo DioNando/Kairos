@@ -44,9 +44,10 @@ class KairosViewModel(private val repository: KairosRepository) : ViewModel() {
     fun saveTask(task: Task, subtasks: List<Subtask>) =
         viewModelScope.launch { repository.saveTaskWithSubtasks(task, subtasks, now()) }
 
-    fun moveTo(taskId: Long, quadrant: Quadrant) = viewModelScope.launch { repository.moveTo(taskId, quadrant) }
+    fun moveTo(taskId: Long, quadrant: Quadrant, beforeId: Long? = null) =
+        viewModelScope.launch { repository.moveTo(taskId, quadrant, beforeId) }
 
-    fun reorder(taskId: Long, targetIndex: Int) = viewModelScope.launch { repository.reorder(taskId, targetIndex) }
+    fun reorder(taskId: Long, beforeId: Long?) = viewModelScope.launch { repository.reorder(taskId, beforeId) }
 
     fun setUrgent(taskId: Long, urgent: Boolean) = viewModelScope.launch { repository.setUrgent(taskId, urgent) }
 

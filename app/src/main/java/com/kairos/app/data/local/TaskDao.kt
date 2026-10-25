@@ -5,6 +5,7 @@ import androidx.room.Delete
 import androidx.room.Insert
 import androidx.room.OnConflictStrategy
 import androidx.room.Query
+import androidx.room.Transaction
 import androidx.room.Update
 import com.kairos.app.data.model.Task
 import kotlinx.coroutines.flow.Flow
@@ -36,6 +37,25 @@ interface TaskDao {
 
     @Query("UPDATE tasks SET position = :position WHERE id = :id")
     suspend fun updatePosition(id: Long, position: Int)
+
+    /**
+     * Pose une tâche dans le quadrant ([important] × [urgent]) juste **devant** [beforeId] (null ou
+     * introuvable = en fin) et renumérote densément les positions des tâches actives du quadrant.
+     * **Une seule transaction** : le Flow n'émet que l'ordre final (pas d'états intermédiaires qui
+     * font sauter la liste), et deux dépôts rapprochés ne peuvent pas s'entrelacer.
+     */
+    @Transaction
+    suspend fun placeInQuadrant(taskId: Long, important: Boolean, urgent: Boolean, beforeId: Long?) {
+        val task = getById(taskId) ?: return
+        val moved = task.copy(important = important, urgent = urgent)
+        if (moved != task) update(moved)
+        val others = activeInQuadrant(important, urgent).filter { it.id != taskId }
+        val anchor = others.indexOfFirst { it.id == beforeId }
+        val ordered = others.toMutableList().apply { add(if (anchor < 0) size else anchor, moved) }
+        ordered.forEachIndexed { index, t ->
+            if (t.position != index) updatePosition(t.id, index)
+        }
+    }
 
     /** Cumule des secondes de concentration (Pomodoro lié) sur une tâche. */
     @Query("UPDATE tasks SET focusSeconds = focusSeconds + :seconds WHERE id = :id")

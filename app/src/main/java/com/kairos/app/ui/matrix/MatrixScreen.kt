@@ -9,6 +9,7 @@ package com.kairos.app.ui.matrix
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.snap
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -32,6 +33,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -70,6 +72,8 @@ import androidx.compose.material3.SwipeToDismissBoxValue
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
@@ -88,9 +92,12 @@ import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.layout.LocalPinnableContainer
+import androidx.compose.ui.layout.PinnableContainer
 import androidx.compose.ui.layout.boundsInRoot
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.layout.positionInRoot
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
@@ -120,11 +127,21 @@ import com.kairos.app.ui.components.quadrantVisual
 import com.kairos.app.ui.components.toColor
 import com.kairos.app.ui.theme.LocalizedOverlay
 import com.kairos.app.ui.editor.QuickAddSheet
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlin.math.roundToInt
 
 /** Ordre des quadrants pour la vue en lanes (haut → bas). */
 private val LaneOrder = listOf(Quadrant.DO, Quadrant.SCHEDULE, Quadrant.DELEGATE, Quadrant.ELIMINATE)
+
+/** Espacement vertical entre deux lignes de tâche (entre aussi dans le décalage de l'aperçu de dépôt). */
+private val RowSpacing = 6.dp
+
+/** Clé de l'emplacement vide ajouté en fin de liste quand une tâche y arrive d'un autre quadrant. */
+private const val DropGapKey = "drop-gap"
+
+/** Clé de la colonne défilante des lanes dans les zones d'auto-défilement. */
+private const val LanesScrollKey = "lanes"
 
 /**
  * Écran d'accueil : la matrice. Vue **grille 2×2** ou **swim lanes** (réglable). On **glisse vers la
@@ -146,8 +163,8 @@ fun MatrixScreen(
     onOpenEditor: (Quadrant, String) -> Unit,
     onOpenTask: (Task) -> Unit,
     onComplete: (Task) -> Unit,
-    onMove: (Task, Quadrant) -> Unit,
-    onReorder: (Task, Int) -> Unit,
+    onMove: (Task, Quadrant, Long?) -> Unit,
+    onReorder: (Task, Long?) -> Unit,
     onRemove: (Task) -> Unit,
     onOpenFocus: () -> Unit,
     onOpenLabels: () -> Unit,
@@ -296,10 +313,16 @@ fun MatrixScreen(
                 }
                 Box(modifier = Modifier.fillMaxWidth().weight(1f)) {
                     if (swimLanes) {
+                        val lanesScroll = rememberScrollState()
+                        DisposableEffect(Unit) { onDispose { drag.scrollAreas.remove(LanesScrollKey) } }
                         Column(
                             modifier = Modifier
                                 .fillMaxSize()
-                                .verticalScroll(rememberScrollState())
+                                // Viewport (avant verticalScroll) inscrit pour l'auto-défilement.
+                                .onGloballyPositioned {
+                                    drag.scrollAreas[LanesScrollKey] = AutoScrollArea(it.boundsInRoot(), lanesScroll)
+                                }
+                                .verticalScroll(lanesScroll)
                                 .padding(horizontal = 12.dp, vertical = 8.dp),
                             verticalArrangement = Arrangement.spacedBy(12.dp),
                         ) {
@@ -334,6 +357,7 @@ fun MatrixScreen(
             }
 
             DragOverlay(drag = drag, labelsById = labelsById)
+            DragEffects(drag = drag)
         }
     }
 
@@ -344,6 +368,27 @@ fun MatrixScreen(
             onQuickAdd = { title, q -> onQuickAdd(title, q); quickAddQuadrant = null },
             onMoreOptions = { title, q -> quickAddQuadrant = null; onOpenEditor(q, title) },
         )
+    }
+}
+
+/**
+ * Effets du drag isolés dans leur propre composable (pour ne pas recomposer tout l'écran) :
+ * auto-défilement près des bords pendant le geste, et filet de sécurité qui lève l'aperçu figé après
+ * un dépôt si la base n'émet pas de nouvel ordre.
+ */
+@Composable
+private fun DragEffects(drag: QuadrantDragState) {
+    val density = LocalDensity.current
+    if (drag.isDragging) {
+        LaunchedEffect(Unit) {
+            with(density) { drag.autoScroll(edge = 56.dp.toPx(), maxSpeed = 1100.dp.toPx()) }
+        }
+    }
+    if (drag.isSettling) {
+        LaunchedEffect(Unit) {
+            delay(1_000)
+            drag.clearPreview()
+        }
     }
 }
 
@@ -481,8 +526,8 @@ private fun QuadrantCell(
     onAdd: () -> Unit,
     onOpenTask: (Task) -> Unit,
     onComplete: (Task) -> Unit,
-    onMove: (Task, Quadrant) -> Unit,
-    onReorder: (Task, Int) -> Unit,
+    onMove: (Task, Quadrant, Long?) -> Unit,
+    onReorder: (Task, Long?) -> Unit,
     onRemove: (Task) -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -495,7 +540,14 @@ private fun QuadrantCell(
     )
     // Publie l'ordre courant des ids pour le calcul de réordonnancement (hors composition).
     val orderIds = tasks.map { it.id }
-    SideEffect { drag.quadrantOrder[quadrant] = orderIds }
+    SideEffect {
+        drag.quadrantOrder[quadrant] = orderIds
+        drag.onOrderPublished()
+    }
+    // Aperçu du dépôt : un emplacement = hauteur de la ligne saisie + espacement entre lignes.
+    val density = LocalDensity.current
+    val slotPx = (drag.preview?.rowHeight ?: 0f) + with(density) { RowSpacing.toPx() }
+    val trailingGap = with(density) { drag.trailingGap(quadrant, orderIds).toDp() }
 
     Column(
         modifier = modifier
@@ -544,9 +596,11 @@ private fun QuadrantCell(
             TaskRow(
                 task, task.labelId?.let { labelsById[it] }, subtaskProgress[task.id], visual.accent,
                 urgencyThresholdHours, now, drag,
+                offsetY = drag.slotShift(task.id, quadrant, orderIds) * slotPx,
+                hidden = drag.isHidden(task.id, quadrant, orderIds),
                 onOpen = { onOpenTask(task) },
                 onComplete = { onComplete(task) },
-                onMove = { onMove(task, it) },
+                onMove = { target, beforeId -> onMove(task, target, beforeId) },
                 onReorder = { onReorder(task, it) },
                 onRemove = { onRemove(task) },
             )
@@ -554,11 +608,33 @@ private fun QuadrantCell(
         if (tasks.isEmpty()) {
             EmptyQuadrant(quadrant = quadrant, visual = visual, onAdd = onAdd)
         } else if (scrollableList) {
-            LazyColumn(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+            val listState = rememberLazyListState()
+            // Liste inscrite pour l'auto-défilement pendant un drag (viewport en repère racine).
+            DisposableEffect(quadrant) { onDispose { drag.scrollAreas.remove(quadrant) } }
+            LazyColumn(
+                state = listState,
+                verticalArrangement = Arrangement.spacedBy(RowSpacing),
+                modifier = Modifier.onGloballyPositioned {
+                    drag.scrollAreas[quadrant] = AutoScrollArea(it.boundsInRoot(), listState, quadrant)
+                },
+            ) {
                 // animateItem : le réordonnancement intra-quadrant (et l'ajout/retrait) glisse en
-                // douceur au lieu de sauter d'une position à l'autre.
+                // douceur au lieu de sauter d'une position à l'autre. Sauf au **dépôt** d'un drag : les
+                // lignes sont déjà visuellement à leur nouvelle place (aperçu décalé), la nouvelle mise
+                // en page doit s'appliquer telle quelle — sinon elles repartiraient de l'ancienne
+                // position, et la tâche quittant ce quadrant laisserait un fantôme en fondu.
+                val settling = drag.isSettling
                 items(tasks, key = { it.id }) { task ->
-                    Box(modifier = Modifier.animateItem()) { rowContent(task) }
+                    Box(
+                        modifier = if (settling) {
+                            Modifier
+                        } else {
+                            Modifier.animateItem()
+                        },
+                    ) { rowContent(task) }
+                }
+                if (trailingGap > 0.dp) {
+                    item(key = DropGapKey) { Spacer(Modifier.height(trailingGap)) }
                 }
             }
         } else {
@@ -566,8 +642,9 @@ private fun QuadrantCell(
             // tâche et non sa position. Sans ça, retirer une ligne fait « glisser » la suivante dans
             // la position libérée, qui hérite de l'état de swipe → carte fantôme (fond archive/coche)
             // au lieu de la vraie tâche.
-            Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+            Column(verticalArrangement = Arrangement.spacedBy(RowSpacing)) {
                 tasks.forEach { task -> key(task.id) { rowContent(task) } }
+                if (trailingGap > 0.dp) Spacer(Modifier.height(trailingGap))
             }
         }
     }
@@ -683,14 +760,24 @@ private fun TaskRow(
     urgencyThresholdHours: Int,
     now: Long,
     drag: QuadrantDragState,
+    offsetY: Float,
+    hidden: Boolean,
     onOpen: () -> Unit,
     onComplete: () -> Unit,
-    onMove: (Quadrant) -> Unit,
-    onReorder: (Int) -> Unit,
+    onMove: (Quadrant, Long?) -> Unit,
+    onReorder: (Long?) -> Unit,
     onRemove: () -> Unit,
 ) {
     val haptic = LocalHapticFeedback.current
     val scope = rememberCoroutineScope()
+    // Aperçu du dépôt : la ligne glisse pour ouvrir la place de la tâche saisie (ou refermer son
+    // trou). Coupé net au dépôt (isSettling) : la vraie mise en page prend alors le relais pile à
+    // l'endroit où la ligne est affichée.
+    val shift by animateFloatAsState(
+        targetValue = offsetY,
+        animationSpec = if (drag.isSettling) snap() else MaterialTheme.motionScheme.fastSpatialSpec(),
+        label = "drop-shift",
+    )
 
     // Swipe (API SwipeToDismissBox alpha21, pattern `onDismiss`) : droite = terminer, gauche = retirer.
     // Choix clés qui règlent les bugs successivement rencontrés :
@@ -742,7 +829,16 @@ private fun TaskRow(
         state = dismissState,
         // Clip à la forme de la ligne : le contenu qui glisse et le fond révélé restent DANS la
         // tuile (fini le débordement sous les tuiles voisines / « masqué derrière »).
-        modifier = Modifier.clip(RoundedCornerShape(12.dp)),
+        modifier = Modifier
+            // Bornes mesurées AVANT le décalage : le point d'insertion se calcule sur les positions
+            // réelles, sinon les lignes qui s'écartent déplaceraient la cible (oscillation).
+            .onGloballyPositioned { drag.itemBounds[task.id] = it.boundsInRoot() }
+            .graphicsLayer {
+                translationY = shift
+                // Ligne saisie masquée : l'overlay la représente, son emplacement reste vide.
+                alpha = if (hidden) 0f else 1f
+            }
+            .clip(RoundedCornerShape(12.dp)),
         onDismiss = onDismiss,
         backgroundContent = { SwipeBackground(dismissState.dismissDirection, accent) },
     ) {
@@ -801,14 +897,35 @@ private fun TaskRowContent(
     drag: QuadrantDragState,
     onOpen: () -> Unit,
     onComplete: () -> Unit,
-    onMove: (Quadrant) -> Unit,
-    onReorder: (Int) -> Unit,
+    onMove: (Quadrant, Long?) -> Unit,
+    onReorder: (Long?) -> Unit,
     onRemove: () -> Unit,
 ) {
     val haptic = LocalHapticFeedback.current
     var menuOpen by remember { mutableStateOf(false) }
     var origin by remember { mutableStateOf(Offset.Zero) }
-    val beingDragged = drag.dragged?.id == task.id
+    var rowHeight by remember { mutableStateOf(0f) }
+    // Le pointerInput est keyé sur l'id seul (pour ne pas couper un geste en cours) : on lit la
+    // tâche et les callbacks via rememberUpdatedState pour ne jamais agir sur une version périmée.
+    val currentTask by rememberUpdatedState(task)
+    val currentOnMove by rememberUpdatedState(onMove)
+    val currentOnReorder by rememberUpdatedState(onReorder)
+    // Épinglage pendant le drag : dans une LazyColumn, l'auto-défilement peut faire sortir la ligne
+    // saisie de l'écran ; épinglée, elle reste composée et son geste n'est pas annulé.
+    val pinnable by rememberUpdatedState(LocalPinnableContainer.current)
+    var pinHandle by remember { mutableStateOf<PinnableContainer.PinnedHandle?>(null) }
+    val unpin = {
+        pinHandle?.release()
+        pinHandle = null
+    }
+    // Ligne sortie de la composition (défilement, filtre, retrait) : on retire ses bornes, sinon
+    // son rectangle périmé fausserait le point d'insertion.
+    DisposableEffect(task.id) {
+        onDispose {
+            drag.itemBounds.remove(task.id)
+            unpin()
+        }
+    }
     val status = dueStatus(task.dueAt, now, urgencyThresholdHours, task.isCompleted)
 
     // Profondeur tonale : ligne = surfaceContainerHigh ; pulsation d'accent si échéance proche.
@@ -833,9 +950,8 @@ private fun TaskRowContent(
             .fillMaxWidth()
             .onGloballyPositioned {
                 origin = it.positionInRoot()
-                drag.itemBounds[task.id] = it.boundsInRoot()
+                rowHeight = it.size.height.toFloat()
             }
-            .graphicsLayer { alpha = if (beingDragged) 0.3f else 1f }
             // Clip AVANT le clickable : le ripple/halo du long-press épouse les coins arrondis
             // (fini le carré d'ombre qui dénotait) et la ligne glisse proprement au-dessus du fond.
             .clip(RoundedCornerShape(12.dp))
@@ -844,27 +960,38 @@ private fun TaskRowContent(
             .pointerInput(task.id) {
                 detectDragGesturesAfterLongPress(
                     onDragStart = { touch ->
-                        haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-                        drag.start(task, origin + touch)
+                        if (drag.start(currentTask, origin + touch, rowHeight)) {
+                            haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                            pinHandle = pinnable?.pin()
+                        }
                     },
-                    onDrag = { change, amount ->
+                    onDrag = { change, _ ->
                         change.consume()
-                        drag.move(amount)
+                        // Position absolue (origine courante de la ligne + doigt en local) : reste
+                        // juste même si la ligne a bougé sous le doigt pendant l'auto-défilement.
+                        // Petit retour haptique à chaque changement de quadrant survolé.
+                        if (drag.moveTo(task.id, origin + change.position)) {
+                            haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                        }
                     },
                     onDragEnd = {
-                        when (val result = drag.end()) {
+                        unpin()
+                        when (val result = drag.end(task.id)) {
                             is DragResult.Move -> {
                                 haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
-                                onMove(result.target)
+                                currentOnMove(result.target, result.beforeId)
                             }
                             is DragResult.Reorder -> {
                                 haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
-                                onReorder(result.targetIndex)
+                                currentOnReorder(result.beforeId)
                             }
                             null -> Unit
                         }
                     },
-                    onDragCancel = { drag.cancel() },
+                    onDragCancel = {
+                        unpin()
+                        drag.cancel(task.id)
+                    },
                 )
             }
             .padding(horizontal = 8.dp, vertical = 6.dp),
@@ -967,7 +1094,7 @@ private fun TaskRowContent(
                         onClick = {
                             menuOpen = false
                             haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
-                            onMove(target)
+                            onMove(target, null)
                         },
                     )
                 }

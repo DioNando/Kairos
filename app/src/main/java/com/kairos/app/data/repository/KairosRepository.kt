@@ -45,27 +45,23 @@ class KairosRepository(
         return id
     }
 
-    /** Déplace une tâche dans un quadrant (menu accessible « Déplacer vers… » ou glisser). */
-    suspend fun moveTo(taskId: Long, quadrant: Quadrant) {
+    /**
+     * Déplace une tâche dans un quadrant, devant [beforeId] (glisser) ou en fin (null : menu
+     * accessible « Déplacer vers… »).
+     */
+    suspend fun moveTo(taskId: Long, quadrant: Quadrant, beforeId: Long? = null) {
         val task = taskDao.getById(taskId) ?: return
         if (task.important == quadrant.important && task.urgent == quadrant.urgent) return
-        val position = taskDao.maxPosition(quadrant.important, quadrant.urgent) + 1
-        taskDao.update(task.copy(important = quadrant.important, urgent = quadrant.urgent, position = position))
+        taskDao.placeInQuadrant(taskId, quadrant.important, quadrant.urgent, beforeId)
     }
 
     /**
-     * Réordonne une tâche **dans son propre quadrant** : l'insère à [targetIndex] parmi les tâches
-     * actives du quadrant et renumérote les positions de façon dense.
+     * Réordonne une tâche **dans son propre quadrant** : l'insère devant [beforeId] (null = en fin)
+     * parmi les tâches actives du quadrant et renumérote les positions de façon dense.
      */
-    suspend fun reorder(taskId: Long, targetIndex: Int) {
+    suspend fun reorder(taskId: Long, beforeId: Long?) {
         val task = taskDao.getById(taskId) ?: return
-        val active = taskDao.activeInQuadrant(task.important, task.urgent)
-        val without = active.filter { it.id != taskId }
-        val clamped = targetIndex.coerceIn(0, without.size)
-        val ordered = without.toMutableList().apply { add(clamped, task) }
-        ordered.forEachIndexed { index, t ->
-            if (t.position != index) taskDao.updatePosition(t.id, index)
-        }
+        taskDao.placeInQuadrant(taskId, task.important, task.urgent, beforeId)
     }
 
     /** Bascule urgent/important (accepter la suggestion d'échéance = passer urgent = true). */
