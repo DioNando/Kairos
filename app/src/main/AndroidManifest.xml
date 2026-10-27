@@ -78,6 +78,30 @@
                 android:resource="@xml/kairos_widget_row_info" />
         </receiver>
 
+        <!-- Widget écran d'accueil : « À faire en priorité » (Glance), avec ✓ pour terminer. -->
+        <receiver
+            android:name=".widget.KairosFocusWidgetReceiver"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/kairos_widget_focus_info" />
+        </receiver>
+
+        <!-- Widget écran d'accueil : la tâche prioritaire seule, version fine 2×1 (Glance). -->
+        <receiver
+            android:name=".widget.KairosFocusCompactWidgetReceiver"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/kairos_widget_focus_compact_info" />
+        </receiver>
+
         <!-- Actions envoyées par la montre (terminer une tâche, piloter le Pomodoro). -->
         <service
             android:name=".wear.WearActionService"

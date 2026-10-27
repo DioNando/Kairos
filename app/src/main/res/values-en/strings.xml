@@ -258,7 +258,7 @@
     <string name="guide_daily_remind_t">Due-date reminders</string>
     <string name="guide_daily_remind_b">A task with a due date fires a notification as the time approaches (lead time adjustable in Settings → Reminders). Tap the notification to open the task.</string>
     <string name="guide_daily_widget_t">Home-screen widget</string>
-    <string name="guide_daily_widget_b">Add the Kairós widget to your home screen to see the task count per quadrant at a glance. Tap it to open the app.</string>
+    <string name="guide_daily_widget_b">Four home screen widgets: the matrix (tasks per quadrant, full size or slim) and “Top priority” (full, or slim with just the task of the moment), which shows the task of the moment and what\'s next — ✓ completes it without opening the app, a tap opens it.</string>
     <string name="guide_daily_archive_t">Archive</string>
     <string name="guide_daily_archive_b">Every task that leaves the board is kept here, tagged “Done” or “Removed”. It is the only place to delete for good: restore a task, delete it permanently, clear all, or enable auto-purge after N days.</string>
 
@@ -451,4 +451,15 @@
     <string name="guide_wear_today_b">Today\'s scheduled slots, then the 4 quadrants: tap one to browse its tasks (arrows, or swipe left for the next one).</string>
     <string name="guide_wear_tiles_t">Tiles</string>
     <string name="guide_wear_tiles_b">Two tiles to add: the matrix (tasks per quadrant) and “Next slot”, which moves on to the next slot by itself.</string>
+
+    <!-- Widget « À faire en priorité » -->
+    <string name="widget_focus_title">Top priority</string>
+    <string name="widget_focus_empty">Nothing to do right now 🎉</string>
+    <string name="widget_up_next">Up next</string>
+    <string name="widget_focus_description">Kairós: the task to do now and what\'s next, completed in one tap.</string>
+    <string name="widget_focus_compact_description">Kairós (slim): your top task, completed in one tap.</string>
+    <string name="widget_focus_compact_empty">Nothing to do 🎉</string>
+    <string name="widget_preview_task_1">Hand in the report</string>
+    <string name="widget_preview_task_2">Prepare for the exam</string>
+    <string name="widget_preview_task_3">Book a taxi</string>
 </resources>

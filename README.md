@@ -61,6 +61,10 @@ Les déplacer, c'est reclasser la tâche.
   sur la notification **ouvre la tâche**. Resynchronisés automatiquement à chaque changement.
 - **Widget d'écran d'accueil** (Glance) : matrice 2×2 avec le **nombre de tâches par quadrant**
   (icônes, indépendant de la langue), rafraîchi automatiquement ; un appui ouvre l'app.
+- **Widget « À faire en priorité »** (Glance, 4×2 redimensionnable) : la tâche du moment (carte
+  teintée par son quadrant) et « À suivre », même classement que le mode Focus ; un **✓ termine** la
+  tâche sans ouvrir l'app, un appui l'ouvre dans l'éditeur, l'en-tête ouvre le mode Focus. Variante
+  **fine 2×1** : la seule tâche prioritaire, sur la couleur de son quadrant, avec son ✓.
 - **Mode Focus « Et maintenant ? »** : sort **LA** tâche prioritaire, plus un aperçu « À suivre ».
   Score **pondérable** (Réglages : importance ↔ échéance), partagé avec le tri « Priorité » et la montre.
 - **Étiquettes** transversales (catégories) avec couleur (20 teintes), indépendantes des quadrants,
@@ -203,7 +207,8 @@ espace à idées pour faire mûrir l'app.*
   dans la sauvegarde._
 
 ### Intégrations & plateforme
-- [x] **Widget** (Glance) : compteurs par quadrant (icônes). _À venir : tâche du moment, bouton Pomodoro._
+- [x] **Widget** (Glance) : compteurs par quadrant (icônes) et **« À faire en priorité »** (tâche du
+  moment + à suivre, ✓ pour terminer). _À venir : bouton Pomodoro._
 - [ ] **Tuiles Quick Settings** et **App Shortcuts** (ajout rapide, démarrer un Pomodoro).
 - [ ] **Raccourci d'ajout** depuis le partage Android (« Partager vers Kairós »).
 - [ ] **Saisie vocale** et **Assistant / App Actions** (« ajoute … à Faire »).

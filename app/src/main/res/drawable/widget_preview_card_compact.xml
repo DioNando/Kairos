@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Carte de l'aperçu 2×1 (rayon 18 dp = 26 − marge 8, concentrique au fond ; teintée par quadrant). -->
+<shape xmlns:android="http://schemas.android.com/apk/res/android"
+    android:shape="rectangle">
+    <corners android:radius="18dp" />
+    <solid android:color="#FFFFFF" />
+</shape>

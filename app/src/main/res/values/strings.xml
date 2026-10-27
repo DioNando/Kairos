@@ -258,7 +258,7 @@
     <string name="guide_daily_remind_t">Rappels d\'échéance</string>
     <string name="guide_daily_remind_b">Une tâche avec une échéance déclenche une notification à l\'approche du moment (délai d\'anticipation réglable dans Réglages → Rappels). Touche la notification pour ouvrir la tâche.</string>
     <string name="guide_daily_widget_t">Widget d\'accueil</string>
-    <string name="guide_daily_widget_b">Ajoute le widget Kairós à ton écran d\'accueil pour voir d\'un coup d\'œil le nombre de tâches par quadrant. Un appui ouvre l\'app.</string>
+    <string name="guide_daily_widget_b">Quatre widgets à poser sur l\'écran d\'accueil : la matrice (nombre de tâches par quadrant, en grand ou en version fine) et « À faire en priorité » (complet, ou fin avec la seule tâche du moment), qui affiche la tâche du moment et la suite — le ✓ la termine sans ouvrir l\'app, un appui l\'ouvre.</string>
     <string name="guide_daily_archive_t">Archive</string>
     <string name="guide_daily_archive_b">Toutes les tâches sorties du board sont rangées ici, avec un badge « Terminée » ou « Retirée ». C\'est le seul endroit où supprimer définitivement : restaure une tâche, supprime-la pour de bon, vide tout, ou active une purge automatique après N jours.</string>
 
@@ -451,4 +451,15 @@
     <string name="guide_wear_today_b">Les créneaux planifiés du jour, puis les 4 quadrants : touche-en un pour parcourir ses tâches (flèches ou glisser vers la gauche pour passer au suivant).</string>
     <string name="guide_wear_tiles_t">Tuiles</string>
     <string name="guide_wear_tiles_b">Deux tuiles à ajouter : la matrice (nombre de tâches par quadrant) et « Prochain créneau », qui passe d\'elle-même au créneau suivant.</string>
+
+    <!-- Widget « À faire en priorité » -->
+    <string name="widget_focus_title">À faire en priorité</string>
+    <string name="widget_focus_empty">Rien à faire pour l\'instant 🎉</string>
+    <string name="widget_up_next">À suivre</string>
+    <string name="widget_focus_description">Kairós : la tâche à faire maintenant et la suite, à terminer d\'un tap.</string>
+    <string name="widget_focus_compact_description">Kairós (fin) : la tâche prioritaire, à terminer d\'un tap.</string>
+    <string name="widget_focus_compact_empty">Rien à faire 🎉</string>
+    <string name="widget_preview_task_1">Rendre le dossier</string>
+    <string name="widget_preview_task_2">Préparer l\'examen</string>
+    <string name="widget_preview_task_3">Réserver un taxi</string>
 </resources>

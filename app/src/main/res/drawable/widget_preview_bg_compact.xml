@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Fond de l'aperçu du widget 2×1 « Tâche prioritaire » (rayon 26 dp, = widget réel). -->
+<shape xmlns:android="http://schemas.android.com/apk/res/android"
+    android:shape="rectangle">
+    <corners android:radius="26dp" />
+    <solid android:color="@color/widget_bg" />
+</shape>

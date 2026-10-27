@@ -18,6 +18,8 @@ import com.kairos.app.data.repository.KairosRepository
 import com.kairos.app.data.repository.PomodoroSessionStore
 import com.kairos.app.data.repository.SecureCredentialStore
 import com.kairos.app.data.repository.SettingsRepository
+import com.kairos.app.widget.KairosFocusCompactWidget
+import com.kairos.app.widget.KairosFocusWidget
 import com.kairos.app.widget.KairosWidget
 import com.kairos.app.widget.KairosRowWidget
 import androidx.glance.appwidget.updateAll
@@ -216,6 +218,8 @@ class KairosApp : Application() {
                 try {
                     KairosWidget().updateAll(this@KairosApp)
                     KairosRowWidget().updateAll(this@KairosApp)
+                    KairosFocusWidget().updateAll(this@KairosApp)
+                    KairosFocusCompactWidget().updateAll(this@KairosApp)
                 } catch (_: Throwable) {
                     // Widget indisponible / non posé : sans conséquence.
                 }
