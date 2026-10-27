@@ -43,7 +43,10 @@ import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
+import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.IconButtonDefaults
+import androidx.compose.material3.LoadingIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
@@ -131,7 +134,7 @@ private class PlanningDrag {
  * (appui long), on déplace un créneau de la même façon, on le renvoie au bac pour le déplanifier. Un
  * tap sur une tâche du bac la pose sur le **prochain créneau libre** (chemin accessible).
  */
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 fun PlanningScreen(
     tasks: List<Task>,
@@ -151,8 +154,11 @@ fun PlanningScreen(
     val dayEnd = day.plusDays(1).atStartOfDay(zone).toInstant().toEpochMilli()
     val isToday = day == LocalDate.now(zone)
 
+    var loadingBusy by remember { mutableStateOf(false) }
     val busy by produceState(initialValue = emptyList<BusySlot>(), dayStart, calendarConfigured) {
+        loadingBusy = calendarConfigured
         value = runCatching { loadBusy(dayStart, dayEnd) }.getOrDefault(emptyList())
+        loadingBusy = false
     }
     val timedBusy = remember(busy) { busy.filter { !it.allDay } }
     val allDayBusy = remember(busy) { busy.filter { it.allDay } }
@@ -260,13 +266,24 @@ fun PlanningScreen(
                     }
                 },
                 actions = {
-                    IconButton(onClick = { epochDay-- }) {
+                    // Lecture des agendas en cours : indicateur M3 Expressive (forme qui morphe).
+                    if (loadingBusy) {
+                        LoadingIndicator(
+                            modifier = Modifier.size(24.dp),
+                            color = MaterialTheme.colorScheme.primary,
+                        )
+                    }
+                    IconButton(onClick = { epochDay-- }, shapes = IconButtonDefaults.shapes()) {
                         Icon(Icons.AutoMirrored.Rounded.KeyboardArrowLeft, contentDescription = stringResource(R.string.cd_previous_day))
                     }
-                    IconButton(onClick = { epochDay = LocalDate.now(zone).toEpochDay() }, enabled = !isToday) {
+                    IconButton(
+                        onClick = { epochDay = LocalDate.now(zone).toEpochDay() },
+                        enabled = !isToday,
+                        shapes = IconButtonDefaults.shapes(),
+                    ) {
                         Icon(Icons.Rounded.Today, contentDescription = stringResource(R.string.cd_today))
                     }
-                    IconButton(onClick = { epochDay++ }) {
+                    IconButton(onClick = { epochDay++ }, shapes = IconButtonDefaults.shapes()) {
                         Icon(Icons.AutoMirrored.Rounded.KeyboardArrowRight, contentDescription = stringResource(R.string.cd_next_day))
                     }
                 },
@@ -464,7 +481,12 @@ fun PlanningScreen(
                 }
             }
 
-            // Carte qui suit le doigt pendant un drag.
+            // Carte qui suit le doigt pendant un drag ; elle « se soulève » au ressort à la saisie.
+            val dragLift by androidx.compose.animation.core.animateFloatAsState(
+                if (drag.task != null) 1.06f else 1f,
+                MaterialTheme.motionScheme.fastSpatialSpec(),
+                label = "drag-lift",
+            )
             drag.task?.let { task ->
                 val accent = quadrantVisual(task.quadrant).accent
                 Surface(
@@ -477,7 +499,7 @@ fun PlanningScreen(
                             val local = drag.pointer - rootOffset
                             IntOffset((local.x - 60.dp.toPx()).roundToInt(), (local.y - 20.dp.toPx()).roundToInt())
                         }
-                        .graphicsLayer { scaleX = 1.04f; scaleY = 1.04f },
+                        .graphicsLayer { scaleX = dragLift; scaleY = dragLift },
                 ) {
                     Text(
                         task.title,
@@ -651,15 +673,26 @@ private fun TaskBlock(
     val content = onAccent(accent)
     val startMin = (task.blockStart!! - dayStart) / MILLIS_PER_MINUTE
     val width = laneWidth / lane.lanes
+    // Mouvement M3 Expressive : un créneau déplacé ou redimensionné glisse (et rebondit) jusqu'à sa
+    // nouvelle place au lieu de sauter ; le décalage latéral (chevauchements) suit le même ressort.
+    val spatial = MaterialTheme.motionScheme.defaultSpatialSpec<androidx.compose.ui.unit.Dp>()
+    val y by androidx.compose.animation.core.animateDpAsState(HourHeight * (startMin / 60f), spatial, label = "block-y")
+    val h by androidx.compose.animation.core.animateDpAsState(
+        HourHeight * (task.blockDuration / 60f) - 2.dp,
+        spatial,
+        label = "block-h",
+    )
+    val x by androidx.compose.animation.core.animateDpAsState(Gutter + width * lane.lane, spatial, label = "block-x")
+    val w by androidx.compose.animation.core.animateDpAsState(width - 2.dp, spatial, label = "block-w")
     var menuOpen by remember { mutableStateOf(false) }
     var origin by remember { mutableStateOf(Offset.Zero) }
     val callbacks by rememberUpdatedState(listOf(onDragStart, onDrag))
     val endCallbacks by rememberUpdatedState(onDragEnd to onDragCancel)
     Box(
         modifier = Modifier
-            .offset(x = Gutter + width * lane.lane, y = HourHeight * (startMin / 60f))
-            .width(width - 2.dp)
-            .height(HourHeight * (task.blockDuration / 60f) - 2.dp)
+            .offset(x = x, y = y)
+            .width(w)
+            .height(h)
             .alpha(if (dragging) 0.35f else 1f)
             .onGloballyPositioned { origin = it.positionInRoot() }
             .clip(RoundedCornerShape(10.dp))
@@ -762,9 +795,16 @@ private fun TrayTask(
     var origin by remember { mutableStateOf(Offset.Zero) }
     val callbacks by rememberUpdatedState(listOf(onDragStart, onDrag))
     val endCallbacks by rememberUpdatedState(onDragEnd to onDragCancel)
+    // La puce saisie se tasse (ressort) pendant qu'elle est glissée sur la frise.
+    val scale by androidx.compose.animation.core.animateFloatAsState(
+        if (dragging) 0.92f else 1f,
+        MaterialTheme.motionScheme.fastSpatialSpec(),
+        label = "tray-scale",
+    )
     Row(
         modifier = Modifier
             .widthIn(max = 200.dp)
+            .graphicsLayer { scaleX = scale; scaleY = scale }
             .alpha(if (dragging) 0.35f else 1f)
             .onGloballyPositioned { origin = it.positionInRoot() }
             .clip(CircleShape)

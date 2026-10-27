@@ -58,7 +58,7 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.LinearProgressIndicator
+import androidx.compose.material3.LinearWavyProgressIndicator
 import androidx.compose.material3.LoadingIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
@@ -635,10 +635,20 @@ fun TaskEditorScreen(
                         }
                     }
                     if (filled.isNotEmpty()) {
-                        LinearProgressIndicator(
-                            progress = { filled.count { it.done }.toFloat() / filled.size },
+                        // Barre ondulée M3 Expressive (comme le bandeau Pomodoro), progression animée
+                        // au ressort quand on coche une sous-tâche.
+                        val target = filled.count { it.done }.toFloat() / filled.size
+                        val progress by androidx.compose.animation.core.animateFloatAsState(
+                            targetValue = target,
+                            animationSpec = MaterialTheme.motionScheme.defaultSpatialSpec(),
+                            label = "subtask-progress",
+                        )
+                        LinearWavyProgressIndicator(
+                            progress = { progress },
                             color = visual.accent,
                             trackColor = visual.accent.copy(alpha = 0.18f),
+                            amplitude = { 1f },
+                            wavelength = 26.dp,
                             modifier = Modifier.fillMaxWidth(),
                         )
                     }
@@ -813,6 +823,9 @@ fun TaskEditorScreen(
     }
 }
 
+/** Marges des options du menu ⋮ d'une sous-tâche : un peu plus d'air à droite du texte. */
+private val SubtaskMenuPadding = PaddingValues(start = 12.dp, end = 24.dp)
+
 /** Insère une case à cocher vide au curseur : en début de ligne si elle est vide, sinon à la ligne. */
 private fun TextFieldValue.withCheckboxAtCursor(): TextFieldValue {
     val cursor = selection.start.coerceIn(0, text.length)
@@ -950,7 +963,11 @@ private fun SubtaskRow(
             }
         }
         Box {
-            IconButton(onClick = { menuOpen = true }, modifier = Modifier.size(36.dp)) {
+            IconButton(
+                onClick = { menuOpen = true },
+                shapes = androidx.compose.material3.IconButtonDefaults.shapes(),
+                modifier = Modifier.size(36.dp),
+            ) {
                 Icon(
                     Icons.Rounded.MoreVert,
                     contentDescription = stringResource(R.string.cd_subtask_menu),
@@ -960,24 +977,28 @@ private fun SubtaskRow(
             DropdownMenu(expanded = menuOpen, onDismissRequest = { menuOpen = false }) {
                 LocalizedOverlay {
                     DropdownMenuItem(
+                        contentPadding = SubtaskMenuPadding,
                         text = { Text(stringResource(R.string.subtask_due)) },
                         leadingIcon = { Icon(Icons.Rounded.Event, contentDescription = null) },
                         onClick = { menuOpen = false; onPickDue() },
                     )
                     if (field.dueAt != null) {
                         DropdownMenuItem(
+                            contentPadding = SubtaskMenuPadding,
                             text = { Text(stringResource(R.string.due_clear)) },
                             leadingIcon = { Icon(Icons.Rounded.Close, contentDescription = null) },
                             onClick = { menuOpen = false; field.dueAt = null },
                         )
                     }
                     DropdownMenuItem(
+                        contentPadding = SubtaskMenuPadding,
                         text = { Text(stringResource(R.string.subtask_promote)) },
                         leadingIcon = { Icon(Icons.Rounded.Upgrade, contentDescription = null) },
                         enabled = field.title.isNotBlank(),
                         onClick = { menuOpen = false; onPromote() },
                     )
                     DropdownMenuItem(
+                        contentPadding = SubtaskMenuPadding,
                         text = { Text(stringResource(R.string.cd_remove_subtask)) },
                         leadingIcon = { Icon(Icons.Rounded.Close, contentDescription = null) },
                         onClick = { menuOpen = false; onRemove() },

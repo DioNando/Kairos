@@ -30,7 +30,10 @@ import androidx.compose.material.icons.outlined.PushPin
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
+import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.IconButtonDefaults
+import androidx.compose.material3.IconToggleButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Switch
@@ -53,6 +56,7 @@ import com.kairos.app.data.model.Label
 import com.kairos.app.data.model.SavedFilter
 import com.kairos.app.ui.components.KairosFieldShape
 import com.kairos.app.ui.components.KairosFilterChip
+import com.kairos.app.ui.components.MorphingColorSwatch
 import com.kairos.app.ui.components.kairosFieldColors
 import com.kairos.app.ui.components.onAccent
 import com.kairos.app.ui.components.toColor
@@ -236,6 +240,7 @@ private fun SectionHeader(title: String) {
     )
 }
 
+@OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 private fun LabelRow(label: Label, onEdit: () -> Unit, onTogglePin: () -> Unit, onDelete: () -> Unit) {
     Row(
@@ -253,14 +258,18 @@ private fun LabelRow(label: Label, onEdit: () -> Unit, onTogglePin: () -> Unit, 
         )
         Spacer(Modifier.size(12.dp))
         Text(label.name, style = MaterialTheme.typography.bodyLarge, modifier = Modifier.weight(1f))
-        IconButton(onClick = onTogglePin) {
+        // Bascule M3 Expressive : la forme du bouton morphe entre épinglé et non épinglé.
+        IconToggleButton(
+            checked = label.pinned,
+            onCheckedChange = { onTogglePin() },
+            shapes = IconButtonDefaults.toggleableShapes(),
+        ) {
             Icon(
                 if (label.pinned) Icons.Rounded.PushPin else Icons.Outlined.PushPin,
                 contentDescription = stringResource(if (label.pinned) R.string.cd_unpin_label else R.string.cd_pin_label),
-                tint = if (label.pinned) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
             )
         }
-        IconButton(onClick = onDelete) {
+        IconButton(onClick = onDelete, shapes = IconButtonDefaults.shapes()) {
             Icon(Icons.Rounded.Delete, contentDescription = stringResource(R.string.cd_delete_label, label.name))
         }
     }
@@ -341,26 +350,14 @@ private fun LabelEditorDialog(
                     horizontalArrangement = Arrangement.spacedBy(8.dp),
                     verticalArrangement = Arrangement.spacedBy(8.dp),
                 ) {
+                    // Pastilles morphantes (cercle → « cookie » + coche) : la sélection se voit à la forme.
                     LabelColors.forEach { hex ->
-                        val selected = hex == colorHex
-                        val swatch = hex.toColor()
-                        Box(
-                            modifier = Modifier
-                                .size(36.dp)
-                                .background(swatch, CircleShape)
-                                .clickable { colorHex = hex },
-                            contentAlignment = Alignment.Center,
-                        ) {
-                            // Sélection matérialisée par une coche (pas de bordure — style tonal).
-                            if (selected) {
-                                Icon(
-                                    Icons.Rounded.Check,
-                                    contentDescription = null,
-                                    tint = onAccent(swatch),
-                                    modifier = Modifier.size(18.dp),
-                                )
-                            }
-                        }
+                        MorphingColorSwatch(
+                            color = hex.toColor(),
+                            selected = hex == colorHex,
+                            onClick = { colorHex = hex },
+                            size = 36.dp,
+                        )
                     }
                 }
             }

@@ -68,8 +68,17 @@ import androidx.compose.material.icons.rounded.Timer
 import androidx.compose.material3.BottomAppBar
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+
 import androidx.compose.material3.DropdownMenu
+
 import androidx.compose.material3.DropdownMenuItem
+
+import androidx.compose.material3.FilledIconButton
+import androidx.compose.material3.FloatingToolbarDefaults
+import androidx.compose.material3.HorizontalFloatingToolbar
+import androidx.compose.material3.IconButtonDefaults
+
+import androidx.compose.ui.zIndex
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
@@ -135,6 +144,7 @@ import com.kairos.app.ui.pomodoro.PomodoroState
 import com.kairos.app.ui.components.DueStatus
 import com.kairos.app.ui.components.KairosFieldShape
 import com.kairos.app.ui.components.KairosFilterChip
+import com.kairos.app.ui.components.MorphingCheckbox
 import com.kairos.app.ui.components.MorphingIconPill
 import com.kairos.app.ui.components.QuadrantVisual
 import com.kairos.app.ui.components.dueStatus
@@ -240,13 +250,8 @@ fun MatrixScreen(
           if (selecting) {
             SelectionTopBar(
                 count = selection.size,
-                labels = labels,
                 onClear = { selection = emptySet() },
                 onSelectAll = { selection = filtered.map { it.id }.toSet() },
-                onMove = { onMoveMany(selection, it); selection = emptySet() },
-                onLabel = { onLabelMany(selection, it); selection = emptySet() },
-                onComplete = { onCompleteMany(selection); selection = emptySet() },
-                onRemove = { onRemoveMany(selection); selection = emptySet() },
             )
           } else {
             TopAppBar(
@@ -295,6 +300,8 @@ fun MatrixScreen(
           }
         },
         bottomBar = {
+          // En mode sélection, la barre basse laisse place à la barre d'outils flottante (actions en lot).
+          if (!selecting) {
             BottomAppBar(
                 actions = {
                     IconButton(onClick = onOpenFocus) {
@@ -319,6 +326,7 @@ fun MatrixScreen(
                     }
                 },
             )
+          }
         },
     ) { padding ->
         Box(
@@ -447,6 +455,29 @@ fun MatrixScreen(
 
             DragOverlay(drag = drag, labelsById = labelsById)
             DragEffects(drag = drag)
+
+            // Actions en lot : barre d'outils flottante M3 Expressive, qui surgit avec un ressort.
+            AnimatedVisibility(
+                visible = selecting,
+                enter = androidx.compose.animation.slideInVertically(
+                    MaterialTheme.motionScheme.defaultSpatialSpec(),
+                ) { it } + androidx.compose.animation.fadeIn(MaterialTheme.motionScheme.defaultEffectsSpec()),
+                exit = androidx.compose.animation.slideOutVertically(
+                    MaterialTheme.motionScheme.fastSpatialSpec(),
+                ) { it } + androidx.compose.animation.fadeOut(MaterialTheme.motionScheme.fastEffectsSpec()),
+                modifier = Modifier
+                    .align(Alignment.BottomCenter)
+                    .padding(bottom = 16.dp)
+                    .zIndex(1f),
+            ) {
+                SelectionToolbar(
+                    labels = labels,
+                    onMove = { onMoveMany(selection, it); selection = emptySet() },
+                    onLabel = { onLabelMany(selection, it); selection = emptySet() },
+                    onComplete = { onCompleteMany(selection); selection = emptySet() },
+                    onRemove = { onRemoveMany(selection); selection = emptySet() },
+                )
+            }
         }
     }
 
@@ -807,16 +838,31 @@ private fun SortMenu(current: Int, onSelect: (Int) -> Unit) {
     }
 }
 
+/** Barre du haut du mode sélection : quitter, nombre de tâches cochées, tout sélectionner. */
+@Composable
+private fun SelectionTopBar(count: Int, onClear: () -> Unit, onSelectAll: () -> Unit) {
+    TopAppBar(
+        navigationIcon = {
+            IconButton(onClick = onClear, shapes = IconButtonDefaults.shapes()) {
+                Icon(Icons.Rounded.Close, contentDescription = stringResource(R.string.cd_clear_selection))
+            }
+        },
+        title = { Text(stringResource(R.string.selection_count, count)) },
+        actions = {
+            IconButton(onClick = onSelectAll, shapes = IconButtonDefaults.shapes()) {
+                Icon(Icons.Rounded.SelectAll, contentDescription = stringResource(R.string.cd_select_all))
+            }
+        },
+    )
+}
+
 /**
- * Barre contextuelle du mode sélection : nombre de tâches cochées + actions en lot (tout
- * sélectionner, déplacer, étiqueter, terminer, retirer).
+ * Actions en lot du mode sélection, dans une **barre d'outils flottante** M3 Expressive (couleurs
+ * « vibrantes ») : déplacer, étiqueter, retirer, et terminer en action principale.
  */
 @Composable
-private fun SelectionTopBar(
-    count: Int,
+private fun SelectionToolbar(
     labels: List<Label>,
-    onClear: () -> Unit,
-    onSelectAll: () -> Unit,
     onMove: (Quadrant) -> Unit,
     onLabel: (Long?) -> Unit,
     onComplete: () -> Unit,
@@ -824,64 +870,56 @@ private fun SelectionTopBar(
 ) {
     var moveOpen by remember { mutableStateOf(false) }
     var labelOpen by remember { mutableStateOf(false) }
-    TopAppBar(
-        navigationIcon = {
-            IconButton(onClick = onClear) {
-                Icon(Icons.Rounded.Close, contentDescription = stringResource(R.string.cd_clear_selection))
+    HorizontalFloatingToolbar(
+        expanded = true,
+        colors = FloatingToolbarDefaults.vibrantFloatingToolbarColors(),
+    ) {
+        Box {
+            IconButton(onClick = { moveOpen = true }, shapes = IconButtonDefaults.shapes()) {
+                Icon(Icons.Rounded.DriveFileMove, contentDescription = stringResource(R.string.move_to))
             }
-        },
-        title = { Text(stringResource(R.string.selection_count, count)) },
-        actions = {
-            IconButton(onClick = onSelectAll) {
-                Icon(Icons.Rounded.SelectAll, contentDescription = stringResource(R.string.cd_select_all))
-            }
-            Box {
-                IconButton(onClick = { moveOpen = true }) {
-                    Icon(Icons.Rounded.DriveFileMove, contentDescription = stringResource(R.string.move_to))
-                }
-                DropdownMenu(expanded = moveOpen, onDismissRequest = { moveOpen = false }) {
-                    LocalizedOverlay {
-                        Quadrant.entries.forEach { target ->
-                            val tv = quadrantVisual(target)
-                            DropdownMenuItem(
-                                text = { Text(tv.verb) },
-                                leadingIcon = { Icon(tv.icon, contentDescription = null, tint = tv.accent) },
-                                onClick = { moveOpen = false; onMove(target) },
-                            )
-                        }
-                    }
-                }
-            }
-            Box {
-                IconButton(onClick = { labelOpen = true }) {
-                    Icon(Icons.AutoMirrored.Rounded.Label, contentDescription = stringResource(R.string.cd_set_label))
-                }
-                DropdownMenu(expanded = labelOpen, onDismissRequest = { labelOpen = false }) {
-                    LocalizedOverlay {
+            DropdownMenu(expanded = moveOpen, onDismissRequest = { moveOpen = false }) {
+                LocalizedOverlay {
+                    Quadrant.entries.forEach { target ->
+                        val tv = quadrantVisual(target)
                         DropdownMenuItem(
-                            text = { Text(stringResource(R.string.label_none)) },
-                            onClick = { labelOpen = false; onLabel(null) },
+                            text = { Text(tv.verb) },
+                            leadingIcon = { Icon(tv.icon, contentDescription = null, tint = tv.accent) },
+                            onClick = { moveOpen = false; onMove(target) },
                         )
-                        labels.forEach { label ->
-                            DropdownMenuItem(
-                                text = { Text(label.name) },
-                                leadingIcon = {
-                                    Box(Modifier.size(12.dp).background(label.colorHex.toColor(), CircleShape))
-                                },
-                                onClick = { labelOpen = false; onLabel(label.id) },
-                            )
-                        }
                     }
                 }
             }
-            IconButton(onClick = onComplete) {
-                Icon(Icons.Rounded.CheckCircle, contentDescription = stringResource(R.string.cd_mark_done))
+        }
+        Box {
+            IconButton(onClick = { labelOpen = true }, shapes = IconButtonDefaults.shapes()) {
+                Icon(Icons.AutoMirrored.Rounded.Label, contentDescription = stringResource(R.string.cd_set_label))
             }
-            IconButton(onClick = onRemove) {
-                Icon(Icons.Rounded.Inventory2, contentDescription = stringResource(R.string.action_remove))
+            DropdownMenu(expanded = labelOpen, onDismissRequest = { labelOpen = false }) {
+                LocalizedOverlay {
+                    DropdownMenuItem(
+                        text = { Text(stringResource(R.string.label_none)) },
+                        onClick = { labelOpen = false; onLabel(null) },
+                    )
+                    labels.forEach { label ->
+                        DropdownMenuItem(
+                            text = { Text(label.name) },
+                            leadingIcon = {
+                                Box(Modifier.size(12.dp).background(label.colorHex.toColor(), CircleShape))
+                            },
+                            onClick = { labelOpen = false; onLabel(label.id) },
+                        )
+                    }
+                }
             }
-        },
-    )
+        }
+        IconButton(onClick = onRemove, shapes = IconButtonDefaults.shapes()) {
+            Icon(Icons.Rounded.Inventory2, contentDescription = stringResource(R.string.action_remove))
+        }
+        FilledIconButton(onClick = onComplete, shapes = IconButtonDefaults.shapes()) {
+            Icon(Icons.Rounded.CheckCircle, contentDescription = stringResource(R.string.cd_mark_done))
+        }
+    }
 }
 
 /**
@@ -1395,14 +1433,15 @@ private fun TaskRowContent(
             }
         }
         if (selecting) {
-            IconButton(onClick = onToggleSelect, modifier = Modifier.size(28.dp)) {
-                Icon(
-                    if (selected) Icons.Rounded.CheckCircle else Icons.Rounded.RadioButtonUnchecked,
-                    contentDescription = stringResource(if (selected) R.string.cd_deselect else R.string.cd_select),
-                    tint = if (selected) accent else MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.size(20.dp),
-                )
-            }
+            // Case morphante (cercle → « cookie ») : même langage que les sous-tâches de l'éditeur.
+            MorphingCheckbox(
+                checked = selected,
+                accent = accent,
+                onClick = onToggleSelect,
+                modifier = Modifier.size(28.dp),
+                contentDescription = stringResource(if (selected) R.string.cd_deselect else R.string.cd_select),
+                boxSize = 20.dp,
+            )
         } else Box {
             IconButton(onClick = { menuOpen = true }, modifier = Modifier.size(28.dp)) {
                 Icon(
