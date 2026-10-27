@@ -11,7 +11,11 @@ import kotlinx.coroutines.flow.Flow
 @Dao
 interface LabelDao {
 
-    @Query("SELECT * FROM labels ORDER BY createdAt ASC")
+    /** Ordre d'affichage : épinglées d'abord, puis sans groupe, puis par groupe, puis par création. */
+    @Query(
+        "SELECT * FROM labels ORDER BY pinned DESC, (groupName = '') DESC, " +
+            "groupName COLLATE NOCASE ASC, createdAt ASC",
+    )
     fun observeAll(): Flow<List<Label>>
 
     @Query("SELECT * FROM labels ORDER BY id ASC")
@@ -29,6 +33,9 @@ interface LabelDao {
     /** Supprime l'étiquette et détache les tâches qui la portaient (labelId -> NULL). */
     @Query("UPDATE tasks SET labelId = NULL WHERE labelId = :id")
     suspend fun detachTasks(id: Long)
+
+    @Query("UPDATE labels SET pinned = :pinned WHERE id = :id")
+    suspend fun setPinned(id: Long, pinned: Boolean)
 
     @Query("DELETE FROM labels WHERE id = :id")
     suspend fun deleteById(id: Long)

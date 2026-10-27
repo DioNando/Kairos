@@ -179,6 +179,14 @@ class MainActivity : ComponentActivity() {
                                 openTaskLaunch = openTaskLaunch.intValue,
                                 onSetRemindersEnabled = { scope.launch { settingsRepository.setRemindersEnabled(it) } },
                                 onSetReminderLead = { scope.launch { settingsRepository.setReminderLeadMinutes(it) } },
+                                onSetQuadrantSort = { scope.launch { settingsRepository.setQuadrantSort(it) } },
+                                onSetFocusDueWeight = { scope.launch { settingsRepository.setFocusDueWeight(it) } },
+                                onSetCalendarEnabled = { scope.launch { settingsRepository.setCalendarEnabled(it) } },
+                                onSetIcalUrl = { scope.launch { settingsRepository.setIcalUrl(it) } },
+                                onTestIcal = { app.calendarSource.testIcal(it) },
+                                loadBusy = { from, to ->
+                                    app.calendarSource.busySlots(from, to, settings.calendarEnabled, settings.icalUrl)
+                                },
                             )
                         }
                     }

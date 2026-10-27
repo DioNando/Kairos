@@ -54,8 +54,9 @@ fun FocusScreen(
     onBack: () -> Unit,
     onComplete: (Task) -> Unit,
     onOpenTask: (Task) -> Unit,
+    focusDueWeight: Int = FocusSelector.DEFAULT_DUE_WEIGHT,
 ) {
-    val ranked = remember(tasks) { FocusSelector.rank(tasks) }
+    val ranked = remember(tasks, focusDueWeight) { FocusSelector.rank(tasks, focusDueWeight) }
     val next = ranked.firstOrNull()
     val upNext = remember(ranked) { ranked.drop(1).take(3) }
     val labelsById = remember(labels) { labels.associateBy { it.id } }

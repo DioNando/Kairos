@@ -214,7 +214,7 @@
     <string name="guide_create_title">Creating a task</string>
     <string name="guide_create_sub">All the editor options</string>
     <string name="guide_daily_title">Day to day</string>
-    <string name="guide_daily_sub">Move, complete, archive</string>
+    <string name="guide_daily_sub">Sort, select, move, complete</string>
     <string name="guide_focus_title">Focus &amp; Pomodoro</string>
     <string name="guide_focus_sub">Focus on what matters</string>
     <string name="guide_ai_title">AI assistant</string>
@@ -242,7 +242,7 @@
     <string name="guide_create_rec_t">Recurrence</string>
     <string name="guide_create_rec_b">Daily, weekly or monthly. On completion the task stays on the board: its due date rolls forward to the next one and its subtasks get unchecked (so it doesn’t go to the archive). E.g. “Water the plants” every week.</string>
     <string name="guide_create_sub_t">Subtasks</string>
-    <string name="guide_create_sub_b">A checklist within the task; the card shows progress (e.g. 2/5). Great for breaking things down. E.g. “Plan the birthday” → cake, invitations, decorations.</string>
+    <string name="guide_create_sub_b">A checklist inside the task, with a progress bar. Each subtask can have its own due date (⋮ menu) or be promoted to a full task (same quadrant, same label). E.g. “Plan the birthday” → cake, invitations, decorations.</string>
     <string name="guide_create_ai_t">Reformulate (AI)</string>
     <string name="guide_create_ai_b">Tidies up the title, note and subtasks in one tap. Appears if an API key is configured (Settings → AI assistant).</string>
 
@@ -250,7 +250,7 @@
     <string name="guide_daily_views_t">Grid or lists</string>
     <string name="guide_daily_views_b">Switch between the 2×2 grid and a vertical list per quadrant (in Settings).</string>
     <string name="guide_daily_search_t">Search &amp; filter</string>
-    <string name="guide_daily_search_b">The magnifier icon at the top opens a search bar (title and note) and label filters — handy to find a task among many.</string>
+    <string name="guide_daily_search_b">The magnifier opens search (title and note) and label filters. The bookmark icon saves the current search as a filter you can reapply in one tap; manage them from the Labels screen.</string>
     <string name="guide_daily_move_t">Moving a task</string>
     <string name="guide_daily_move_b">Long-press then drag to another quadrant (or to reorder). The ⋮ “Move to” menu does the same and stays accessible with TalkBack.</string>
     <string name="guide_daily_swipe_t">Complete / remove</string>
@@ -264,7 +264,7 @@
 
     <!-- Sub-page: focus &amp; pomodoro -->
     <string name="guide_focus_focus_t">Focus mode</string>
-    <string name="guide_focus_focus_b">“What now?” blends importance and due date to surface THE task to do now, plus a preview of what\'s next.</string>
+    <string name="guide_focus_focus_b">“What now?” blends importance and due date to surface THE task to do now, with a preview of what\'s next. Settings → Focus mode priority sets how much each one weighs.</string>
     <string name="guide_focus_pomo_t">Pomodoro</string>
     <string name="guide_focus_pomo_b">A focus/break timer (e.g. 25 min focus, 5 min break) that survives closing the app, with a notification. Link a session to a task to credit its focus time.</string>
 
@@ -287,7 +287,7 @@
     <string name="guide_set_palette_t">Palettes</string>
     <string name="guide_set_palette_b">Choose the quadrant color palette, or create your own (4 custom colors).</string>
     <string name="guide_set_backup_t">Backup</string>
-    <string name="guide_set_backup_b">Export all your data (tasks, subtasks, labels, settings) as JSON, and re-import it on another device.</string>
+    <string name="guide_set_backup_b">Export your data (tasks, subtasks, labels, filters, time blocks, settings) as JSON and import it on another device. Attachments stay on the device.</string>
     <string name="guide_set_guide_t">This guide</string>
     <string name="guide_set_guide_b">You can hide the guide shortcut (the top icon) from Settings → Help; it stays reachable via “Open the guide”.</string>
     <string name="settings_pomodoro_style">“Liquid circle” timer</string>
@@ -346,4 +346,109 @@
     <string name="shortcut_focus_long">Focus: what now?</string>
     <string name="shortcut_pomodoro_short">Pomodoro</string>
     <string name="shortcut_pomodoro_long">Open the Pomodoro</string>
+
+    <!-- Tri, sélection multiple, filtres, sous-tâches/notes enrichies, pièces jointes, planning -->
+    <string name="action_select">Select</string>
+    <string name="action_undo">Undo</string>
+    <string name="attachment_add">Attach a file</string>
+    <string name="attachment_error">Couldn\'t attach this file.</string>
+    <string name="attachment_no_app">No app can open this file.</string>
+    <string name="attachment_too_large">File too large (10 MB max).</string>
+    <string name="block_clear">Unschedule</string>
+    <string name="block_planned">Scheduled: %1$s</string>
+    <string name="cd_clear_selection">Exit selection</string>
+    <string name="cd_delete_filter">Delete filter %1$s</string>
+    <string name="cd_deselect">Deselect</string>
+    <string name="cd_next_day">Next day</string>
+    <string name="cd_pin_label">Pin label</string>
+    <string name="cd_planned">Scheduled slot</string>
+    <string name="cd_planning">Planner</string>
+    <string name="cd_planning_conflict">Overlaps a busy slot</string>
+    <string name="cd_previous_day">Previous day</string>
+    <string name="cd_remove_attachment">Remove attachment</string>
+    <string name="cd_select">Select</string>
+    <string name="cd_select_all">Select all</string>
+    <string name="cd_set_label">Set label</string>
+    <string name="cd_sort">Sort</string>
+    <string name="cd_subtask_menu">Subtask options</string>
+    <string name="cd_today">Today</string>
+    <string name="cd_unpin_label">Unpin label</string>
+    <string name="field_attachments">Attachments</string>
+    <string name="field_label_group">Group (optional)</string>
+    <string name="field_label_pinned">Pinned</string>
+    <string name="field_label_pinned_desc">Listed first and shown as a quick filter on the matrix.</string>
+    <string name="filter_name">Filter name</string>
+    <string name="filter_save">Save filter</string>
+    <string name="labels_pinned">Pinned</string>
+    <string name="labels_ungrouped">No group</string>
+    <string name="note_checkbox">Checkbox</string>
+    <string name="note_edit">Edit note</string>
+    <string name="note_preview">Preview</string>
+    <string name="planning_busy">Busy</string>
+    <string name="planning_connect_calendar">Connect your calendar (Google Calendar, iCal) in settings to see your busy slots.</string>
+    <string name="planning_drop_to_unschedule">Drop here to unschedule</string>
+    <string name="planning_duration">Duration</string>
+    <string name="planning_open_task">Open task</string>
+    <string name="planning_title">Planner</string>
+    <string name="planning_tray">To schedule (%1$d) · long-press to drag, tap = next free slot</string>
+    <string name="planning_tray_empty">All your active tasks are scheduled.</string>
+    <string name="saved_filters_empty">No filters yet. From the matrix search, tap the bookmark icon to save a search or a label.</string>
+    <string name="saved_filters_title">Saved filters</string>
+    <string name="selection_count">%1$d selected</string>
+    <string name="settings_calendar_device">Device calendars</string>
+    <string name="settings_calendar_device_desc">Shows busy slots from Google Calendar and other synced accounts in the Planner (read-only).</string>
+    <string name="settings_focus_weight">Focus mode priority</string>
+    <string name="settings_focus_weight_desc">Sets what matters most when picking the task to do now (and for the “Priority” sort).</string>
+    <string name="settings_focus_weight_due">Due date</string>
+    <string name="settings_focus_weight_importance">Importance</string>
+    <string name="settings_focus_weight_value">Due date: %1$d %%</string>
+    <string name="settings_group_calendar">Calendar</string>
+    <string name="settings_ical">iCal feed</string>
+    <string name="settings_ical_desc">Secret iCal (.ics) address of a calendar, e.g. Google Calendar, Outlook or iCloud.</string>
+    <string name="settings_ical_error">Failed: %1$s</string>
+    <string name="settings_ical_ok">%1$d event(s) found</string>
+    <string name="settings_ical_test">Test and save</string>
+    <string name="settings_sort">Sort within quadrants</string>
+    <string name="sort_alpha">Alphabetical</string>
+    <string name="sort_created">Created</string>
+    <string name="sort_due">Due date</string>
+    <string name="sort_manual">Manual</string>
+    <string name="sort_priority">Priority</string>
+    <string name="sort_title">Sort by</string>
+    <string name="subtask_due">Due date…</string>
+    <string name="subtask_promote">Promote to task</string>
+    <string name="subtask_promoted">“%1$s” will become a task</string>
+
+    <!-- Guide : planning, montre, nouveautés de l\'éditeur et du quotidien -->
+    <string name="guide_create_note_t">Rich notes</string>
+    <string name="guide_create_note_b">The “Checkbox” button adds a “- [ ]” line: in preview, tap it to check it. Links (https://…, www.…) become clickable. Tap the preview to go back to editing.</string>
+    <string name="guide_create_attach_t">Attachments</string>
+    <string name="guide_create_attach_b">Attach light files (photo, PDF… 10 MB max): they\'re copied into the app and open in one tap.</string>
+    <string name="guide_daily_sort_t">Sort quadrants</string>
+    <string name="guide_daily_sort_b">The sort icon at the top orders tasks by due date, priority, creation date or alphabetically. In “Manual” sort, you order them by dragging.</string>
+    <string name="guide_daily_select_t">Multi-select</string>
+    <string name="guide_daily_select_b">⋮ menu → “Select”, then tap other tasks. The top bar acts on the whole selection: move, label, complete, remove.</string>
+    <string name="guide_daily_labels_t">Advanced labels</string>
+    <string name="guide_daily_labels_b">Organise labels into groups and pin the ones you use most: a pinned label is listed first and shown as a quick filter right on the matrix.</string>
+    <string name="guide_planning_title">Planner &amp; calendar</string>
+    <string name="guide_planning_sub">Book time for your tasks</string>
+    <string name="guide_planning_p1">The Planner (calendar icon at the bottom of the matrix) shows your day hour by hour. Placing a task there books a slot for it: time-blocking.</string>
+    <string name="guide_planning_drag_t">Drag a task</string>
+    <string name="guide_planning_drag_b">Long-press a task in the “To schedule” tray, then drop it on the timeline (snaps to 15 minutes). A simple tap puts it on the next free slot.</string>
+    <string name="guide_planning_block_t">Adjust a slot</string>
+    <string name="guide_planning_block_b">Tap a slot to change its duration, open the task or unschedule it. Long-press to move it; drop it on the tray to remove it from the plan.</string>
+    <string name="guide_planning_cal_t">Google Calendar &amp; iCal</string>
+    <string name="guide_planning_cal_b">In Settings → Calendar, turn on reading the phone\'s calendars (Google Calendar and other accounts) or paste an iCal (.ics) feed address. Your events show in grey, read-only.</string>
+    <string name="guide_planning_tip">A slot that overlaps an event shows a small warning triangle. Start by blocking time for Schedule: that\'s where deep work happens.</string>
+    <string name="guide_wear_title">On your watch</string>
+    <string name="guide_wear_sub">Kairós on your wrist (Wear OS)</string>
+    <string name="guide_wear_p1">The watch app mirrors your phone: it shows what the phone sends and sends your actions back.</string>
+    <string name="guide_wear_focus_t">Top priority</string>
+    <string name="guide_wear_focus_b">The task of the moment and the next ones, like Focus mode. The ✓ button completes it right from your wrist.</string>
+    <string name="guide_wear_pomo_t">Pomodoro</string>
+    <string name="guide_wear_pomo_b">During a session, the watch shows the time left and lets you pause, resume or reset.</string>
+    <string name="guide_wear_today_t">Today &amp; quadrants</string>
+    <string name="guide_wear_today_b">Today\'s scheduled slots, then the 4 quadrants: tap one to browse its tasks (arrows, or swipe left for the next one).</string>
+    <string name="guide_wear_tiles_t">Tiles</string>
+    <string name="guide_wear_tiles_b">Two tiles to add: the matrix (tasks per quadrant) and “Next slot”, which moves on to the next slot by itself.</string>
 </resources>

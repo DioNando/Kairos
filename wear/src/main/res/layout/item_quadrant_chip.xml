@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Puce d'un quadrant (écran principal) : icône + nombre de tâches, fond teinté par la palette
+     (en code). Largeur partagée à parts égales avec sa voisine (poids 1). -->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="0dp"
+    android:layout_height="44dp"
+    android:layout_weight="1"
+    android:background="@drawable/bg_chip"
+    android:gravity="center"
+    android:orientation="horizontal">
+
+    <ImageView
+        android:id="@+id/chip_icon"
+        android:layout_width="16dp"
+        android:layout_height="16dp"
+        android:contentDescription="@null"
+        android:src="@drawable/wear_do" />
+
+    <TextView
+        android:id="@+id/chip_count"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="6dp"
+        android:textSize="16sp"
+        android:textStyle="bold" />
+</LinearLayout>

@@ -1,7 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!-- App Kairós sur la montre : « À faire en priorité » (tâche prioritaire + à suivre, reflet de
-     l'écran Focus du téléphone) + deux boutons ronds (ajout rapide / ouvrir l'app). Les données
-     viennent du Data Layer ([FocusStore]). ScrollView + padding généreux pour l'écran rond. -->
+     l'écran Focus du téléphone, avec ✓ pour terminer), Pomodoro en cours, créneaux du jour, accès aux
+     4 quadrants, puis deux boutons ronds (ajout rapide / ouvrir l'app). Les données viennent du Data
+     Layer. ScrollView + padding généreux pour l'écran rond. -->
 <ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
@@ -37,89 +38,165 @@
             android:textSize="14sp"
             android:visibility="gone" />
 
-        <!-- Tâche prioritaire : fond teinté (accent du quadrant). Icône du quadrant en ligne devant le
-             verbe (gain de largeur) puis titre pleine largeur + pastille d'étiquette. Teintes en code. -->
+        <!-- Tâche prioritaire : fond teinté (accent du quadrant). À gauche, le texte (icône + verbe,
+             titre, pastille d'étiquette) ; à droite, le bouton ✓ (terminer) centré verticalement. -->
         <LinearLayout
             android:id="@+id/priority_card"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:orientation="vertical"
-            android:paddingHorizontal="16dp"
+            android:gravity="center_vertical"
+            android:orientation="horizontal"
+            android:paddingStart="16dp"
+            android:paddingEnd="12dp"
             android:paddingVertical="14dp">
 
-            <!-- Ligne verbe : petite icône de quadrant (ex. éclair) + verbe (« Faire »…). -->
             <LinearLayout
-                android:layout_width="wrap_content"
+                android:layout_width="0dp"
                 android:layout_height="wrap_content"
-                android:gravity="center_vertical"
-                android:orientation="horizontal">
+                android:layout_weight="1"
+                android:orientation="vertical">
 
-                <ImageView
-                    android:id="@+id/priority_icon"
-                    android:layout_width="14dp"
-                    android:layout_height="14dp"
-                    android:contentDescription="@null"
-                    android:src="@drawable/wear_do" />
-
-                <TextView
-                    android:id="@+id/priority_verb"
+                <LinearLayout
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:layout_marginStart="6dp"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal">
+
+                    <ImageView
+                        android:id="@+id/priority_icon"
+                        android:layout_width="14dp"
+                        android:layout_height="14dp"
+                        android:contentDescription="@null"
+                        android:src="@drawable/wear_do" />
+
+                    <TextView
+                        android:id="@+id/priority_verb"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="6dp"
+                        android:textSize="11sp"
+                        android:textStyle="bold" />
+                </LinearLayout>
+
+                <TextView
+                    android:id="@+id/priority_title"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="3dp"
+                    android:ellipsize="end"
+                    android:maxLines="3"
+                    android:textColor="@color/wear_on_bg"
+                    android:textSize="15sp"
+                    android:textStyle="bold" />
+
+                <!-- Pastille d'étiquette (point coloré + nom tronqué), masquée si la tâche n'en a pas. -->
+                <LinearLayout
+                    android:id="@+id/priority_label_row"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="5dp"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal"
+                    android:visibility="gone">
+
+                    <View
+                        android:id="@+id/priority_label_dot"
+                        android:layout_width="8dp"
+                        android:layout_height="8dp"
+                        android:background="@drawable/dot" />
+
+                    <TextView
+                        android:id="@+id/priority_label_name"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="6dp"
+                        android:layout_weight="1"
+                        android:ellipsize="end"
+                        android:maxLines="1"
+                        android:textColor="@color/wear_on_bg_variant"
+                        android:textSize="11sp" />
+                </LinearLayout>
+            </LinearLayout>
+
+            <ImageButton
+                android:id="@+id/priority_done"
+                android:layout_width="32dp"
+                android:layout_height="32dp"
+                android:layout_marginStart="10dp"
+                android:background="@drawable/bg_circle"
+                android:contentDescription="@string/action_complete"
+                android:padding="8dp"
+                android:scaleType="fitCenter"
+                android:src="@drawable/ic_check" />
+        </LinearLayout>
+
+        <!-- Pomodoro en cours (masqué hors session) : phase + décompte local + marche/pause + reset. -->
+        <LinearLayout
+            android:id="@+id/pomo_card"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="12dp"
+            android:background="@drawable/bg_upnext"
+            android:gravity="center_vertical"
+            android:orientation="horizontal"
+            android:paddingStart="14dp"
+            android:paddingEnd="8dp"
+            android:paddingVertical="10dp"
+            android:visibility="gone">
+
+            <LinearLayout
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:orientation="vertical">
+
+                <TextView
+                    android:id="@+id/pomo_phase"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:textColor="@color/wear_on_bg_variant"
                     android:textSize="11sp"
+                    android:textStyle="bold" />
+
+                <TextView
+                    android:id="@+id/pomo_time"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:fontFeatureSettings="tnum"
+                    android:textColor="@color/wear_on_bg"
+                    android:textSize="22sp"
                     android:textStyle="bold" />
             </LinearLayout>
 
-            <TextView
-                android:id="@+id/priority_title"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="3dp"
-                android:ellipsize="end"
-                android:maxLines="3"
-                android:textColor="@color/wear_on_bg"
-                android:textSize="15sp"
-                android:textStyle="bold" />
+            <ImageButton
+                android:id="@+id/pomo_reset"
+                android:layout_width="34dp"
+                android:layout_height="34dp"
+                android:layout_marginEnd="6dp"
+                android:background="@drawable/bg_circle"
+                android:backgroundTint="@color/wear_surface_high"
+                android:contentDescription="@string/pomo_reset"
+                android:padding="8dp"
+                android:scaleType="fitCenter"
+                android:src="@drawable/ic_replay" />
 
-            <!-- Pastille d'étiquette (point coloré + nom tronqué), masquée si la tâche n'en a pas. -->
-            <LinearLayout
-                android:id="@+id/priority_label_row"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="5dp"
-                android:gravity="center_vertical"
-                android:orientation="horizontal"
-                android:visibility="gone">
-
-                <View
-                    android:id="@+id/priority_label_dot"
-                    android:layout_width="8dp"
-                    android:layout_height="8dp"
-                    android:background="@drawable/dot" />
-
-                <TextView
-                    android:id="@+id/priority_label_name"
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_marginStart="6dp"
-                    android:layout_weight="1"
-                    android:ellipsize="end"
-                    android:maxLines="1"
-                    android:textColor="@color/wear_on_bg_variant"
-                    android:textSize="11sp" />
-            </LinearLayout>
+            <ImageButton
+                android:id="@+id/pomo_toggle"
+                android:layout_width="40dp"
+                android:layout_height="40dp"
+                android:background="@drawable/bg_circle"
+                android:backgroundTint="@color/accent_add"
+                android:contentDescription="@string/pomo_toggle"
+                android:padding="10dp"
+                android:scaleType="fitCenter"
+                android:src="@drawable/ic_pause" />
         </LinearLayout>
 
         <!-- Aperçu « À suivre » : libellé + lignes ajoutées en code (item_upnext). -->
         <TextView
             android:id="@+id/upnext_label"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="16dp"
+            style="@style/WearSectionLabel"
             android:text="@string/focus_up_next"
-            android:textColor="@color/wear_on_bg_variant"
-            android:textSize="12sp"
-            android:textStyle="bold"
             android:visibility="gone" />
 
         <LinearLayout
@@ -129,7 +206,65 @@
             android:layout_marginTop="4dp"
             android:orientation="vertical" />
 
-        <!-- Deux boutons ronds : ajout rapide / ouvrir l'app (sur le téléphone). -->
+        <!-- Créneaux planifiés du jour (time-blocking du téléphone), masqués s'il n'y en a pas. -->
+        <TextView
+            android:id="@+id/today_label"
+            style="@style/WearSectionLabel"
+            android:text="@string/today_title"
+            android:visibility="gone" />
+
+        <LinearLayout
+            android:id="@+id/today_container"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="4dp"
+            android:orientation="vertical" />
+
+        <!-- Les 4 quadrants (compteurs) : tap = parcourir les tâches du quadrant. -->
+        <TextView
+            style="@style/WearSectionLabel"
+            android:text="@string/quadrants_title" />
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="6dp"
+            android:orientation="horizontal">
+
+            <include
+                android:id="@+id/quad_0"
+                layout="@layout/item_quadrant_chip" />
+
+            <Space
+                android:layout_width="6dp"
+                android:layout_height="0dp" />
+
+            <include
+                android:id="@+id/quad_1"
+                layout="@layout/item_quadrant_chip" />
+        </LinearLayout>
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="6dp"
+            android:orientation="horizontal">
+
+            <include
+                android:id="@+id/quad_2"
+                layout="@layout/item_quadrant_chip" />
+
+            <Space
+                android:layout_width="6dp"
+                android:layout_height="0dp" />
+
+            <include
+                android:id="@+id/quad_3"
+                layout="@layout/item_quadrant_chip" />
+        </LinearLayout>
+
+        <!-- Deux boutons ronds (icônes seules, libellés en contentDescription) : ajout rapide /
+             ouvrir l'app (sur le téléphone). -->
         <LinearLayout
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
@@ -137,59 +272,29 @@
             android:gravity="center"
             android:orientation="horizontal">
 
-            <LinearLayout
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginHorizontal="12dp"
-                android:gravity="center_horizontal"
-                android:orientation="vertical">
+            <ImageButton
+                android:id="@+id/btn_add"
+                android:layout_width="52dp"
+                android:layout_height="52dp"
+                android:layout_marginHorizontal="6dp"
+                android:background="@drawable/bg_circle"
+                android:backgroundTint="@color/accent_add"
+                android:contentDescription="@string/action_quick_add"
+                android:padding="14dp"
+                android:scaleType="fitCenter"
+                android:src="@drawable/ic_add" />
 
-                <ImageButton
-                    android:id="@+id/btn_add"
-                    android:layout_width="52dp"
-                    android:layout_height="52dp"
-                    android:background="@drawable/bg_circle"
-                    android:backgroundTint="@color/accent_add"
-                    android:contentDescription="@string/action_quick_add"
-                    android:padding="14dp"
-                    android:scaleType="fitCenter"
-                    android:src="@drawable/ic_add" />
-
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="6dp"
-                    android:text="@string/action_quick_add"
-                    android:textColor="@color/wear_on_bg_variant"
-                    android:textSize="11sp" />
-            </LinearLayout>
-
-            <LinearLayout
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginHorizontal="12dp"
-                android:gravity="center_horizontal"
-                android:orientation="vertical">
-
-                <ImageButton
-                    android:id="@+id/btn_open"
-                    android:layout_width="52dp"
-                    android:layout_height="52dp"
-                    android:background="@drawable/bg_circle"
-                    android:backgroundTint="@color/accent_open"
-                    android:contentDescription="@string/action_open_app"
-                    android:padding="14dp"
-                    android:scaleType="fitCenter"
-                    android:src="@drawable/ic_open_phone" />
-
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="6dp"
-                    android:text="@string/action_open_app"
-                    android:textColor="@color/wear_on_bg_variant"
-                    android:textSize="11sp" />
-            </LinearLayout>
+            <ImageButton
+                android:id="@+id/btn_open"
+                android:layout_width="52dp"
+                android:layout_height="52dp"
+                android:layout_marginHorizontal="6dp"
+                android:background="@drawable/bg_circle"
+                android:backgroundTint="@color/accent_open"
+                android:contentDescription="@string/action_open_app"
+                android:padding="14dp"
+                android:scaleType="fitCenter"
+                android:src="@drawable/ic_open_phone" />
         </LinearLayout>
     </LinearLayout>
 </ScrollView>

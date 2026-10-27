@@ -16,4 +16,31 @@
     <string name="verb_schedule">Planifier</string>
     <string name="verb_delegate">Déléguer</string>
     <string name="verb_eliminate">Supprimer</string>
+
+    <!-- Actions depuis la montre. -->
+    <string name="action_complete">Terminer</string>
+    <string name="done_sent">Terminée ✓</string>
+    <string name="phone_unreachable">Téléphone injoignable</string>
+
+    <!-- Pomodoro. -->
+    <string name="pomo_focus">Focus</string>
+    <string name="pomo_short">Pause courte</string>
+    <string name="pomo_long">Pause longue</string>
+    <string name="pomo_paused">%1$s · en pause</string>
+    <string name="pomo_toggle">Démarrer ou mettre en pause</string>
+    <string name="pomo_reset">Réinitialiser</string>
+
+    <!-- Planning du jour + tuile « Prochain créneau ». -->
+    <string name="today_title">Aujourd\'hui</string>
+    <string name="tile_next_label">Kairós — Prochain créneau</string>
+    <string name="next_block_title">Prochain créneau</string>
+    <string name="next_block_now">En cours</string>
+    <string name="next_block_none">Rien de planifié aujourd\'hui</string>
+
+    <!-- Navigation par quadrant. -->
+    <string name="quadrants_title">Quadrants</string>
+    <string name="quadrant_empty">Aucune tâche ici</string>
+    <string name="quadrant_more">+ %1$d sur le téléphone</string>
+    <string name="cd_prev_quadrant">Quadrant précédent</string>
+    <string name="cd_next_quadrant">Quadrant suivant</string>
 </resources>

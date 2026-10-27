@@ -7,6 +7,8 @@
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
     <!-- Reformulation IA des notes (optionnelle) : appels HTTPS vers Gemini / OpenRouter. -->
     <uses-permission android:name="android.permission.INTERNET" />
+    <!-- Time-blocking : lecture des créneaux occupés des agendas de l'appareil (optionnelle). -->
+    <uses-permission android:name="android.permission.READ_CALENDAR" />
 
     <application
         android:name=".KairosApp"
@@ -75,6 +77,30 @@
                 android:name="android.appwidget.provider"
                 android:resource="@xml/kairos_widget_row_info" />
         </receiver>
+
+        <!-- Actions envoyées par la montre (terminer une tâche, piloter le Pomodoro). -->
+        <service
+            android:name=".wear.WearActionService"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="com.google.android.gms.wearable.MESSAGE_RECEIVED" />
+                <data
+                    android:scheme="wear"
+                    android:host="*"
+                    android:pathPrefix="/kairos/action" />
+            </intent-filter>
+        </service>
+
+        <!-- Pièces jointes des tâches : ouverture en lecture par l'app choisie par l'utilisateur. -->
+        <provider
+            android:name="androidx.core.content.FileProvider"
+            android:authorities="${applicationId}.attachments"
+            android:exported="false"
+            android:grantUriPermissions="true">
+            <meta-data
+                android:name="android.support.FILE_PROVIDER_PATHS"
+                android:resource="@xml/attachment_paths" />
+        </provider>
     </application>
 
 </manifest>

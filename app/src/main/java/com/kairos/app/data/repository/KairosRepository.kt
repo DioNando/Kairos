@@ -1,24 +1,36 @@
 package com.kairos.app.data.repository
 
+import com.kairos.app.data.local.AttachmentDao
 import com.kairos.app.data.local.LabelDao
+import com.kairos.app.data.local.SavedFilterDao
 import com.kairos.app.data.local.SubtaskDao
 import com.kairos.app.data.local.TaskDao
+import com.kairos.app.data.model.Attachment
 import com.kairos.app.data.model.Label
 import com.kairos.app.data.model.Quadrant
+import com.kairos.app.data.model.SavedFilter
 import com.kairos.app.data.model.Subtask
 import com.kairos.app.data.model.Task
 import com.kairos.app.domain.recurrence.Recurrence
 import kotlinx.coroutines.flow.Flow
 
-/** Point d'accès unique aux données (tâches + étiquettes + sous-tâches) pour les ViewModels. */
+/**
+ * Point d'accès unique aux données (tâches, étiquettes, sous-tâches, filtres enregistrés, pièces
+ * jointes) pour les ViewModels.
+ */
 class KairosRepository(
     private val taskDao: TaskDao,
     private val labelDao: LabelDao,
     private val subtaskDao: SubtaskDao,
+    private val savedFilterDao: SavedFilterDao,
+    private val attachmentDao: AttachmentDao,
+    private val attachmentStore: AttachmentStore,
 ) {
     val tasks: Flow<List<Task>> = taskDao.observeAll()
     val labels: Flow<List<Label>> = labelDao.observeAll()
     val subtasks: Flow<List<Subtask>> = subtaskDao.observeAll()
+    val savedFilters: Flow<List<SavedFilter>> = savedFilterDao.observeAll()
+    val attachments: Flow<List<Attachment>> = attachmentDao.observeAll()
 
     suspend fun getTask(id: Long): Task? = taskDao.getById(id)
 
@@ -36,14 +48,59 @@ class KairosRepository(
      * Enregistre une tâche **et** remplace intégralement sa checklist. Les sous-tâches sont
      * réinsérées à neuf (ids régénérés) dans l'ordre fourni.
      */
-    suspend fun saveTaskWithSubtasks(task: Task, subtasks: List<Subtask>, now: Long): Long {
+    suspend fun saveTaskWithSubtasks(
+        task: Task,
+        subtasks: List<Subtask>,
+        now: Long,
+        promoted: List<Subtask> = emptyList(),
+        attachments: List<Attachment>? = null,
+    ): Long {
         val id = saveTask(task, now)
         subtaskDao.deleteForTask(id)
         subtasks.forEachIndexed { index, sub ->
             subtaskDao.insert(sub.copy(id = 0, taskId = id, position = index))
         }
+        // Sous-tâches **promues** : deviennent des tâches à part entière, dans le même quadrant et
+        // avec la même étiquette que la tâche parente, en reprenant leur échéance propre.
+        promoted.forEach { sub ->
+            saveTask(
+                Task(
+                    title = sub.title,
+                    important = task.important,
+                    urgent = task.urgent,
+                    labelId = task.labelId,
+                    dueAt = sub.dueAt,
+                    completedAt = if (sub.done) now else null,
+                ),
+                now,
+            )
+        }
+        if (attachments != null) replaceAttachments(id, attachments, now)
         return id
     }
+
+    /**
+     * Aligne les pièces jointes de [taskId] sur [wanted] : supprime (ligne + fichier) celles qui n'y
+     * sont plus, insère les nouvelles (id 0).
+     */
+    private suspend fun replaceAttachments(taskId: Long, wanted: List<Attachment>, now: Long) {
+        val keptIds = wanted.map { it.id }.toSet()
+        attachmentDao.forTask(taskId).filter { it.id !in keptIds }.forEach {
+            attachmentDao.deleteById(it.id)
+            attachmentStore.delete(it.fileName)
+        }
+        wanted.filter { it.id == 0L }.forEach {
+            attachmentDao.insert(it.copy(taskId = taskId, createdAt = now))
+        }
+    }
+
+    /** Copie un document choisi par l'utilisateur en pièce jointe (à rattacher à l'enregistrement). */
+    suspend fun importAttachment(uri: android.net.Uri): Attachment = attachmentStore.import(uri)
+
+    fun attachmentUri(attachment: Attachment): android.net.Uri = attachmentStore.uriFor(attachment)
+
+    /** Supprime les fichiers de pièces jointes que plus aucune ligne ne référence (balayage au démarrage). */
+    suspend fun sweepAttachmentFiles() = attachmentStore.sweep(attachmentDao.allFileNames().toSet())
 
     /**
      * Déplace une tâche dans un quadrant, devant [beforeId] (glisser) ou en fin (null : menu
@@ -110,6 +167,23 @@ class KairosRepository(
         taskDao.update(task.copy(completedAt = null, removedAt = null))
     }
 
+    // --- Actions en lot (sélection multiple) ----------------------------------------------------
+
+    /** Déplace plusieurs tâches en fin de [quadrant] (celles qui y sont déjà ne bougent pas). */
+    suspend fun moveMany(ids: List<Long>, quadrant: Quadrant) = ids.forEach { moveTo(it, quadrant) }
+
+    suspend fun setLabelMany(ids: List<Long>, labelId: Long?) = taskDao.setLabel(ids, labelId)
+
+    suspend fun completeMany(ids: List<Long>, now: Long) = ids.forEach { setCompleted(it, now) }
+
+    suspend fun removeMany(ids: List<Long>, now: Long) = ids.forEach { setRemoved(it, now) }
+
+    // --- Time-blocking --------------------------------------------------------------------------
+
+    /** Planifie [taskId] sur le créneau [start] (null = retire du planning) pour [minutes]. */
+    suspend fun setBlock(taskId: Long, start: Long?, minutes: Int) =
+        taskDao.setBlock(taskId, start, if (start == null) 0 else minutes)
+
     /** Suppression **définitive** (uniquement depuis l'archive). */
     suspend fun deleteTask(taskId: Long) = taskDao.deleteById(taskId)
 
@@ -139,8 +213,18 @@ class KairosRepository(
 
     suspend fun deleteLabel(id: Long) {
         labelDao.detachTasks(id)
+        savedFilterDao.detachLabel(id)
         labelDao.deleteById(id)
     }
+
+    suspend fun setLabelPinned(id: Long, pinned: Boolean) = labelDao.setPinned(id, pinned)
+
+    // --- Filtres enregistrés --------------------------------------------------------------------
+
+    suspend fun saveFilter(filter: SavedFilter, now: Long): Long =
+        savedFilterDao.insert(filter.copy(createdAt = if (filter.id == 0L) now else filter.createdAt))
+
+    suspend fun deleteFilter(id: Long) = savedFilterDao.deleteById(id)
 
     /** Crée les étiquettes par défaut au premier lancement (si aucune n'existe). */
     suspend fun seedIfEmpty(now: Long) {

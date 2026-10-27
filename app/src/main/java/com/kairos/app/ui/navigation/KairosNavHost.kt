@@ -3,10 +3,15 @@ package com.kairos.app.ui.navigation
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
+import android.content.ActivityNotFoundException
+import android.content.Intent
 import android.net.Uri
+import android.widget.Toast
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -15,7 +20,10 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
+import com.kairos.app.R
+import com.kairos.app.data.calendar.BusySlot
 import com.kairos.app.data.model.AppSettings
+import com.kairos.app.data.model.SavedFilter
 import com.kairos.app.data.model.Quadrant
 import com.kairos.app.data.model.Task
 import com.kairos.app.domain.ai.Classification
@@ -27,6 +35,7 @@ import com.kairos.app.ui.focus.FocusScreen
 import com.kairos.app.ui.guide.GuideScreen
 import com.kairos.app.ui.labels.LabelsScreen
 import com.kairos.app.ui.matrix.MatrixScreen
+import com.kairos.app.ui.planning.PlanningScreen
 import com.kairos.app.ui.pomodoro.PomodoroViewModel
 import com.kairos.app.ui.pomodoro.PomodoroScreen
 import com.kairos.app.ui.settings.SettingsScreen
@@ -39,6 +48,7 @@ private object Routes {
     const val POMODORO = "pomodoro"
     const val ARCHIVE = "archive"
     const val GUIDE = "guide"
+    const val PLANNING = "planning"
     const val EDITOR = "editor?taskId={taskId}&quadrant={quadrant}&title={title}"
 }
 
@@ -70,6 +80,13 @@ fun KairosNavHost(
     onSetReminderLead: (Int) -> Unit,
     onExport: () -> Unit,
     onImport: () -> Unit,
+    onSetQuadrantSort: (Int) -> Unit = {},
+    onSetFocusDueWeight: (Int) -> Unit = {},
+    onSetCalendarEnabled: (Boolean) -> Unit = {},
+    onSetIcalUrl: (String) -> Unit = {},
+    onTestIcal: suspend (String) -> Result<Int> = { Result.failure(IllegalStateException()) },
+    /** Créneaux occupés des agendas sur [from, to[ (time-blocking). */
+    loadBusy: suspend (from: Long, to: Long) -> List<BusySlot> = { _, _ -> emptyList() },
     /** Signal (compteur) d'ouverture directe du Pomodoro depuis une notification ou un raccourci. */
     pomodoroLaunch: Int = 0,
     /** Raccourcis d'application : compteurs déclencheurs (nouvelle tâche / Focus). */
@@ -84,6 +101,10 @@ fun KairosNavHost(
     val labels by viewModel.labels.collectAsStateWithLifecycle()
     val subtasks by viewModel.subtasks.collectAsStateWithLifecycle()
     val subtaskProgress by viewModel.subtaskProgress.collectAsStateWithLifecycle()
+    val savedFilters by viewModel.savedFilters.collectAsStateWithLifecycle()
+    val attachments by viewModel.attachments.collectAsStateWithLifecycle()
+    val context = LocalContext.current
+    val noAppMessage = stringResource(R.string.attachment_no_app)
     // ViewModel Pomodoro hissé : l'état alimente le bandeau de la matrice ET l'écran dédié.
     val pomodoroViewModel: PomodoroViewModel = viewModel(factory = factory)
     val pomodoroState by pomodoroViewModel.state.collectAsStateWithLifecycle()
@@ -156,6 +177,18 @@ fun KairosNavHost(
                 onOpenArchive = { navController.navigate(Routes.ARCHIVE) },
                 showGuide = settings.showGuide,
                 onOpenGuide = { navController.navigate(Routes.GUIDE) },
+                quadrantSort = settings.quadrantSort,
+                focusDueWeight = settings.focusDueWeight,
+                onSetQuadrantSort = onSetQuadrantSort,
+                savedFilters = savedFilters,
+                onSaveFilter = { name, query, labelId ->
+                    viewModel.saveFilter(SavedFilter(name = name, query = query, labelId = labelId))
+                },
+                onMoveMany = { ids, quadrant -> viewModel.moveMany(ids, quadrant) },
+                onLabelMany = { ids, labelId -> viewModel.setLabelMany(ids, labelId) },
+                onCompleteMany = { viewModel.completeMany(it) },
+                onRemoveMany = { viewModel.removeMany(it) },
+                onOpenPlanning = { navController.navigate(Routes.PLANNING) },
             )
         }
         composable(Routes.FOCUS) {
@@ -165,6 +198,20 @@ fun KairosNavHost(
                 onBack = { navController.popBackStack() },
                 onComplete = { viewModel.setCompleted(it.id, true) },
                 onOpenTask = { openExisting(it) },
+                focusDueWeight = settings.focusDueWeight,
+            )
+        }
+        composable(Routes.PLANNING) {
+            PlanningScreen(
+                tasks = tasks,
+                labels = labels,
+                focusDueWeight = settings.focusDueWeight,
+                calendarConfigured = settings.calendarEnabled || settings.icalUrl.isNotBlank(),
+                loadBusy = loadBusy,
+                onSetBlock = { task, start, minutes -> viewModel.setBlock(task.id, start, minutes) },
+                onOpenTask = { openExisting(it) },
+                onOpenSettings = { navController.navigate(Routes.SETTINGS) },
+                onBack = { navController.popBackStack() },
             )
         }
         composable(Routes.LABELS) {
@@ -173,6 +220,9 @@ fun KairosNavHost(
                 onBack = { navController.popBackStack() },
                 onSave = { viewModel.saveLabel(it) },
                 onDelete = { viewModel.deleteLabel(it) },
+                onTogglePin = { viewModel.setLabelPinned(it.id, !it.pinned) },
+                savedFilters = savedFilters,
+                onDeleteFilter = { viewModel.deleteFilter(it) },
             )
         }
         composable(Routes.SETTINGS) {
@@ -201,6 +251,11 @@ fun KairosNavHost(
                 onExport = onExport,
                 onImport = onImport,
                 onBack = { navController.popBackStack() },
+                onSetQuadrantSort = onSetQuadrantSort,
+                onSetFocusDueWeight = onSetFocusDueWeight,
+                onSetCalendarEnabled = onSetCalendarEnabled,
+                onSetIcalUrl = onSetIcalUrl,
+                onTestIcal = onTestIcal,
             )
         }
         composable(Routes.POMODORO) {
@@ -239,6 +294,7 @@ fun KairosNavHost(
             // taskId = 0 → création (aucune tâche ne correspond).
             val editorTask = tasks.firstOrNull { it.id == taskId }
             val editorSubtasks = subtasks.filter { it.taskId == taskId }.sortedBy { it.position }
+            val editorAttachments = attachments.filter { it.taskId == taskId }
             TaskEditorScreen(
                 task = editorTask,
                 defaultQuadrant = Quadrant.entries.getOrElse(quadrantOrdinal) { Quadrant.SCHEDULE },
@@ -247,12 +303,27 @@ fun KairosNavHost(
                 now = System.currentTimeMillis(),
                 initialTitle = initialTitle,
                 initialSubtasks = editorSubtasks,
+                initialAttachments = editorAttachments,
                 aiEnabled = aiEnabled,
                 onReformulateTask = reformulateTask,
                 onSuggestClassify = suggestClassify,
                 onSuggestSubtasks = suggestSubtasks,
+                onPickAttachment = { viewModel.importAttachment(it) },
+                onOpenAttachment = { attachment ->
+                    val intent = Intent(Intent.ACTION_VIEW)
+                        .setDataAndType(viewModel.attachmentUri(attachment), attachment.mimeType)
+                        .addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_ACTIVITY_NEW_TASK)
+                    try {
+                        context.startActivity(intent)
+                    } catch (_: ActivityNotFoundException) {
+                        Toast.makeText(context, noAppMessage, Toast.LENGTH_SHORT).show()
+                    }
+                },
                 onBack = { navController.popBackStack() },
-                onSave = { task, subs -> viewModel.saveTask(task, subs); navController.popBackStack() },
+                onSave = { task, subs, promoted, files ->
+                    viewModel.saveTask(task, subs, promoted, files)
+                    navController.popBackStack()
+                },
                 // Depuis l'éditeur, « retirer » = archiver (réversible), pas de suppression dure.
                 onDelete = { viewModel.removeTask(it.id); navController.popBackStack() },
             )

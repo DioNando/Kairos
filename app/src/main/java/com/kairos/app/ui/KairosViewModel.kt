@@ -2,8 +2,11 @@ package com.kairos.app.ui
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import android.net.Uri
+import com.kairos.app.data.model.Attachment
 import com.kairos.app.data.model.Label
 import com.kairos.app.data.model.Quadrant
+import com.kairos.app.data.model.SavedFilter
 import com.kairos.app.data.model.Subtask
 import com.kairos.app.data.model.Task
 import com.kairos.app.data.repository.KairosRepository
@@ -28,6 +31,12 @@ class KairosViewModel(private val repository: KairosRepository) : ViewModel() {
     val subtasks: StateFlow<List<Subtask>> =
         repository.subtasks.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
 
+    val savedFilters: StateFlow<List<SavedFilter>> =
+        repository.savedFilters.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
+
+    val attachments: StateFlow<List<Attachment>> =
+        repository.attachments.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
+
     /** Compteur terminées/total par tâche, dérivé du flux des sous-tâches. */
     val subtaskProgress: StateFlow<Map<Long, SubtaskProgress>> =
         repository.subtasks
@@ -41,8 +50,47 @@ class KairosViewModel(private val repository: KairosRepository) : ViewModel() {
 
     fun saveTask(task: Task) = viewModelScope.launch { repository.saveTask(task, now()) }
 
-    fun saveTask(task: Task, subtasks: List<Subtask>) =
-        viewModelScope.launch { repository.saveTaskWithSubtasks(task, subtasks, now()) }
+    /**
+     * Enregistre depuis l'éditeur : checklist, sous-tâches [promoted] (créées comme tâches) et pièces
+     * jointes ([attachments] = liste complète voulue).
+     */
+    fun saveTask(
+        task: Task,
+        subtasks: List<Subtask>,
+        promoted: List<Subtask> = emptyList(),
+        attachments: List<Attachment>? = null,
+    ) = viewModelScope.launch {
+        repository.saveTaskWithSubtasks(task, subtasks, now(), promoted, attachments)
+    }
+
+    suspend fun importAttachment(uri: Uri): Result<Attachment> = runCatching { repository.importAttachment(uri) }
+
+    fun attachmentUri(attachment: Attachment): Uri = repository.attachmentUri(attachment)
+
+    // --- Sélection multiple ---------------------------------------------------------------------
+
+    fun moveMany(ids: Collection<Long>, quadrant: Quadrant) =
+        viewModelScope.launch { repository.moveMany(ids.toList(), quadrant) }
+
+    fun setLabelMany(ids: Collection<Long>, labelId: Long?) =
+        viewModelScope.launch { repository.setLabelMany(ids.toList(), labelId) }
+
+    fun completeMany(ids: Collection<Long>) = viewModelScope.launch { repository.completeMany(ids.toList(), now()) }
+
+    fun removeMany(ids: Collection<Long>) = viewModelScope.launch { repository.removeMany(ids.toList(), now()) }
+
+    // --- Time-blocking --------------------------------------------------------------------------
+
+    fun setBlock(taskId: Long, start: Long?, minutes: Int) =
+        viewModelScope.launch { repository.setBlock(taskId, start, minutes) }
+
+    // --- Étiquettes & filtres -------------------------------------------------------------------
+
+    fun setLabelPinned(id: Long, pinned: Boolean) = viewModelScope.launch { repository.setLabelPinned(id, pinned) }
+
+    fun saveFilter(filter: SavedFilter) = viewModelScope.launch { repository.saveFilter(filter, now()) }
+
+    fun deleteFilter(id: Long) = viewModelScope.launch { repository.deleteFilter(id) }
 
     fun moveTo(taskId: Long, quadrant: Quadrant, beforeId: Long? = null) =
         viewModelScope.launch { repository.moveTo(taskId, quadrant, beforeId) }

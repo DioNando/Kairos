@@ -6,6 +6,7 @@
 
 package com.kairos.app.ui.matrix
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.animateFloatAsState
@@ -39,7 +40,19 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.rounded.Label
+import androidx.compose.material.icons.automirrored.rounded.Sort
 import androidx.compose.material.icons.rounded.Add
+import androidx.compose.material.icons.rounded.Bookmark
+import androidx.compose.material.icons.rounded.BookmarkAdd
+import androidx.compose.material.icons.rounded.CalendarMonth
+import androidx.compose.material.icons.rounded.Check
+import androidx.compose.material.icons.rounded.DriveFileMove
+import androidx.compose.material.icons.rounded.LibraryAddCheck
+import androidx.compose.material.icons.rounded.PushPin
+import androidx.compose.material.icons.rounded.RadioButtonUnchecked
+import androidx.compose.material.icons.rounded.Schedule
+import androidx.compose.material.icons.rounded.SelectAll
 import androidx.compose.material.icons.rounded.Category
 import androidx.compose.material.icons.rounded.CenterFocusStrong
 import androidx.compose.material.icons.rounded.CheckCircle
@@ -62,7 +75,9 @@ import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearWavyProgressIndicator
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.SwipeToDismissBox
@@ -107,10 +122,13 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import com.kairos.app.R
+import com.kairos.app.data.model.AppSettings
 import com.kairos.app.data.model.Label
 import com.kairos.app.data.model.Quadrant
+import com.kairos.app.data.model.SavedFilter
 import com.kairos.app.data.model.Task
 import com.kairos.app.domain.recurrence.Recurrence
+import com.kairos.app.domain.sort.TaskSort
 import com.kairos.app.ui.SubtaskProgress
 import com.kairos.app.ui.pomodoro.PomodoroPhase
 import com.kairos.app.ui.pomodoro.PomodoroState
@@ -120,6 +138,8 @@ import com.kairos.app.ui.components.KairosFilterChip
 import com.kairos.app.ui.components.MorphingIconPill
 import com.kairos.app.ui.components.QuadrantVisual
 import com.kairos.app.ui.components.dueStatus
+import com.kairos.app.ui.components.formatBlock
+import com.kairos.app.ui.components.onAccent
 import com.kairos.app.ui.components.kairosFieldColors
 import com.kairos.app.ui.components.formatDue
 import com.kairos.app.ui.components.quadrantEmptyRes
@@ -173,11 +193,34 @@ fun MatrixScreen(
     onOpenArchive: () -> Unit,
     showGuide: Boolean,
     onOpenGuide: () -> Unit,
+    quadrantSort: Int = AppSettings.SORT_MANUAL,
+    focusDueWeight: Int = 30,
+    onSetQuadrantSort: (Int) -> Unit = {},
+    savedFilters: List<SavedFilter> = emptyList(),
+    onSaveFilter: (name: String, query: String, labelId: Long?) -> Unit = { _, _, _ -> },
+    onMoveMany: (Set<Long>, Quadrant) -> Unit = { _, _ -> },
+    onLabelMany: (Set<Long>, Long?) -> Unit = { _, _ -> },
+    onCompleteMany: (Set<Long>) -> Unit = {},
+    onRemoveMany: (Set<Long>) -> Unit = {},
+    onOpenPlanning: () -> Unit = {},
 ) {
     val active = remember(tasks) { tasks.filter { it.isActive } }
     val labelsById = remember(labels) { labels.associateBy { it.id } }
     val drag = remember { QuadrantDragState() }
+    SideEffect { drag.manualOrder = quadrantSort == AppSettings.SORT_MANUAL }
     var quickAddQuadrant by remember { mutableStateOf<Quadrant?>(null) }
+
+    // Sélection multiple : non vide = mode sélection (tap = cocher, drag/swipe désactivés, barre
+    // d'actions en lot). Les tâches qui quittent le board en sortent d'elles-mêmes.
+    var selection by remember { mutableStateOf(emptySet<Long>()) }
+    val activeIds = remember(active) { active.map { it.id }.toSet() }
+    if (selection.isNotEmpty() && !activeIds.containsAll(selection)) selection = selection intersect activeIds
+    val selecting = selection.isNotEmpty()
+    BackHandler(enabled = selecting) { selection = emptySet() }
+    val toggleSelect: (Task) -> Unit = { t ->
+        selection = if (t.id in selection) selection - t.id else selection + t.id
+    }
+    val pinnedLabels = remember(labels) { labels.filter { it.pinned } }
 
     // Recherche + filtre par étiquette (transversal aux quadrants). Le panneau se déplie via l'icône
     // de recherche ; les compteurs et cellules reflètent alors le sous-ensemble filtré.
@@ -194,6 +237,18 @@ fun MatrixScreen(
 
     Scaffold(
         topBar = {
+          if (selecting) {
+            SelectionTopBar(
+                count = selection.size,
+                labels = labels,
+                onClear = { selection = emptySet() },
+                onSelectAll = { selection = filtered.map { it.id }.toSet() },
+                onMove = { onMoveMany(selection, it); selection = emptySet() },
+                onLabel = { onLabelMany(selection, it); selection = emptySet() },
+                onComplete = { onCompleteMany(selection); selection = emptySet() },
+                onRemove = { onRemoveMany(selection); selection = emptySet() },
+            )
+          } else {
             TopAppBar(
                 title = {
                     Row(verticalAlignment = Alignment.CenterVertically) {
@@ -211,6 +266,8 @@ fun MatrixScreen(
                     }
                 },
                 actions = {
+                    // Tri des tâches dans les quadrants.
+                    SortMenu(current = quadrantSort, onSelect = onSetQuadrantSort)
                     // Recherche + filtre par étiquette (déplie le panneau).
                     IconButton(onClick = {
                         searching = !searching
@@ -235,6 +292,7 @@ fun MatrixScreen(
                     }
                 },
             )
+          }
         },
         bottomBar = {
             BottomAppBar(
@@ -244,6 +302,9 @@ fun MatrixScreen(
                     }
                     IconButton(onClick = onOpenPomodoro) {
                         Icon(Icons.Rounded.Timer, contentDescription = stringResource(R.string.cd_pomodoro))
+                    }
+                    IconButton(onClick = onOpenPlanning) {
+                        Icon(Icons.Rounded.CalendarMonth, contentDescription = stringResource(R.string.cd_planning))
                     }
                     IconButton(onClick = onOpenLabels) {
                         Icon(Icons.Rounded.Category, contentDescription = stringResource(R.string.cd_labels))
@@ -275,7 +336,7 @@ fun MatrixScreen(
             val cellContent: @Composable (Quadrant, Modifier, Boolean) -> Unit = { quadrant, modifier, lazy ->
                 QuadrantCell(
                     quadrant = quadrant,
-                    tasks = filtered.filter { it.quadrant == quadrant },
+                    tasks = TaskSort.apply(filtered.filter { it.quadrant == quadrant }, quadrantSort, focusDueWeight, now),
                     labelsById = labelsById,
                     subtaskProgress = subtaskProgress,
                     urgencyThresholdHours = urgencyThresholdHours,
@@ -288,6 +349,8 @@ fun MatrixScreen(
                     onMove = onMove,
                     onReorder = onReorder,
                     onRemove = onRemove,
+                    selection = selection,
+                    onToggleSelect = toggleSelect,
                     modifier = modifier,
                 )
             }
@@ -301,7 +364,33 @@ fun MatrixScreen(
                         labels = labels,
                         filterLabelId = filterLabelId,
                         onFilterLabel = { filterLabelId = it },
+                        savedFilters = savedFilters,
+                        onApplyFilter = { f ->
+                            val applied = f.query == query && f.labelId == filterLabelId
+                            query = if (applied) "" else f.query
+                            filterLabelId = if (applied) null else f.labelId
+                        },
+                        onSaveFilter = { name -> onSaveFilter(name, query.trim(), filterLabelId) },
                     )
+                }
+                // Étiquettes épinglées : filtres rapides toujours visibles (panneau de recherche fermé).
+                AnimatedVisibility(visible = !searching && pinnedLabels.isNotEmpty()) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .horizontalScroll(rememberScrollState())
+                            .padding(horizontal = 12.dp)
+                            .padding(top = 4.dp, bottom = 8.dp),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    ) {
+                        pinnedLabels.forEach { label ->
+                            LabelFilterChip(
+                                label = label,
+                                selected = filterLabelId == label.id,
+                                onClick = { filterLabelId = if (filterLabelId == label.id) null else label.id },
+                            )
+                        }
+                    }
                 }
                 // Bandeau Pomodoro : visible tant qu'une session est active, tap = ouvrir l'écran.
                 AnimatedVisibility(visible = pomodoro.active) {
@@ -529,6 +618,8 @@ private fun QuadrantCell(
     onMove: (Task, Quadrant, Long?) -> Unit,
     onReorder: (Task, Long?) -> Unit,
     onRemove: (Task) -> Unit,
+    selection: Set<Long>,
+    onToggleSelect: (Task) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val visual = quadrantVisual(quadrant)
@@ -603,6 +694,9 @@ private fun QuadrantCell(
                 onMove = { target, beforeId -> onMove(task, target, beforeId) },
                 onReorder = { onReorder(task, it) },
                 onRemove = { onRemove(task) },
+                selecting = selection.isNotEmpty(),
+                selected = task.id in selection,
+                onToggleSelect = { onToggleSelect(task) },
             )
         }
         if (tasks.isEmpty()) {
@@ -650,9 +744,150 @@ private fun QuadrantCell(
     }
 }
 
+/** Puce de filtre d'étiquette : pastille en tête, couleur de la pastille une fois sélectionnée. */
+@Composable
+private fun LabelFilterChip(label: Label, selected: Boolean, onClick: () -> Unit) {
+    val swatch = label.colorHex.toColor()
+    KairosFilterChip(
+        selected = selected,
+        onClick = onClick,
+        label = label.name,
+        selectedContainerColor = swatch,
+        leadingIcon = {
+            if (label.pinned) {
+                Icon(
+                    Icons.Rounded.PushPin,
+                    contentDescription = null,
+                    tint = if (selected) onAccent(swatch) else swatch,
+                )
+            } else {
+                Box(
+                    modifier = Modifier
+                        .size(10.dp)
+                        .background(if (selected) onAccent(swatch) else swatch, CircleShape),
+                )
+            }
+        },
+    )
+}
+
+/** Menu de tri des quadrants (icône de la barre du haut), option courante cochée. */
+@Composable
+private fun SortMenu(current: Int, onSelect: (Int) -> Unit) {
+    var open by remember { mutableStateOf(false) }
+    Box {
+        IconButton(onClick = { open = true }) {
+            Icon(Icons.AutoMirrored.Rounded.Sort, contentDescription = stringResource(R.string.cd_sort))
+        }
+        DropdownMenu(expanded = open, onDismissRequest = { open = false }) {
+            LocalizedOverlay {
+                Text(
+                    stringResource(R.string.sort_title),
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
+                )
+                listOf(
+                    AppSettings.SORT_MANUAL to R.string.sort_manual,
+                    AppSettings.SORT_DUE to R.string.sort_due,
+                    AppSettings.SORT_PRIORITY to R.string.sort_priority,
+                    AppSettings.SORT_CREATED to R.string.sort_created,
+                    AppSettings.SORT_ALPHA to R.string.sort_alpha,
+                ).forEach { (value, res) ->
+                    DropdownMenuItem(
+                        text = { Text(stringResource(res)) },
+                        trailingIcon = {
+                            if (value == current) Icon(Icons.Rounded.Check, contentDescription = null)
+                        },
+                        onClick = { open = false; onSelect(value) },
+                    )
+                }
+            }
+        }
+    }
+}
+
 /**
- * Panneau de recherche + filtre par étiquette (transversal aux quadrants). Champ texte (titre/note)
- * + rangée de puces d'étiquettes défilante (« Toutes » + une par étiquette, avec sa pastille).
+ * Barre contextuelle du mode sélection : nombre de tâches cochées + actions en lot (tout
+ * sélectionner, déplacer, étiqueter, terminer, retirer).
+ */
+@Composable
+private fun SelectionTopBar(
+    count: Int,
+    labels: List<Label>,
+    onClear: () -> Unit,
+    onSelectAll: () -> Unit,
+    onMove: (Quadrant) -> Unit,
+    onLabel: (Long?) -> Unit,
+    onComplete: () -> Unit,
+    onRemove: () -> Unit,
+) {
+    var moveOpen by remember { mutableStateOf(false) }
+    var labelOpen by remember { mutableStateOf(false) }
+    TopAppBar(
+        navigationIcon = {
+            IconButton(onClick = onClear) {
+                Icon(Icons.Rounded.Close, contentDescription = stringResource(R.string.cd_clear_selection))
+            }
+        },
+        title = { Text(stringResource(R.string.selection_count, count)) },
+        actions = {
+            IconButton(onClick = onSelectAll) {
+                Icon(Icons.Rounded.SelectAll, contentDescription = stringResource(R.string.cd_select_all))
+            }
+            Box {
+                IconButton(onClick = { moveOpen = true }) {
+                    Icon(Icons.Rounded.DriveFileMove, contentDescription = stringResource(R.string.move_to))
+                }
+                DropdownMenu(expanded = moveOpen, onDismissRequest = { moveOpen = false }) {
+                    LocalizedOverlay {
+                        Quadrant.entries.forEach { target ->
+                            val tv = quadrantVisual(target)
+                            DropdownMenuItem(
+                                text = { Text(tv.verb) },
+                                leadingIcon = { Icon(tv.icon, contentDescription = null, tint = tv.accent) },
+                                onClick = { moveOpen = false; onMove(target) },
+                            )
+                        }
+                    }
+                }
+            }
+            Box {
+                IconButton(onClick = { labelOpen = true }) {
+                    Icon(Icons.AutoMirrored.Rounded.Label, contentDescription = stringResource(R.string.cd_set_label))
+                }
+                DropdownMenu(expanded = labelOpen, onDismissRequest = { labelOpen = false }) {
+                    LocalizedOverlay {
+                        DropdownMenuItem(
+                            text = { Text(stringResource(R.string.label_none)) },
+                            onClick = { labelOpen = false; onLabel(null) },
+                        )
+                        labels.forEach { label ->
+                            DropdownMenuItem(
+                                text = { Text(label.name) },
+                                leadingIcon = {
+                                    Box(Modifier.size(12.dp).background(label.colorHex.toColor(), CircleShape))
+                                },
+                                onClick = { labelOpen = false; onLabel(label.id) },
+                            )
+                        }
+                    }
+                }
+            }
+            IconButton(onClick = onComplete) {
+                Icon(Icons.Rounded.CheckCircle, contentDescription = stringResource(R.string.cd_mark_done))
+            }
+            IconButton(onClick = onRemove) {
+                Icon(Icons.Rounded.Inventory2, contentDescription = stringResource(R.string.action_remove))
+            }
+        },
+    )
+}
+
+/**
+ * Panneau de recherche + filtre par étiquette (transversal aux quadrants). Champ texte (titre/note),
+ * filtres enregistrés (réappliqués d'un tap) et rangée de puces d'étiquettes défilante (« Toutes » +
+ * une par étiquette, avec sa pastille). L'icône signet du champ enregistre le filtre courant.
  */
 @Composable
 private fun FilterPanel(
@@ -661,7 +896,12 @@ private fun FilterPanel(
     labels: List<Label>,
     filterLabelId: Long?,
     onFilterLabel: (Long?) -> Unit,
+    savedFilters: List<SavedFilter>,
+    onApplyFilter: (SavedFilter) -> Unit,
+    onSaveFilter: (String) -> Unit,
 ) {
+    var naming by remember { mutableStateOf(false) }
+    val canSave = query.isNotBlank() || filterLabelId != null
     Column(
         modifier = Modifier
             .fillMaxWidth()
@@ -676,9 +916,16 @@ private fun FilterPanel(
             singleLine = true,
             leadingIcon = { Icon(Icons.Rounded.Search, contentDescription = null) },
             trailingIcon = {
-                if (query.isNotEmpty()) {
-                    IconButton(onClick = { onQueryChange("") }) {
-                        Icon(Icons.Rounded.Close, contentDescription = stringResource(R.string.search_clear))
+                Row {
+                    if (canSave) {
+                        IconButton(onClick = { naming = true }) {
+                            Icon(Icons.Rounded.BookmarkAdd, contentDescription = stringResource(R.string.filter_save))
+                        }
+                    }
+                    if (query.isNotEmpty()) {
+                        IconButton(onClick = { onQueryChange("") }) {
+                            Icon(Icons.Rounded.Close, contentDescription = stringResource(R.string.search_clear))
+                        }
                     }
                 }
             },
@@ -686,6 +933,21 @@ private fun FilterPanel(
             colors = kairosFieldColors(),
             modifier = Modifier.fillMaxWidth(),
         )
+        if (savedFilters.isNotEmpty()) {
+            Row(
+                modifier = Modifier.horizontalScroll(rememberScrollState()),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                savedFilters.forEach { filter ->
+                    KairosFilterChip(
+                        selected = filter.query == query && filter.labelId == filterLabelId,
+                        onClick = { onApplyFilter(filter) },
+                        label = filter.name,
+                        leadingIcon = { Icon(Icons.Rounded.Bookmark, contentDescription = null) },
+                    )
+                }
+            }
+        }
         if (labels.isNotEmpty()) {
             Row(
                 modifier = Modifier
@@ -699,17 +961,44 @@ private fun FilterPanel(
                     label = stringResource(R.string.filter_all),
                 )
                 labels.forEach { label ->
-                    KairosFilterChip(
+                    LabelFilterChip(
+                        label = label,
                         selected = filterLabelId == label.id,
                         onClick = { onFilterLabel(if (filterLabelId == label.id) null else label.id) },
-                        label = label.name,
-                        leadingIcon = {
-                            Box(modifier = Modifier.size(10.dp).background(label.colorHex.toColor(), CircleShape))
-                        },
                     )
                 }
             }
         }
+    }
+
+    if (naming) {
+        var name by remember { mutableStateOf(query.trim()) }
+        // Strings résolues hors du dialog (fenêtre détachée qui perd l'override de langue in-app).
+        val dialogTitle = stringResource(R.string.filter_save)
+        val nameLabel = stringResource(R.string.filter_name)
+        val saveLabel = stringResource(R.string.action_save)
+        val cancelLabel = stringResource(R.string.action_cancel)
+        AlertDialog(
+            onDismissRequest = { naming = false },
+            title = { Text(dialogTitle) },
+            text = {
+                TextField(
+                    value = name,
+                    onValueChange = { name = it },
+                    label = { Text(nameLabel) },
+                    singleLine = true,
+                    shape = KairosFieldShape,
+                    colors = kairosFieldColors(),
+                )
+            },
+            confirmButton = {
+                TextButton(
+                    enabled = name.isNotBlank(),
+                    onClick = { naming = false; onSaveFilter(name.trim()) },
+                ) { Text(saveLabel) }
+            },
+            dismissButton = { TextButton(onClick = { naming = false }) { Text(cancelLabel) } },
+        )
     }
 }
 
@@ -769,6 +1058,9 @@ private fun TaskRow(
     onMove: (Quadrant, Long?) -> Unit,
     onReorder: (Long?) -> Unit,
     onRemove: () -> Unit,
+    selecting: Boolean,
+    selected: Boolean,
+    onToggleSelect: () -> Unit,
 ) {
     val haptic = LocalHapticFeedback.current
     val scope = rememberCoroutineScope()
@@ -842,15 +1134,20 @@ private fun TaskRow(
             }
             .clip(RoundedCornerShape(12.dp)),
         onDismiss = onDismiss,
+        // Mode sélection : pas de swipe (un tap coche, un glissement ne doit rien archiver).
+        gesturesEnabled = !selecting,
         backgroundContent = { SwipeBackground(dismissState.dismissDirection, accent) },
     ) {
         TaskRowContent(
             task, label, progress, accent, urgencyThresholdHours, now, drag,
-            onOpen = onOpen,
+            onOpen = if (selecting) onToggleSelect else onOpen,
             onComplete = onComplete,
             onMove = onMove,
             onReorder = onReorder,
             onRemove = onRemove,
+            selecting = selecting,
+            selected = selected,
+            onToggleSelect = onToggleSelect,
         )
     }
 }
@@ -902,9 +1199,13 @@ private fun TaskRowContent(
     onMove: (Quadrant, Long?) -> Unit,
     onReorder: (Long?) -> Unit,
     onRemove: () -> Unit,
+    selecting: Boolean,
+    selected: Boolean,
+    onToggleSelect: () -> Unit,
 ) {
     val haptic = LocalHapticFeedback.current
     var menuOpen by remember { mutableStateOf(false) }
+    val currentSelecting by rememberUpdatedState(selecting)
     var origin by remember { mutableStateOf(Offset.Zero) }
     var rowHeight by remember { mutableStateOf(0f) }
     // Le pointerInput est keyé sur l'id seul (pour ne pas couper un geste en cours) : on lit la
@@ -943,7 +1244,11 @@ private fun TaskRowContent(
         // Surbrillance rendue **opaque** : on compose l'accent translucide SUR la surface, au lieu
         // d'un simple alpha qui laissait le fond du swipe (et son icône) transparaître à travers la
         // ligne pendant le glissement (icônes superposées au contenu).
-        if (pulse) accent.copy(alpha = pulseAlpha).compositeOver(surface) else surface,
+        when {
+            selected -> accent.copy(alpha = if (darkTheme) 0.38f else 0.50f).compositeOver(surface)
+            pulse -> accent.copy(alpha = pulseAlpha).compositeOver(surface)
+            else -> surface
+        },
         animationSpec = MaterialTheme.motionScheme.defaultEffectsSpec(),
         label = "task-pulse",
     )
@@ -962,7 +1267,11 @@ private fun TaskRowContent(
             .pointerInput(task.id) {
                 detectDragGesturesAfterLongPress(
                     onDragStart = { touch ->
-                        if (drag.start(currentTask, origin + touch, rowHeight)) {
+                        // En mode sélection, l'appui long coche/décoche au lieu de saisir la ligne.
+                        if (currentSelecting) {
+                            haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                            onToggleSelect()
+                        } else if (drag.start(currentTask, origin + touch, rowHeight)) {
                             haptic.performHapticFeedback(HapticFeedbackType.LongPress)
                             pinHandle = pinnable?.pin()
                         }
@@ -1009,7 +1318,7 @@ private fun TaskRowContent(
             // Méta en FlowRow : label / récurrence / sous-tâches / échéance passent **à la ligne**
             // au lieu de s'écraser (carte étroite en grille 2×2). Chaque info sur une seule ligne.
             val hasMeta = label != null || task.recurrenceType != Recurrence.NONE ||
-                (progress != null && progress.total > 0) || task.dueAt != null
+                (progress != null && progress.total > 0) || task.dueAt != null || task.blockStart != null
             if (hasMeta) {
                 FlowRow(
                     modifier = Modifier.padding(top = 3.dp),
@@ -1053,6 +1362,23 @@ private fun TaskRowContent(
                             )
                         }
                     }
+                    if (task.blockStart != null) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Icon(
+                                Icons.Rounded.Schedule,
+                                contentDescription = stringResource(R.string.cd_planned),
+                                tint = accent,
+                                modifier = Modifier.size(14.dp),
+                            )
+                            Spacer(Modifier.size(2.dp))
+                            Text(
+                                formatBlock(task.blockStart, task.blockEnd ?: task.blockStart),
+                                style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                maxLines = 1,
+                            )
+                        }
+                    }
                     if (task.dueAt != null) {
                         Text(
                             formatDue(task.dueAt),
@@ -1068,7 +1394,16 @@ private fun TaskRowContent(
                 }
             }
         }
-        Box {
+        if (selecting) {
+            IconButton(onClick = onToggleSelect, modifier = Modifier.size(28.dp)) {
+                Icon(
+                    if (selected) Icons.Rounded.CheckCircle else Icons.Rounded.RadioButtonUnchecked,
+                    contentDescription = stringResource(if (selected) R.string.cd_deselect else R.string.cd_select),
+                    tint = if (selected) accent else MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.size(20.dp),
+                )
+            }
+        } else Box {
             IconButton(onClick = { menuOpen = true }, modifier = Modifier.size(28.dp)) {
                 Icon(
                     Icons.Rounded.MoreVert,
@@ -1101,6 +1436,16 @@ private fun TaskRowContent(
                     )
                 }
                 HorizontalDivider()
+                // Entrée du mode sélection multiple (cette tâche cochée d'office).
+                DropdownMenuItem(
+                    text = { Text(stringResource(R.string.action_select)) },
+                    leadingIcon = { Icon(Icons.Rounded.LibraryAddCheck, contentDescription = null) },
+                    onClick = {
+                        menuOpen = false
+                        haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                        onToggleSelect()
+                    },
+                )
                 // Marquer terminée : la checkbox de ligne a été retirée (le swipe droite fait déjà
                 // le geste) — on garde l'action ici, accessible et juste au-dessus de Supprimer.
                 DropdownMenuItem(

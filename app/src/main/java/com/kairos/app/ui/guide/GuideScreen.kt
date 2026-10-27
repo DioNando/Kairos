@@ -18,6 +18,15 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.rounded.CalendarMonth
+import androidx.compose.material.icons.rounded.Watch
+import androidx.compose.material.icons.rounded.CheckBox
+import androidx.compose.material.icons.rounded.AttachFile
+import androidx.compose.material.icons.automirrored.rounded.Sort
+import androidx.compose.material.icons.rounded.LibraryAddCheck
+import androidx.compose.material.icons.rounded.PushPin
+import androidx.compose.material.icons.rounded.Schedule
+import androidx.compose.material.icons.rounded.CheckCircle
 import androidx.compose.material.icons.automirrored.rounded.ArrowBack
 import androidx.compose.material.icons.automirrored.rounded.KeyboardArrowRight
 import androidx.compose.material.icons.rounded.AutoAwesome
@@ -72,6 +81,8 @@ private enum class GuideTopic(val icon: ImageVector, val titleRes: Int, val subR
     CREATE(Icons.Rounded.EditNote, R.string.guide_create_title, R.string.guide_create_sub),
     DAILY(Icons.Rounded.Swipe, R.string.guide_daily_title, R.string.guide_daily_sub),
     FOCUS(Icons.Rounded.CenterFocusStrong, R.string.guide_focus_title, R.string.guide_focus_sub),
+    PLANNING(Icons.Rounded.CalendarMonth, R.string.guide_planning_title, R.string.guide_planning_sub),
+    WEAR(Icons.Rounded.Watch, R.string.guide_wear_title, R.string.guide_wear_sub),
     AI(Icons.Rounded.AutoAwesome, R.string.guide_ai_title, R.string.guide_ai_sub),
     SETTINGS(Icons.Rounded.Palette, R.string.guide_settings_title, R.string.guide_settings_sub),
 }
@@ -121,6 +132,8 @@ fun GuideScreen(onBack: () -> Unit) {
                 GuideTopic.CREATE -> CreateDetail()
                 GuideTopic.DAILY -> DailyDetail()
                 GuideTopic.FOCUS -> FocusDetail()
+                GuideTopic.PLANNING -> PlanningDetail()
+                GuideTopic.WEAR -> WearDetail()
                 GuideTopic.AI -> AiDetail()
                 GuideTopic.SETTINGS -> SettingsDetail()
             }
@@ -268,6 +281,8 @@ private fun ColumnScope.CreateDetail() {
     Point(Icons.Rounded.Label, stringResource(R.string.guide_create_label_t), stringResource(R.string.guide_create_label_b))
     Point(Icons.Rounded.Repeat, stringResource(R.string.guide_create_rec_t), stringResource(R.string.guide_create_rec_b))
     Point(Icons.Rounded.Checklist, stringResource(R.string.guide_create_sub_t), stringResource(R.string.guide_create_sub_b))
+    Point(Icons.Rounded.CheckBox, stringResource(R.string.guide_create_note_t), stringResource(R.string.guide_create_note_b))
+    Point(Icons.Rounded.AttachFile, stringResource(R.string.guide_create_attach_t), stringResource(R.string.guide_create_attach_b))
     Point(Icons.Rounded.AutoAwesome, stringResource(R.string.guide_create_ai_t), stringResource(R.string.guide_create_ai_b))
 }
 
@@ -275,6 +290,9 @@ private fun ColumnScope.CreateDetail() {
 private fun ColumnScope.DailyDetail() {
     Point(Icons.Rounded.ViewAgenda, stringResource(R.string.guide_daily_views_t), stringResource(R.string.guide_daily_views_b))
     Point(Icons.Rounded.Search, stringResource(R.string.guide_daily_search_t), stringResource(R.string.guide_daily_search_b))
+    Point(Icons.AutoMirrored.Rounded.Sort, stringResource(R.string.guide_daily_sort_t), stringResource(R.string.guide_daily_sort_b))
+    Point(Icons.Rounded.LibraryAddCheck, stringResource(R.string.guide_daily_select_t), stringResource(R.string.guide_daily_select_b))
+    Point(Icons.Rounded.PushPin, stringResource(R.string.guide_daily_labels_t), stringResource(R.string.guide_daily_labels_b))
     Point(Icons.Rounded.DragIndicator, stringResource(R.string.guide_daily_move_t), stringResource(R.string.guide_daily_move_b))
     Point(Icons.Rounded.Swipe, stringResource(R.string.guide_daily_swipe_t), stringResource(R.string.guide_daily_swipe_b))
     Point(Icons.Rounded.Notifications, stringResource(R.string.guide_daily_remind_t), stringResource(R.string.guide_daily_remind_b))
@@ -286,6 +304,24 @@ private fun ColumnScope.DailyDetail() {
 private fun ColumnScope.FocusDetail() {
     Point(Icons.Rounded.CenterFocusStrong, stringResource(R.string.guide_focus_focus_t), stringResource(R.string.guide_focus_focus_b))
     Point(Icons.Rounded.Timer, stringResource(R.string.guide_focus_pomo_t), stringResource(R.string.guide_focus_pomo_b))
+}
+
+@Composable
+private fun ColumnScope.PlanningDetail() {
+    Para(stringResource(R.string.guide_planning_p1))
+    Point(Icons.Rounded.DragIndicator, stringResource(R.string.guide_planning_drag_t), stringResource(R.string.guide_planning_drag_b))
+    Point(Icons.Rounded.Schedule, stringResource(R.string.guide_planning_block_t), stringResource(R.string.guide_planning_block_b))
+    Point(Icons.Rounded.CalendarMonth, stringResource(R.string.guide_planning_cal_t), stringResource(R.string.guide_planning_cal_b))
+    Tip(stringResource(R.string.guide_planning_tip))
+}
+
+@Composable
+private fun ColumnScope.WearDetail() {
+    Para(stringResource(R.string.guide_wear_p1))
+    Point(Icons.Rounded.CheckCircle, stringResource(R.string.guide_wear_focus_t), stringResource(R.string.guide_wear_focus_b))
+    Point(Icons.Rounded.Timer, stringResource(R.string.guide_wear_pomo_t), stringResource(R.string.guide_wear_pomo_b))
+    Point(Icons.Rounded.GridView, stringResource(R.string.guide_wear_today_t), stringResource(R.string.guide_wear_today_b))
+    Point(Icons.Rounded.Widgets, stringResource(R.string.guide_wear_tiles_t), stringResource(R.string.guide_wear_tiles_b))
 }
 
 @Composable

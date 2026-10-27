@@ -53,6 +53,27 @@
                 android:resource="@drawable/tile_preview" />
         </service>
 
+        <!-- Parcours d'un quadrant (tâches + ✓ terminer). Exportée : la tuile matrice l'ouvre
+             directement. -->
+        <activity
+            android:name=".QuadrantActivity"
+            android:exported="true" />
+
+        <!-- Tuile « Prochain créneau » (time-blocking du téléphone). -->
+        <service
+            android:name=".NextBlockTileService"
+            android:exported="true"
+            android:icon="@mipmap/ic_launcher"
+            android:label="@string/tile_next_label"
+            android:permission="com.google.android.wearable.permission.BIND_TILE_PROVIDER">
+            <intent-filter>
+                <action android:name="androidx.wear.tiles.action.BIND_TILE_PROVIDER" />
+            </intent-filter>
+            <meta-data
+                android:name="androidx.wear.tiles.PREVIEW"
+                android:resource="@drawable/tile_preview" />
+        </service>
+
         <!-- Réception des compteurs poussés par le téléphone (Data Layer). -->
         <service
             android:name=".WearDataListenerService"

@@ -37,6 +37,10 @@ class SettingsRepository(private val context: Context) {
         val AI_PROVIDER = intPreferencesKey("ai_provider")
         val REMINDERS_ENABLED = booleanPreferencesKey("reminders_enabled")
         val REMINDER_LEAD_MIN = intPreferencesKey("reminder_lead_minutes")
+        val QUADRANT_SORT = intPreferencesKey("quadrant_sort")
+        val FOCUS_DUE_WEIGHT = intPreferencesKey("focus_due_weight")
+        val CALENDAR_ENABLED = booleanPreferencesKey("calendar_enabled")
+        val ICAL_URL = stringPreferencesKey("ical_url")
     }
 
     val settings: Flow<AppSettings> = context.dataStore.data.map { prefs ->
@@ -62,7 +66,27 @@ class SettingsRepository(private val context: Context) {
             aiProvider = prefs[Keys.AI_PROVIDER] ?: AppSettings.AI_GEMINI,
             remindersEnabled = prefs[Keys.REMINDERS_ENABLED] ?: true,
             reminderLeadMinutes = prefs[Keys.REMINDER_LEAD_MIN] ?: 0,
+            quadrantSort = prefs[Keys.QUADRANT_SORT] ?: AppSettings.SORT_MANUAL,
+            focusDueWeight = prefs[Keys.FOCUS_DUE_WEIGHT] ?: 30,
+            calendarEnabled = prefs[Keys.CALENDAR_ENABLED] ?: false,
+            icalUrl = prefs[Keys.ICAL_URL] ?: "",
         )
+    }
+
+    suspend fun setQuadrantSort(sort: Int) {
+        context.dataStore.edit { it[Keys.QUADRANT_SORT] = sort.coerceIn(0, AppSettings.SORT_ALPHA) }
+    }
+
+    suspend fun setFocusDueWeight(weight: Int) {
+        context.dataStore.edit { it[Keys.FOCUS_DUE_WEIGHT] = weight.coerceIn(0, 100) }
+    }
+
+    suspend fun setCalendarEnabled(value: Boolean) {
+        context.dataStore.edit { it[Keys.CALENDAR_ENABLED] = value }
+    }
+
+    suspend fun setIcalUrl(url: String) {
+        context.dataStore.edit { it[Keys.ICAL_URL] = url.trim() }
     }
 
     suspend fun setThemeMode(mode: Int) {
@@ -161,6 +185,10 @@ class SettingsRepository(private val context: Context) {
             prefs[Keys.AI_PROVIDER] = s.aiProvider
             prefs[Keys.REMINDERS_ENABLED] = s.remindersEnabled
             prefs[Keys.REMINDER_LEAD_MIN] = s.reminderLeadMinutes
+            prefs[Keys.QUADRANT_SORT] = s.quadrantSort
+            prefs[Keys.FOCUS_DUE_WEIGHT] = s.focusDueWeight
+            prefs[Keys.CALENDAR_ENABLED] = s.calendarEnabled
+            prefs[Keys.ICAL_URL] = s.icalUrl
         }
     }
 }

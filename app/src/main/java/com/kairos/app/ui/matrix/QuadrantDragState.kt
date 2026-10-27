@@ -123,6 +123,13 @@ class QuadrantDragState {
     val isDragging: Boolean get() = dragged != null
 
     /**
+     * false quand les quadrants sont **triés** (échéance, priorité…) : l'ordre n'est plus manuel, on
+     * ne réordonne donc pas dans un quadrant et un changement de quadrant dépose en fin (le tri
+     * replace ensuite la tâche).
+     */
+    var manualOrder by mutableStateOf(true)
+
+    /**
      * Démarre le geste ; false si un autre drag est déjà en cours (second doigt). [rowHeight] =
      * hauteur de la ligne saisie (px).
      */
@@ -289,6 +296,7 @@ class QuadrantDragState {
      * la tâche qui la suit dans l'ordre affiché), ou devant la première ligne visible sinon.
      */
     private fun slotIn(task: Task, target: Quadrant): DropSlot? {
+        if (!manualOrder) return if (target == task.quadrant) null else DropSlot(null)
         val order = quadrantOrder[target].orEmpty()
         val others = order.filter { it != task.id }
         val visible = visibleOthers(task, target)

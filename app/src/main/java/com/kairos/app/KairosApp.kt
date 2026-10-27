@@ -1,6 +1,7 @@
 package com.kairos.app
 
 import android.app.Application
+import com.kairos.app.data.calendar.CalendarSource
 import com.kairos.app.data.local.KairosDatabase
 import com.kairos.app.data.model.AppSettings
 import com.kairos.app.data.model.Label
@@ -12,6 +13,7 @@ import com.kairos.app.data.remote.OpenRouterConfig
 import com.kairos.app.data.remote.OpenRouterHttpService
 import com.kairos.app.data.reminder.ReminderNotifications
 import com.kairos.app.data.reminder.ReminderScheduler
+import com.kairos.app.data.repository.AttachmentStore
 import com.kairos.app.data.repository.KairosRepository
 import com.kairos.app.data.repository.PomodoroSessionStore
 import com.kairos.app.data.repository.SecureCredentialStore
@@ -34,6 +36,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.distinctUntilChangedBy
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
@@ -47,13 +50,21 @@ class KairosApp : Application() {
 
     val database by lazy { KairosDatabase.getInstance(this) }
 
+    val attachmentStore by lazy { AttachmentStore(this) }
+
     val repository by lazy {
         KairosRepository(
             taskDao = database.taskDao(),
             labelDao = database.labelDao(),
             subtaskDao = database.subtaskDao(),
+            savedFilterDao = database.savedFilterDao(),
+            attachmentDao = database.attachmentDao(),
+            attachmentStore = attachmentStore,
         )
     }
+
+    /** Créneaux occupés des agendas (appareil + flux iCal), pour le time-blocking. */
+    val calendarSource by lazy { CalendarSource(this, OkHttpClient()) }
 
     val settingsRepository by lazy { SettingsRepository(this) }
 
@@ -62,6 +73,7 @@ class KairosApp : Application() {
             taskDao = database.taskDao(),
             labelDao = database.labelDao(),
             subtaskDao = database.subtaskDao(),
+            savedFilterDao = database.savedFilterDao(),
             settingsRepository = settingsRepository,
         )
     }
@@ -168,6 +180,8 @@ class KairosApp : Application() {
             val days = settingsRepository.settings.first().archivePurgeDays
             repository.purgeArchive(days, System.currentTimeMillis())
             repository.purgeLegacyRecurringArchive()
+            // Fichiers de pièces jointes orphelins (tâche supprimée, import, éditeur abandonné).
+            repository.sweepAttachmentFiles()
         }
         // Suit les durées Pomodoro choisies dans les réglages.
         applicationScope.launch {
@@ -222,9 +236,22 @@ class KairosApp : Application() {
                 val palette = settings.toAccentPalette()
                 val labelsById = labels.associateBy { it.id }
                 runCatching { WearSync.pushCounts(this@KairosApp, tasks) }
-                runCatching { WearSync.pushFocus(this@KairosApp, tasks, labelsById) }
+                runCatching { WearSync.pushFocus(this@KairosApp, tasks, labelsById, settings.focusDueWeight) }
+                runCatching {
+                    WearSync.pushQuadrants(this@KairosApp, tasks, labelsById, settings.quadrantSort, settings.focusDueWeight)
+                }
+                runCatching { WearSync.pushPlanning(this@KairosApp, tasks) }
                 runCatching { WearSync.pushPalette(this@KairosApp, palette) }
             }
+        }
+        // Pomodoro vers la montre : uniquement aux transitions (marche/pause, phase, remise à zéro) —
+        // en marche la montre décompte seule à partir de l'heure de fin, pas d'envoi par seconde.
+        applicationScope.launch {
+            pomodoroEngine.state
+                .distinctUntilChangedBy { s ->
+                    listOf(s.active, s.isRunning, s.phase, s.totalSeconds, if (s.isRunning) 0 else s.remainingSeconds)
+                }
+                .collect { runCatching { WearSync.pushPomodoro(this@KairosApp, it) } }
         }
         // Rappels d'échéance : resynchronisés à chaque changement des tâches ou des réglages de
         // rappel. WorkManager reflète toujours l'état courant des données.

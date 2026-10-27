@@ -44,6 +44,16 @@ data class AppSettings(
     val remindersEnabled: Boolean = true,
     /** Délai (minutes) **avant** l'échéance auquel notifier. 0 = pile à l'heure. */
     val reminderLeadMinutes: Int = 0,
+    // --- Tri & priorité ---
+    /** Tri des tâches dans chaque quadrant (voir `SORT_*`). Manuel = ordre glissé à la main. */
+    val quadrantSort: Int = SORT_MANUAL,
+    /** Mode Focus : poids de l'échéance face à l'importance (0 = importance seule, 100 = échéance seule). */
+    val focusDueWeight: Int = 30,
+    // --- Agenda (time-blocking) ---
+    /** Lit les créneaux occupés des agendas de l'appareil (Google Agenda…), permission requise. */
+    val calendarEnabled: Boolean = false,
+    /** Flux iCal (.ics) optionnel lu en plus des agendas de l'appareil. Vide = aucun. */
+    val icalUrl: String = "",
 ) {
     companion object {
         const val THEME_SYSTEM = 0
@@ -56,5 +66,11 @@ data class AppSettings(
         const val LANG_SYSTEM = 0
         const val LANG_FR = 1
         const val LANG_EN = 2
+
+        const val SORT_MANUAL = 0
+        const val SORT_DUE = 1
+        const val SORT_CREATED = 2
+        const val SORT_PRIORITY = 3
+        const val SORT_ALPHA = 4
     }
 }

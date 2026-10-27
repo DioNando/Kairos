@@ -57,6 +57,13 @@ interface TaskDao {
         }
     }
 
+    /** Time-blocking : pose (ou retire, [start] null) le créneau planifié d'une tâche. */
+    @Query("UPDATE tasks SET blockStart = :start, blockMinutes = :minutes WHERE id = :id")
+    suspend fun setBlock(id: Long, start: Long?, minutes: Int)
+
+    @Query("UPDATE tasks SET labelId = :labelId WHERE id IN (:ids)")
+    suspend fun setLabel(ids: List<Long>, labelId: Long?)
+
     /** Cumule des secondes de concentration (Pomodoro lié) sur une tâche. */
     @Query("UPDATE tasks SET focusSeconds = focusSeconds + :seconds WHERE id = :id")
     suspend fun addFocusSeconds(id: Long, seconds: Int)

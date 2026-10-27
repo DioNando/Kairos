@@ -40,7 +40,8 @@ import java.util.concurrent.Executors
 /**
  * Tuile Wear OS : la matrice d'Eisenhower en 2×2, chaque quadrant coloré affichant son nombre de
  * tâches actives (icône + compteur). Les données proviennent de [CountsStore] (poussées par le
- * téléphone via le Data Layer). Un appui ouvre Kairós sur le téléphone via [OpenOnPhoneActivity].
+ * téléphone via le Data Layer). Un appui sur un quadrant ouvre ses tâches **sur la montre**
+ * ([QuadrantActivity], avec ✓ pour terminer).
  *
  * Rendu en ProtoLayout (déclaratif, pas de Compose). Couleurs = palette « Douce » codée en dur, comme
  * les widgets de l'app (une tuile ne lit pas la palette personnalisée).
@@ -93,7 +94,7 @@ class KairosTileService : TileService() {
             )
             .build()
 
-    /** Racine cliquable (ouvre le téléphone) contenant la grille 2×2. [pad] = marge d'inset (écran rond). */
+    /** Racine contenant la grille 2×2 (chaque case est cliquable). [pad] = marge d'inset (écran rond). */
     private fun layout(counts: IntArray, palette: IntArray, pad: Float): LayoutElement =
         Box.Builder()
             .setWidth(expand())
@@ -102,21 +103,6 @@ class KairosTileService : TileService() {
                 Modifiers.Builder()
                     .setBackground(Background.Builder().setColor(argb(BG)).build())
                     .setPadding(Padding.Builder().setAll(dp(pad)).build())
-                    .setClickable(
-                        Clickable.Builder()
-                            .setId("open")
-                            .setOnClick(
-                                ActionBuilders.LaunchAction.Builder()
-                                    .setAndroidActivity(
-                                        ActionBuilders.AndroidActivity.Builder()
-                                            .setPackageName("com.kairos.app")
-                                            .setClassName("com.kairos.wear.OpenOnPhoneActivity")
-                                            .build(),
-                                    )
-                                    .build(),
-                            )
-                            .build(),
-                    )
                     .build(),
             )
             .addContent(grid(counts, palette))
@@ -134,9 +120,9 @@ class KairosTileService : TileService() {
                 Row.Builder()
                     .setWidth(expand())
                     .setHeight(expand())
-                    .addContent(cell(IC_DO, counts[0], palette[0], inkFor(palette[0])))
+                    .addContent(cell(0, IC_DO, counts[0], palette[0], inkFor(palette[0])))
                     .addContent(gap())
-                    .addContent(cell(IC_SCHEDULE, counts[1], palette[1], inkFor(palette[1])))
+                    .addContent(cell(1, IC_SCHEDULE, counts[1], palette[1], inkFor(palette[1])))
                     .build(),
             )
             .addContent(gap())
@@ -144,9 +130,9 @@ class KairosTileService : TileService() {
                 Row.Builder()
                     .setWidth(expand())
                     .setHeight(expand())
-                    .addContent(cell(IC_DELEGATE, counts[2], palette[2], inkFor(palette[2])))
+                    .addContent(cell(2, IC_DELEGATE, counts[2], palette[2], inkFor(palette[2])))
                     .addContent(gap())
-                    .addContent(cell(IC_ELIMINATE, counts[3], palette[3], inkFor(palette[3])))
+                    .addContent(cell(3, IC_ELIMINATE, counts[3], palette[3], inkFor(palette[3])))
                     .build(),
             )
             .build()
@@ -160,8 +146,11 @@ class KairosTileService : TileService() {
         return if (luminance > 0.6) DARK else WHITE
     }
 
-    /** Une tuile de quadrant : fond coloré arrondi, icône au-dessus du compteur. */
-    private fun cell(iconId: String, count: Int, bg: Int, ink: Int): LayoutElement =
+    /**
+     * Une case de quadrant : fond coloré arrondi, icône au-dessus du compteur. Un appui ouvre les
+     * tâches de ce quadrant sur la montre.
+     */
+    private fun cell(quadrant: Int, iconId: String, count: Int, bg: Int, ink: Int): LayoutElement =
         Box.Builder()
             .setWidth(expand())
             .setHeight(expand())
@@ -175,6 +164,7 @@ class KairosTileService : TileService() {
                             .setCorner(Corner.Builder().setRadius(dp(20f)).build())
                             .build(),
                     )
+                    .setClickable(openQuadrant(quadrant))
                     .build(),
             )
             .addContent(
@@ -201,6 +191,25 @@ class KairosTileService : TileService() {
                                     .setWeight(LayoutElementBuilders.FONT_WEIGHT_BOLD)
                                     .setColor(argb(ink))
                                     .build(),
+                            )
+                            .build(),
+                    )
+                    .build(),
+            )
+            .build()
+
+    private fun openQuadrant(quadrant: Int): Clickable =
+        Clickable.Builder()
+            .setId("quadrant_$quadrant")
+            .setOnClick(
+                ActionBuilders.LaunchAction.Builder()
+                    .setAndroidActivity(
+                        ActionBuilders.AndroidActivity.Builder()
+                            .setPackageName("com.kairos.app")
+                            .setClassName("com.kairos.wear.QuadrantActivity")
+                            .addKeyToExtraMapping(
+                                QuadrantActivity.EXTRA_QUADRANT,
+                                ActionBuilders.AndroidIntExtra.Builder().setValue(quadrant).build(),
                             )
                             .build(),
                     )

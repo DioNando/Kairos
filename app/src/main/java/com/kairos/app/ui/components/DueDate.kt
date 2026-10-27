@@ -34,3 +34,19 @@ fun formatDue(dueAt: Long): String {
     val pattern = if (sameYear) "d MMM · HH:mm" else "d MMM yyyy · HH:mm"
     return DateTimeFormatter.ofPattern(pattern, locale).format(date)
 }
+
+/**
+ * Formate un créneau planifié : « 14:00–14:30 » s'il tombe aujourd'hui, sinon préfixé du jour
+ * (« 28 oct. · 14:00–14:30 »).
+ */
+@Composable
+fun formatBlock(start: Long, end: Long): String {
+    val locale = LocalConfiguration.current.locales[0]
+    val zone = ZoneId.systemDefault()
+    val from = Instant.ofEpochMilli(start).atZone(zone)
+    val to = Instant.ofEpochMilli(end).atZone(zone)
+    val time = DateTimeFormatter.ofPattern("HH:mm", locale)
+    val range = "${time.format(from)}–${time.format(to)}"
+    return if (from.toLocalDate() == LocalDate.now(zone)) range
+    else "${DateTimeFormatter.ofPattern("d MMM", locale).format(from)} · $range"
+}

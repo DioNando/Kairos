@@ -15,6 +15,8 @@
     <color name="wear_on_bg_variant">#B0AFB6</color>
     <!-- Surface relevée des lignes « à suivre » sur le fond sombre. -->
     <color name="wear_surface">#1E1E24</color>
+    <!-- Surface un cran plus claire (boutons secondaires posés sur wear_surface). -->
+    <color name="wear_surface_high">#33333B</color>
 
     <!-- Boutons ronds : ajout rapide (terracotta de la marque) / ouvrir l'app (sarcelle). -->
     <color name="accent_add">#E5836B</color>

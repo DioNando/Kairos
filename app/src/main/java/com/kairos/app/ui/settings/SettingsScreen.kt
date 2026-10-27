@@ -1,5 +1,9 @@
 package com.kairos.app.ui.settings
 
+import android.Manifest
+import android.content.pm.PackageManager
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -26,6 +30,10 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.ArrowBack
 import androidx.compose.material.icons.automirrored.rounded.KeyboardArrowRight
+import androidx.compose.material.icons.automirrored.rounded.Sort
+import androidx.compose.material.icons.rounded.CalendarMonth
+import androidx.compose.material.icons.rounded.CenterFocusStrong
+import androidx.compose.material.icons.rounded.Link
 import androidx.compose.material.icons.rounded.AutoAwesome
 import androidx.compose.material.icons.rounded.Brightness6
 import androidx.compose.material.icons.rounded.CheckCircle
@@ -75,6 +83,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalContext
+import androidx.core.content.ContextCompat
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
@@ -126,6 +136,11 @@ fun SettingsScreen(
     onExport: () -> Unit,
     onImport: () -> Unit,
     onBack: () -> Unit,
+    onSetQuadrantSort: (Int) -> Unit = {},
+    onSetFocusDueWeight: (Int) -> Unit = {},
+    onSetCalendarEnabled: (Boolean) -> Unit = {},
+    onSetIcalUrl: (String) -> Unit = {},
+    onTestIcal: suspend (String) -> Result<Int> = { Result.failure(IllegalStateException()) },
 ) {
     Scaffold(
         topBar = {
@@ -238,6 +253,59 @@ fun SettingsScreen(
                     )
                 }
                 SettingDivider()
+                SettingBlock(Icons.AutoMirrored.Rounded.Sort, stringResource(R.string.settings_sort)) {
+                    Row(
+                        modifier = Modifier.horizontalScroll(rememberScrollState()),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    ) {
+                        listOf(
+                            AppSettings.SORT_MANUAL to R.string.sort_manual,
+                            AppSettings.SORT_DUE to R.string.sort_due,
+                            AppSettings.SORT_PRIORITY to R.string.sort_priority,
+                            AppSettings.SORT_CREATED to R.string.sort_created,
+                            AppSettings.SORT_ALPHA to R.string.sort_alpha,
+                        ).forEach { (value, res) ->
+                            KairosFilterChip(
+                                selected = settings.quadrantSort == value,
+                                onClick = { onSetQuadrantSort(value) },
+                                label = stringResource(res),
+                            )
+                        }
+                    }
+                }
+                SettingDivider()
+                SettingBlock(Icons.Rounded.CenterFocusStrong, stringResource(R.string.settings_focus_weight)) {
+                    Text(
+                        stringResource(R.string.settings_focus_weight_value, settings.focusDueWeight),
+                        style = MaterialTheme.typography.bodyMedium,
+                    )
+                    Slider(
+                        value = settings.focusDueWeight.toFloat(),
+                        onValueChange = { onSetFocusDueWeight(it.toInt()) },
+                        valueRange = 0f..100f,
+                        steps = 19,
+                    )
+                    Row(modifier = Modifier.fillMaxWidth()) {
+                        Text(
+                            stringResource(R.string.settings_focus_weight_importance),
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.weight(1f),
+                        )
+                        Text(
+                            stringResource(R.string.settings_focus_weight_due),
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
+                    Spacer(Modifier.height(8.dp))
+                    Text(
+                        stringResource(R.string.settings_focus_weight_desc),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+                SettingDivider()
                 SettingRow(
                     icon = Icons.Rounded.NotificationsActive,
                     title = stringResource(R.string.reminders_enable),
@@ -296,6 +364,40 @@ fun SettingsScreen(
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
+                }
+            }
+
+            // --- Agenda (time-blocking) --------------------------------------------------------
+            GroupHeader(stringResource(R.string.settings_group_calendar))
+            SettingCard {
+                val context = LocalContext.current
+                val permissionLauncher = rememberLauncherForActivityResult(
+                    ActivityResultContracts.RequestPermission(),
+                ) { granted -> onSetCalendarEnabled(granted) }
+                SettingRow(
+                    icon = Icons.Rounded.CalendarMonth,
+                    title = stringResource(R.string.settings_calendar_device),
+                    subtitle = stringResource(R.string.settings_calendar_device_desc),
+                    trailing = {
+                        Switch(
+                            checked = settings.calendarEnabled,
+                            onCheckedChange = { enable ->
+                                val granted = ContextCompat.checkSelfPermission(
+                                    context,
+                                    Manifest.permission.READ_CALENDAR,
+                                ) == PackageManager.PERMISSION_GRANTED
+                                if (enable && !granted) {
+                                    permissionLauncher.launch(Manifest.permission.READ_CALENDAR)
+                                } else {
+                                    onSetCalendarEnabled(enable)
+                                }
+                            },
+                        )
+                    },
+                )
+                SettingDivider()
+                SettingBlock(Icons.Rounded.Link, stringResource(R.string.settings_ical)) {
+                    IcalField(url = settings.icalUrl, onSave = onSetIcalUrl, onTest = onTestIcal)
                 }
             }
 
@@ -717,6 +819,65 @@ private fun DurationTile(
 }
 
 // --- Briques Material You (cartes groupées) --------------------------------------------------------
+
+/**
+ * Saisie du flux iCal : champ + « Tester » (télécharge et compte les événements) ; l'URL est
+ * enregistrée quand le test réussit, ou effacée si le champ est vidé.
+ */
+@Composable
+private fun IcalField(url: String, onSave: (String) -> Unit, onTest: suspend (String) -> Result<Int>) {
+    var value by remember(url) { mutableStateOf(url) }
+    var testing by remember { mutableStateOf(false) }
+    var result by remember { mutableStateOf<Result<Int>?>(null) }
+    val scope = rememberCoroutineScope()
+    Text(
+        stringResource(R.string.settings_ical_desc),
+        style = MaterialTheme.typography.bodySmall,
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
+    )
+    Spacer(Modifier.height(8.dp))
+    TextField(
+        value = value,
+        onValueChange = { value = it; result = null },
+        placeholder = { Text("https://…/basic.ics") },
+        singleLine = true,
+        shape = KairosFieldShape,
+        colors = kairosFieldColors(),
+        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Uri),
+        modifier = Modifier.fillMaxWidth(),
+    )
+    Spacer(Modifier.height(8.dp))
+    Row(verticalAlignment = Alignment.CenterVertically) {
+        TextButton(
+            enabled = !testing,
+            onClick = {
+                if (value.isBlank()) {
+                    onSave("")
+                    result = null
+                } else {
+                    scope.launch {
+                        testing = true
+                        val r = onTest(value.trim())
+                        if (r.isSuccess) onSave(value.trim())
+                        result = r
+                        testing = false
+                    }
+                }
+            },
+        ) { Text(stringResource(if (value.isBlank()) R.string.action_save else R.string.settings_ical_test)) }
+        if (testing) CircularProgressIndicator(modifier = Modifier.size(18.dp), strokeWidth = 2.dp)
+        result?.let { r ->
+            Text(
+                r.fold(
+                    onSuccess = { stringResource(R.string.settings_ical_ok, it) },
+                    onFailure = { stringResource(R.string.settings_ical_error, it.message ?: "") },
+                ),
+                style = MaterialTheme.typography.bodySmall,
+                color = if (r.isSuccess) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.error,
+            )
+        }
+    }
+}
 
 /** Carte arrondie regroupant plusieurs lignes de réglage. */
 @Composable

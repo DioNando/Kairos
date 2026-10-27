@@ -3,10 +3,11 @@ package com.kairos.wear
 import android.app.Activity
 import android.content.Intent
 import android.content.res.ColorStateList
-import android.graphics.Color
 import android.graphics.drawable.GradientDrawable
 import android.net.Uri
 import android.os.Bundle
+import android.os.Handler
+import android.os.Looper
 import android.view.View
 import android.widget.ImageButton
 import android.widget.ImageView
@@ -14,39 +15,51 @@ import android.widget.LinearLayout
 import android.widget.TextView
 import android.widget.Toast
 import androidx.wear.remote.interactions.RemoteActivityHelper
+import java.time.Instant
+import java.time.ZoneId
+import java.time.format.DateTimeFormatter
 
 /**
- * App Kairós sur la montre : **« À faire en priorité »** — la tâche prioritaire + un aperçu « À suivre »,
- * reflet de l'écran Focus du téléphone (classement identique, calculé côté téléphone et poussé via le
- * Data Layer dans [FocusStore]). Deux **boutons ronds** : *ajout rapide* (ouvre l'éditeur de tâche sur
- * le téléphone, `kairos://new`) et *ouvrir l'app* (`kairos://open`).
+ * App Kairós sur la montre :
+ * - **« À faire en priorité »** : la tâche prioritaire + « À suivre », reflet de l'écran Focus du
+ *   téléphone, chacune avec un **✓** qui la termine (action envoyée au téléphone) ;
+ * - le **Pomodoro** en cours : décompte local (heure de fin poussée par le téléphone), marche/pause
+ *   et remise à zéro à distance ;
+ * - les **créneaux du jour** (time-blocking) ;
+ * - les **4 quadrants** (compteurs) → parcours d'un quadrant ([QuadrantActivity]) ;
+ * - deux boutons ronds : ajout rapide (`kairos://new`) et ouvrir l'app (`kairos://open`).
  *
- * La saisie reste sur le téléphone (la montre n'a pas la base Room) ; l'écran est une façade de lecture
- * + télécommande. La **tuile** reste la matrice 2×2 des compteurs ([KairosTileService]), inchangée.
+ * La base reste sur le téléphone : la montre affiche l'état poussé par le Data Layer et renvoie des
+ * actions ([PhoneActions]).
  */
 class KairosLauncherActivity : Activity() {
 
-    // Ressources par quadrant (ordinal 0..3 = DO/SCHEDULE/DELEGATE/ELIMINATE). Les couleurs ne sont
-    // PAS ici : elles viennent de [PaletteStore] (poussées par le téléphone) pour suivre la palette.
-    private val quadrantIcon = intArrayOf(
-        R.drawable.wear_do, R.drawable.wear_schedule, R.drawable.wear_delegate, R.drawable.wear_eliminate,
-    )
-    private val quadrantVerb = intArrayOf(
-        R.string.verb_do, R.string.verb_schedule, R.string.verb_delegate, R.string.verb_eliminate,
-    )
+    private val ticker = Handler(Looper.getMainLooper())
+    private val tick = object : Runnable {
+        override fun run() {
+            renderPomodoro()
+            ticker.postDelayed(this, 1_000L)
+        }
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_launcher)
         findViewById<ImageButton>(R.id.btn_add).setOnClickListener { openOnPhone("kairos://new") }
         findViewById<ImageButton>(R.id.btn_open).setOnClickListener { openOnPhone("kairos://open") }
+        findViewById<ImageButton>(R.id.pomo_toggle).setOnClickListener { sendPomodoro(toggle = true) }
+        findViewById<ImageButton>(R.id.pomo_reset).setOnClickListener { sendPomodoro(toggle = false) }
+        listOf(R.id.quad_0, R.id.quad_1, R.id.quad_2, R.id.quad_3).forEachIndexed { q, id ->
+            findViewById<View>(id).setOnClickListener { startActivity(QuadrantActivity.intent(this, q)) }
+        }
     }
 
     override fun onResume() {
         super.onResume()
         // 1) Affiche tout de suite le dernier état persisté (instantané, éventuellement vide).
         render()
-        // 2) Va lire le DataItem courant sur le Data Layer (hors thread principal), puis rafraîchit :
+        ticker.post(tick)
+        // 2) Va lire les DataItems courants sur le Data Layer (hors thread principal), puis rafraîchit :
         //    indispensable car onDataChanged ne reçoit que les CHANGEMENTS, pas l'état déjà publié.
         Thread {
             CountsSync.pull(this)
@@ -54,7 +67,20 @@ class KairosLauncherActivity : Activity() {
         }.start()
     }
 
+    override fun onPause() {
+        super.onPause()
+        ticker.removeCallbacks(tick)
+    }
+
     private fun render() {
+        val palette = PaletteStore.load(this)
+        renderFocus(palette)
+        renderPomodoro()
+        renderToday(palette)
+        renderQuadrants(palette)
+    }
+
+    private fun renderFocus(palette: IntArray) {
         val items = FocusStore.load(this)
         val card = findViewById<LinearLayout>(R.id.priority_card)
         val empty = findViewById<TextView>(R.id.empty_view)
@@ -72,26 +98,28 @@ class KairosLauncherActivity : Activity() {
         empty.visibility = View.GONE
         card.visibility = View.VISIBLE
 
-        // Palette courante (poussée par le téléphone, repli « Douce » si rien n'a encore été reçu).
-        val palette = PaletteStore.load(this)
-
         // Tâche prioritaire : accent du quadrant (icône + verbe + fond teinté).
         val top = items.first()
         val q = top.quadrant.coerceIn(0, 3)
         val accent = palette[q]
         findViewById<ImageView>(R.id.priority_icon).apply {
-            setImageResource(quadrantIcon[q])
+            setImageResource(WearUi.quadrantIcon[q])
             imageTintList = ColorStateList.valueOf(accent)
         }
         findViewById<TextView>(R.id.priority_verb).apply {
-            text = getString(quadrantVerb[q])
+            text = getString(WearUi.quadrantVerb[q])
             setTextColor(accent)
         }
         findViewById<TextView>(R.id.priority_title).text = top.title
         card.background = GradientDrawable().apply {
             cornerRadius = dp(18f)
             // Accent du quadrant en fond translucide (~18 %), comme la carte de l'écran Focus.
-            setColor(withAlpha(accent, 0x2E))
+            setColor(WearUi.withAlpha(accent, 0x2E))
+        }
+        findViewById<ImageButton>(R.id.priority_done).apply {
+            backgroundTintList = ColorStateList.valueOf(accent)
+            imageTintList = ColorStateList.valueOf(WearUi.inkFor(accent))
+            setOnClickListener { complete(top.id) }
         }
 
         // Pastille d'étiquette (point coloré + nom), affichée seulement si la tâche en a une.
@@ -99,52 +127,104 @@ class KairosLauncherActivity : Activity() {
         if (top.labelName.isNotBlank()) {
             labelRow.visibility = View.VISIBLE
             findViewById<View>(R.id.priority_label_dot).backgroundTintList =
-                ColorStateList.valueOf(parseColor(top.labelColor, accent))
+                ColorStateList.valueOf(WearUi.parseColor(top.labelColor, accent))
             findViewById<TextView>(R.id.priority_label_name).text = top.labelName
         } else {
             labelRow.visibility = View.GONE
         }
 
-        // Aperçu « À suivre » : les tâches suivantes, sans les sortir de la file.
+        // Aperçu « À suivre » : les tâches suivantes, chacune terminable.
         val upNext = items.drop(1)
-        if (upNext.isEmpty()) {
-            upNextLabel.visibility = View.GONE
-        } else {
-            upNextLabel.visibility = View.VISIBLE
-            upNext.forEach { item -> upNextContainer.addView(upNextRow(item, palette, upNextContainer)) }
+        upNextLabel.visibility = if (upNext.isEmpty()) View.GONE else View.VISIBLE
+        upNext.forEach { item ->
+            upNextContainer.addView(
+                WearUi.taskRow(this, upNextContainer, item.title, item.quadrant, item.labelColor, palette) {
+                    complete(item.id)
+                },
+            )
         }
     }
 
-    /** Une ligne « à suivre » : icône du quadrant (teintée) + titre + pastille d'étiquette éventuelle. */
-    private fun upNextRow(item: FocusStore.Item, palette: IntArray, parent: LinearLayout): View {
-        val row = layoutInflater.inflate(R.layout.item_upnext, parent, false)
-        val q = item.quadrant.coerceIn(0, 3)
-        row.findViewById<ImageView>(R.id.upnext_icon).apply {
-            setImageResource(quadrantIcon[q])
-            imageTintList = ColorStateList.valueOf(palette[q])
+    /** Carte Pomodoro : visible pendant une session, décompte recalculé chaque seconde (sans réseau). */
+    private fun renderPomodoro() {
+        val pomo = PomodoroStore.load(this)
+        val card = findViewById<LinearLayout>(R.id.pomo_card)
+        if (!pomo.active) {
+            card.visibility = View.GONE
+            return
         }
-        row.findViewById<TextView>(R.id.upnext_title).text = item.title
-
-        // Lignes « à suivre » : juste la puce colorée de l'étiquette (pas le nom), masquée si aucune.
-        val labelDot = row.findViewById<View>(R.id.upnext_label_dot)
-        if (item.labelName.isNotBlank()) {
-            labelDot.visibility = View.VISIBLE
-            labelDot.backgroundTintList = ColorStateList.valueOf(parseColor(item.labelColor, palette[q]))
-        } else {
-            labelDot.visibility = View.GONE
-        }
-        return row
+        card.visibility = View.VISIBLE
+        val phase = getString(
+            when (pomo.phase) {
+                1 -> R.string.pomo_short
+                2 -> R.string.pomo_long
+                else -> R.string.pomo_focus
+            },
+        )
+        findViewById<TextView>(R.id.pomo_phase).text = if (pomo.running) phase else getString(R.string.pomo_paused, phase)
+        val remaining = pomo.remainingSeconds()
+        findViewById<TextView>(R.id.pomo_time).text = "%02d:%02d".format(remaining / 60, remaining % 60)
+        findViewById<ImageButton>(R.id.pomo_toggle).setImageResource(if (pomo.running) R.drawable.ic_pause else R.drawable.ic_play)
     }
 
-    /** Parse une couleur hex `#RRGGBB` ; replie sur [fallback] si vide ou invalide. */
-    private fun parseColor(hex: String, fallback: Int): Int =
-        runCatching { Color.parseColor(hex) }.getOrDefault(fallback)
+    /** Créneaux planifiés restants aujourd'hui (le créneau en cours en tête). */
+    private fun renderToday(palette: IntArray) {
+        val blocks = PlanningStore.remainingToday(this)
+        val label = findViewById<TextView>(R.id.today_label)
+        val container = findViewById<LinearLayout>(R.id.today_container)
+        container.removeAllViews()
+        label.visibility = if (blocks.isEmpty()) View.GONE else View.VISIBLE
+        val time = DateTimeFormatter.ofPattern("HH:mm")
+        val zone = ZoneId.systemDefault()
+        blocks.forEach { block ->
+            val row = layoutInflater.inflate(R.layout.item_block, container, false)
+            val accent = palette[block.quadrant.coerceIn(0, 3)]
+            row.findViewById<View>(R.id.block_bar).backgroundTintList = ColorStateList.valueOf(accent)
+            row.findViewById<TextView>(R.id.block_time).text =
+                time.format(Instant.ofEpochMilli(block.start).atZone(zone)) + "–" +
+                time.format(Instant.ofEpochMilli(block.end).atZone(zone))
+            row.findViewById<TextView>(R.id.block_title).text = block.title
+            container.addView(row)
+        }
+    }
+
+    /** Puces des 4 quadrants : couleur de la palette, icône + compteur. */
+    private fun renderQuadrants(palette: IntArray) {
+        val counts = CountsStore.load(this)
+        listOf(R.id.quad_0, R.id.quad_1, R.id.quad_2, R.id.quad_3).forEachIndexed { q, id ->
+            val chip = findViewById<View>(id)
+            val ink = WearUi.inkFor(palette[q])
+            chip.backgroundTintList = ColorStateList.valueOf(palette[q])
+            chip.contentDescription = getString(WearUi.quadrantVerb[q]) + " : " + counts[q]
+            chip.findViewById<ImageView>(R.id.chip_icon).apply {
+                setImageResource(WearUi.quadrantIcon[q])
+                imageTintList = ColorStateList.valueOf(ink)
+            }
+            chip.findViewById<TextView>(R.id.chip_count).apply {
+                text = if (counts[q] > 99) "99+" else counts[q].toString()
+                setTextColor(ink)
+            }
+        }
+    }
+
+    /** Termine une tâche (téléphone) puis la retire tout de suite de l'affichage (optimiste). */
+    private fun complete(taskId: Long) {
+        WearUi.completeOnPhone(this, taskId) {
+            FocusStore.remove(this, taskId)
+            QuadrantsStore.remove(this, taskId)
+            render()
+        }
+    }
+
+    /** Marche/pause ([toggle]) ou remise à zéro du Pomodoro, exécutée par le téléphone. */
+    private fun sendPomodoro(toggle: Boolean) {
+        Thread {
+            val ok = if (toggle) PhoneActions.togglePomodoro(this) else PhoneActions.resetPomodoro(this)
+            if (!ok) runOnUiThread { Toast.makeText(this, R.string.phone_unreachable, Toast.LENGTH_SHORT).show() }
+        }.start()
+    }
 
     private fun dp(value: Float): Float = value * resources.displayMetrics.density
-
-    /** Applique un canal alpha [alpha] (0..255) à une couleur opaque. */
-    private fun withAlpha(color: Int, alpha: Int): Int =
-        Color.argb(alpha, Color.red(color), Color.green(color), Color.blue(color))
 
     /** Demande au téléphone d'ouvrir le deep link voulu (ajout rapide ou app) via [RemoteActivityHelper]. */
     private fun openOnPhone(uri: String) {

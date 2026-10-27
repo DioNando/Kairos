@@ -28,4 +28,6 @@ data class Subtask(
     val title: String,
     @ColumnInfo(defaultValue = "0") val done: Boolean = false,
     @ColumnInfo(defaultValue = "0") val position: Int = 0,
+    /** Échéance propre de la sous-tâche (epoch millis), indépendante de celle de la tâche. */
+    val dueAt: Long? = null,
 )

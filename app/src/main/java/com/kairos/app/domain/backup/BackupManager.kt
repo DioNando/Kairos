@@ -1,10 +1,12 @@
 package com.kairos.app.domain.backup
 
 import com.kairos.app.data.local.LabelDao
+import com.kairos.app.data.local.SavedFilterDao
 import com.kairos.app.data.local.SubtaskDao
 import com.kairos.app.data.local.TaskDao
 import com.kairos.app.data.model.AppSettings
 import com.kairos.app.data.model.Label
+import com.kairos.app.data.model.SavedFilter
 import com.kairos.app.data.model.Subtask
 import com.kairos.app.data.model.Task
 import com.kairos.app.data.repository.SettingsRepository
@@ -19,11 +21,14 @@ import org.json.JSONObject
  * L'import **remplace** l'intégralité des données (clear + réinsertion en conservant les ids, ce qui
  * préserve le lien tâche↔étiquette). Le JSON est entièrement parsé **avant** tout effacement : un
  * fichier corrompu lève une exception sans toucher à la base.
+ *
+ * Les pièces jointes ne sont **pas** incluses (fichiers binaires) : seules les données texte voyagent.
  */
 class BackupManager(
     private val taskDao: TaskDao,
     private val labelDao: LabelDao,
     private val subtaskDao: SubtaskDao,
+    private val savedFilterDao: SavedFilterDao,
     private val settingsRepository: SettingsRepository,
 ) {
 
@@ -42,6 +47,18 @@ class BackupManager(
                 put("name", l.name)
                 put("colorHex", l.colorHex)
                 put("createdAt", l.createdAt)
+                put("groupName", l.groupName)
+                put("pinned", l.pinned)
+            }
+        })
+
+        root.put("savedFilters", savedFilterDao.getAll().toJsonArray { f ->
+            JSONObject().apply {
+                put("id", f.id)
+                put("name", f.name)
+                put("query", f.query)
+                if (f.labelId != null) put("labelId", f.labelId)
+                put("createdAt", f.createdAt)
             }
         })
 
@@ -60,6 +77,8 @@ class BackupManager(
                 if (t.removedAt != null) put("removedAt", t.removedAt)
                 put("recurrence", t.recurrence)
                 put("focusSeconds", t.focusSeconds)
+                if (t.blockStart != null) put("blockStart", t.blockStart)
+                put("blockMinutes", t.blockMinutes)
             }
         })
 
@@ -70,6 +89,7 @@ class BackupManager(
                 put("title", s.title)
                 put("done", s.done)
                 put("position", s.position)
+                if (s.dueAt != null) put("dueAt", s.dueAt)
             }
         })
 
@@ -90,6 +110,17 @@ class BackupManager(
                 name = o.getString("name"),
                 colorHex = o.optString("colorHex", "#9C9AA6"),
                 createdAt = o.optLong("createdAt"),
+                groupName = o.optString("groupName", ""),
+                pinned = o.optBoolean("pinned"),
+            )
+        }
+        val savedFilters = root.optJSONArray("savedFilters").mapObjects { o ->
+            SavedFilter(
+                id = o.getLong("id"),
+                name = o.getString("name"),
+                query = o.optString("query", ""),
+                labelId = o.optLongOrNull("labelId"),
+                createdAt = o.optLong("createdAt"),
             )
         }
         val tasks = root.optJSONArray("tasks").mapObjects { o ->
@@ -107,6 +138,8 @@ class BackupManager(
                 removedAt = if (o.has("removedAt") && !o.isNull("removedAt")) o.getLong("removedAt") else null,
                 recurrence = o.optInt("recurrence"),
                 focusSeconds = o.optInt("focusSeconds"),
+                blockStart = o.optLongOrNull("blockStart"),
+                blockMinutes = o.optInt("blockMinutes"),
             )
         }
         val subtasks = root.optJSONArray("subtasks").mapObjects { o ->
@@ -116,6 +149,7 @@ class BackupManager(
                 title = o.getString("title"),
                 done = o.optBoolean("done"),
                 position = o.optInt("position"),
+                dueAt = o.optLongOrNull("dueAt"),
             )
         }
         val settings = root.optJSONObject("settings")?.toSettings()
@@ -123,8 +157,10 @@ class BackupManager(
         // 2) Remplacer : vider puis réinsérer en conservant les ids.
         subtaskDao.clear()
         taskDao.clear()
+        savedFilterDao.clear()
         labelDao.clear()
         labels.forEach { labelDao.insert(it) }
+        savedFilters.forEach { savedFilterDao.insert(it) }
         tasks.forEach { taskDao.insert(it) }
         subtasks.forEach { subtaskDao.insert(it) }
         settings?.let { settingsRepository.applyAll(it) }
@@ -156,6 +192,10 @@ class BackupManager(
         put("aiProvider", aiProvider)
         put("remindersEnabled", remindersEnabled)
         put("reminderLeadMinutes", reminderLeadMinutes)
+        put("quadrantSort", quadrantSort)
+        put("focusDueWeight", focusDueWeight)
+        put("calendarEnabled", calendarEnabled)
+        put("icalUrl", icalUrl)
     }
 
     private fun JSONObject.toSettings(): AppSettings = AppSettings(
@@ -180,14 +220,20 @@ class BackupManager(
         aiProvider = optInt("aiProvider"),
         remindersEnabled = optBoolean("remindersEnabled", true),
         reminderLeadMinutes = optInt("reminderLeadMinutes", 0),
+        quadrantSort = optInt("quadrantSort", AppSettings.SORT_MANUAL),
+        focusDueWeight = optInt("focusDueWeight", 30),
+        calendarEnabled = optBoolean("calendarEnabled"),
+        icalUrl = optString("icalUrl", ""),
     )
 
     private companion object {
-        const val FORMAT_VERSION = 2
+        const val FORMAT_VERSION = 3
     }
 }
 
 // --- Helpers org.json --------------------------------------------------------------------------
+
+private fun JSONObject.optLongOrNull(key: String): Long? = if (has(key) && !isNull(key)) getLong(key) else null
 
 private fun <T> List<T>.toJsonArray(transform: (T) -> JSONObject): JSONArray =
     JSONArray().also { arr -> forEach { arr.put(transform(it)) } }

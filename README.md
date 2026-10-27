@@ -26,8 +26,13 @@ Les déplacer, c'est reclasser la tâche.
 ## Fonctionnalités
 
 - **Matrice 2×2** (ou **vue en listes / swim lanes**, réglable) avec compteur par quadrant.
+- **Tri configurable** des quadrants (icône de tri de la matrice ou Réglages) : manuel (glisser),
+  échéance, priorité (score du mode Focus), date de création, alphabétique.
 - **Recherche & filtre** : une barre de recherche (titre / note) et un **filtre par étiquette**
   transversal, dépliés depuis l'icône loupe de la matrice, pour retrouver une tâche parmi beaucoup.
+  **Filtres enregistrés** (icône signet) réappliqués d'un tap, gérés depuis l'écran Étiquettes.
+- **Sélection multiple** (menu ⋮ → « Sélectionner ») et **actions en lot** : déplacer, étiqueter,
+  terminer, retirer plusieurs tâches d'un coup.
 - **Glisser-déposer** d'une tâche entre quadrants (appui long), avec **réordonnancement fin dans un
   quadrant**, **doublé** d'un menu accessible « Déplacer vers… » (indispensable pour TalkBack).
 - **Swipe** sur une ligne : **droite = terminer**, **gauche = retirer** — dans les deux cas la tâche
@@ -35,6 +40,17 @@ Les déplacer, c'est reclasser la tâche.
   snackbar « Annuler » depuis la matrice. Terminer et retirer sont aussi dans le menu ⋮ de chaque tâche.
 - **Ajout rapide** sans friction (titre + quadrant, clavier ouvert d'emblée) et **éditeur complet**
   (note, échéance date/heure, étiquette, **récurrence**, **sous-tâches / checklist**).
+- **Sous-tâches enrichies** : barre de progression, **échéance propre** par sous-tâche, **promotion
+  en tâche** (même quadrant / étiquette, reprend l'échéance).
+- **Notes enrichies** : lignes `- [ ]` rendues en **cases à cocher** cliquables, **liens** cliquables
+  (aperçu interactif / saisie), **pièces jointes légères** (copiées dans l'app, 10 Mo max, ouvertes
+  via FileProvider).
+- **Time-blocking (Planning)** : vue jour en frise horaire ; on **glisse** une tâche du bac « À
+  planifier » sur un créneau (calage au quart d'heure), on la déplace / redimensionne / déplanifie ;
+  un tap la pose sur le **prochain créneau libre**. Alerte en cas de chevauchement.
+- **Agendas externes** (lecture seule) : créneaux occupés des **agendas du téléphone** (Google Agenda
+  et comptes synchronisés, via `CalendarContract`) et d'un **flux iCal** (.ics / webcal, récurrences
+  simples gérées), affichés dans le Planning.
 - **Échéances non intrusives** : une échéance proche fait **pulser** la tâche et **propose** de la
   passer en urgent — elle ne déplace jamais la tâche de force.
 - **Tâches récurrentes** (quotidienne / hebdo / mensuelle) : à la complétion, la tâche **avance sur
@@ -46,7 +62,10 @@ Les déplacer, c'est reclasser la tâche.
 - **Widget d'écran d'accueil** (Glance) : matrice 2×2 avec le **nombre de tâches par quadrant**
   (icônes, indépendant de la langue), rafraîchi automatiquement ; un appui ouvre l'app.
 - **Mode Focus « Et maintenant ? »** : sort **LA** tâche prioritaire, plus un aperçu « À suivre ».
-- **Étiquettes** transversales (catégories) avec couleur, indépendantes des quadrants.
+  Score **pondérable** (Réglages : importance ↔ échéance), partagé avec le tri « Priorité » et la montre.
+- **Étiquettes** transversales (catégories) avec couleur (20 teintes), indépendantes des quadrants,
+  rangées en **groupes** ; une étiquette **épinglée** passe en tête et sert de **filtre rapide**
+  directement sur la matrice.
 - **Archive** : toutes les tâches sorties du board — **terminées** (✓) ou **retirées** (🗄),
   distinguées par un badge — y sont rangées (restaurables, ou **supprimables définitivement** :
   c'est le **seul** endroit où une suppression est irréversible), avec **vidage** d'un geste et
@@ -66,7 +85,11 @@ Les déplacer, c'est reclasser la tâche.
   les sauvegardes). Fonctions masquées tant qu'aucune clé n'existe.
 - **Enregistrement automatique** de l'éditeur : les modifications sont sauvegardées à la sortie
   (pas de bouton « Enregistrer » à oublier) ; une tâche créée sans titre n'est pas conservée.
-- **Sauvegarde locale** : export / import JSON de toutes les tâches, sous-tâches, étiquettes et réglages.
+- **Sauvegarde locale** : export / import JSON des tâches, sous-tâches, étiquettes, filtres
+  enregistrés, créneaux et réglages (les pièces jointes restent sur l'appareil).
+- **App Wear OS** (module `wear`) : « À faire en priorité » avec **✓ pour terminer** depuis le
+  poignet, **Pomodoro** (décompte, pause / reprise / remise à zéro à distance), **créneaux du jour**,
+  **navigation par quadrant** ; tuiles **Matrice** (compteurs) et **Prochain créneau**. Voir plus bas.
 - **Material 3 Expressive** : formes qui **morphent** (pastilles de quadrant, cards de classement),
   **ButtonGroup connecté** (phases Pomodoro), indicateurs **ondulés**, mouvement à ressorts.
 - **Bilingue** français / anglais — **langue choisie dans l'app** (Système / Français / English,
@@ -77,10 +100,15 @@ Les déplacer, c'est reclasser la tâche.
 Application **100 % locale**, sans backend, calquée (en allégé) sur l'archi de WorkSync :
 
 - **UI** : Jetpack Compose + Material 3 **Expressive** (MotionScheme).
-- **Navigation** : Navigation-Compose (matrice, focus, étiquettes, réglages, pomodoro, archive).
-- **État** : `KairosViewModel` (tâches + étiquettes) et `PomodoroEngine` à portée application.
-- **Données** : **Room** (`Task`, `Label`, `Subtask` — schéma v3 + migrations) + **DataStore**
-  (réglages et session Pomodoro).
+- **Navigation** : Navigation-Compose (matrice, focus, planning, étiquettes, réglages, pomodoro,
+  archive, guide, éditeur).
+- **État** : `KairosViewModel` (tâches, étiquettes, sous-tâches, filtres, pièces jointes) et
+  `PomodoroEngine` à portée application.
+- **Données** : **Room** (`Task`, `Label`, `Subtask`, `SavedFilter`, `Attachment` — schéma v4 +
+  migrations) + **DataStore** (réglages et session Pomodoro) + fichiers privés (pièces jointes,
+  `AttachmentStore`, balayage des orphelins au démarrage).
+- **Agendas** : `CalendarSource` (CalendarContract + flux iCal via OkHttp, cache 15 min) +
+  `IcalParser` (VEVENT, TZID, journées entières, RRULE simples, EXDATE).
 - **DI** : conteneur manuel dans `KairosApp` (pas de framework), `ViewModelFactory`.
 - **Pomodoro** : moteur ancré sur un instant de fin absolu + `PomodoroSessionStore` (persistance) +
   `PomodoroService` (premier plan) + `PomodoroNotifications`.
@@ -89,12 +117,29 @@ Application **100 % locale**, sans backend, calquée (en allégé) sur l'archi d
 
 ```
 com.kairos.app
-├── data/            model (Task, Label, Subtask, Quadrant, AppSettings, LlmProvider) · local (Room) · remote (LLM : Gemini/OpenRouter) · reminder (Scheduler/Worker/Notifications, WorkManager) · repository (dont SecureCredentialStore) · PomodoroSessionStore
-├── domain/          backup (export/import JSON) · focus (FocusSelector) · recurrence (Recurrence) · ai (NoteEnhancer : reformuler/classer/découper)
+├── data/            model (Task, Label, Subtask, SavedFilter, Attachment, Quadrant, AppSettings, LlmProvider) · local (Room) · calendar (CalendarSource, IcalParser) · remote (LLM : Gemini/OpenRouter) · reminder (Scheduler/Worker/Notifications, WorkManager) · repository (dont SecureCredentialStore, AttachmentStore) · PomodoroSessionStore
+├── domain/          backup (export/import JSON) · focus (FocusSelector, score pondéré) · sort (TaskSort) · recurrence (Recurrence) · ai (NoteEnhancer : reformuler/classer/découper)
 ├── pomodoro/        PomodoroService · PomodoroNotifications
+├── wear/            WearSync (DataItems vers la montre) · WearActionService (actions reçues de la montre)
 ├── widget/          KairosWidget · KairosWidgetReceiver (Glance)
-└── ui/              matrix (dont recherche/filtre) · editor · focus · labels · archive · settings · pomodoro · onboarding · guide · theme · components · navigation
+└── ui/              matrix (recherche, filtres, tri, sélection) · editor · planning · focus · labels · archive · settings · pomodoro · onboarding · guide · theme · components · navigation
+
+com.kairos.wear      (module wear)
+├── KairosLauncherActivity · QuadrantActivity     écrans de la montre (Views)
+├── KairosTileService · NextBlockTileService      tuiles (ProtoLayout)
+├── WearDataListenerService · CountsSync · WearPayloads   réception de l'état poussé par le téléphone
+├── PhoneActions                                   actions vers le téléphone (MessageClient)
+└── CountsStore · FocusStore · PaletteStore · WearStores   persistance locale
 ```
+
+### Wear OS
+
+La montre n'a pas de base : le **téléphone pousse** son état via le Data Layer (`DataItem`s
+`/kairos/counts`, `/focus`, `/palette`, `/quadrants`, `/planning`, `/pomodoro`) et la montre le
+persiste localement ; elle **renvoie des actions** par `MessageClient` (`/kairos/action/complete`,
+`/kairos/action/pomodoro`), appliquées par `WearActionService` côté téléphone, qui repousse alors
+l'état à jour. Le Pomodoro n'est poussé qu'aux transitions (marche/pause, phase) : la montre décompte
+seule à partir de l'heure de fin. Les deux APK partagent l'`applicationId` `com.kairos.app`.
 
 ### Build
 
@@ -120,7 +165,10 @@ com.kairos.app
 > échéances non intrusives, **rappels d'échéance (WorkManager)**, **widget d'accueil (Glance)**,
 > mode Focus, étiquettes, archive (vidage + purge auto), Pomodoro (persistant, lié à une tâche),
 > onboarding, guide in-app, palettes (dont personnalisée), Material You, sauvegarde JSON, i18n FR/EN,
-> **assistant IA (reformuler / classer / découper)**, finition M3 Expressive.
+> **assistant IA (reformuler / classer / découper)**, finition M3 Expressive, **tri configurable**,
+> **Focus pondérable**, **sélection multiple**, **étiquettes avancées & filtres enregistrés**,
+> **sous-tâches et notes enrichies, pièces jointes**, **time-blocking + agendas (Google / iCal)**,
+> **app Wear OS** (terminer, Pomodoro, planning du jour, quadrants, 2 tuiles).
 
 *Liste **non exhaustive** de pistes envisageables — ni engagement ni ordre de priorité, juste un
 espace à idées pour faire mûrir l'app.*
@@ -130,8 +178,10 @@ espace à idées pour faire mûrir l'app.*
   réglable). _À venir : report « snooze » depuis la notification._
 - [ ] **Rappels récurrents** et **plages horaires** (ne pas notifier la nuit / le week-end).
 - [ ] **Estimation de durée** par tâche + **budget de temps** quotidien.
-- [ ] **Time-blocking** : glisser une tâche dans un créneau d'agenda.
-- [ ] **Intégration Google Agenda / iCal** (lecture des créneaux occupés).
+- [x] **Time-blocking** : glisser une tâche dans un créneau d'agenda. _À venir : vue semaine,
+  rappel au début d'un créneau._
+- [x] **Intégration Google Agenda / iCal** (lecture des créneaux occupés). _À venir : écrire les
+  créneaux dans l'agenda._
 
 ### Statistiques & motivation
 - [ ] **Tableau de bord** : focus par jour, tâches terminées, répartition par quadrant.
@@ -142,19 +192,25 @@ espace à idées pour faire mûrir l'app.*
 ### Recherche & organisation
 - [x] **Recherche & filtre** par mot-clé (titre / note) et par étiquette. _À venir : filtre par
   échéance / quadrant._
-- [ ] **Tri configurable** dans un quadrant (échéance, création, priorité, alphabétique).
-- [ ] **Réglage de la priorité du mode Focus** (pondérer échéance vs importance).
-- [ ] **Sélection multiple** et **actions en lot** (déplacer / étiqueter / supprimer plusieurs tâches).
-- [ ] **Étiquettes avancées** : groupes, filtres enregistrés, étiquette « épinglée ».
-- [ ] **Sous-tâches enrichies** : progression, échéance propre, promotion en tâche.
-- [ ] **Notes enrichies** : cases à cocher, liens, pièces jointes légères.
+- [x] **Tri configurable** dans un quadrant (échéance, création, priorité, alphabétique).
+  _À venir : tri propre à chaque quadrant._
+- [x] **Réglage de la priorité du mode Focus** (pondérer échéance vs importance).
+- [x] **Sélection multiple** et **actions en lot** (déplacer / étiqueter / terminer / retirer).
+- [x] **Étiquettes avancées** : groupes, filtres enregistrés, étiquette « épinglée ».
+- [x] **Sous-tâches enrichies** : progression, échéance propre, promotion en tâche.
+  _À venir : rappels sur l'échéance d'une sous-tâche._
+- [x] **Notes enrichies** : cases à cocher, liens, pièces jointes légères. _À venir : pièces jointes
+  dans la sauvegarde._
 
 ### Intégrations & plateforme
 - [x] **Widget** (Glance) : compteurs par quadrant (icônes). _À venir : tâche du moment, bouton Pomodoro._
 - [ ] **Tuiles Quick Settings** et **App Shortcuts** (ajout rapide, démarrer un Pomodoro).
 - [ ] **Raccourci d'ajout** depuis le partage Android (« Partager vers Kairós »).
 - [ ] **Saisie vocale** et **Assistant / App Actions** (« ajoute … à Faire »).
-- [ ] **Wear OS** : consulter la tâche du moment, cocher, lancer un Pomodoro.
+- [x] **Wear OS** : tâche du moment, **terminer** depuis la montre, **Pomodoro** au poignet,
+  **planning du jour**, **navigation par quadrant**, tuiles Matrice et Prochain créneau.
+  _À venir : ajout vocal directement sur la montre, complications, action « Terminer » dans les
+  rappels._
 - [ ] **Sauvegarde cloud / synchro multi-appareils** (optionnelle, chiffrée de bout en bout).
 - [ ] **Export CSV / Markdown / .ics** en plus du JSON ; **import** depuis d'autres apps de tâches.
 

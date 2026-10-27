@@ -214,7 +214,7 @@
     <string name="guide_create_title">Créer une tâche</string>
     <string name="guide_create_sub">Toutes les options de l\'éditeur</string>
     <string name="guide_daily_title">Au quotidien</string>
-    <string name="guide_daily_sub">Déplacer, terminer, archiver</string>
+    <string name="guide_daily_sub">Trier, sélectionner, déplacer, terminer</string>
     <string name="guide_focus_title">Focus &amp; Pomodoro</string>
     <string name="guide_focus_sub">Se concentrer sur l\'essentiel</string>
     <string name="guide_ai_title">Assistant IA</string>
@@ -242,7 +242,7 @@
     <string name="guide_create_rec_t">Récurrence</string>
     <string name="guide_create_rec_b">Quotidienne, hebdomadaire ou mensuelle. À la complétion, la tâche reste sur le board : son échéance passe automatiquement à la suivante et ses sous-tâches se décochent (elle ne va donc pas à l\'archive). Ex. : « Arroser les plantes » chaque semaine.</string>
     <string name="guide_create_sub_t">Sous-tâches</string>
-    <string name="guide_create_sub_b">Une checklist dans la tâche ; la carte affiche l\'avancement (ex. 2/5). Idéal pour découper. Ex. : « Organiser l\'anniversaire » → gâteau, invitations, déco.</string>
+    <string name="guide_create_sub_b">Une checklist dans la tâche, avec sa barre de progression. Chaque sous-tâche peut avoir sa propre échéance (menu ⋮) ou être promue en tâche à part entière (même quadrant, même étiquette). Ex. : « Organiser l\'anniversaire » → gâteau, invitations, déco.</string>
     <string name="guide_create_ai_t">Reformuler (IA)</string>
     <string name="guide_create_ai_b">Met au propre le titre, la note et les sous-tâches d\'un seul geste. Apparaît si une clé API est configurée (Réglages → Assistant IA).</string>
 
@@ -250,7 +250,7 @@
     <string name="guide_daily_views_t">Grille ou listes</string>
     <string name="guide_daily_views_b">Bascule entre la grille 2×2 et une vue en listes verticales par quadrant (dans les Réglages).</string>
     <string name="guide_daily_search_t">Rechercher &amp; filtrer</string>
-    <string name="guide_daily_search_b">L\'icône loupe en haut ouvre une barre de recherche (titre et note) et des filtres par étiquette — pratique pour retrouver une tâche parmi beaucoup.</string>
+    <string name="guide_daily_search_b">L\'icône loupe ouvre la recherche (titre et note) et les filtres par étiquette. L\'icône signet enregistre la recherche courante comme filtre, réappliqué ensuite d\'un tap ; gère-les depuis l\'écran Étiquettes.</string>
     <string name="guide_daily_move_t">Déplacer une tâche</string>
     <string name="guide_daily_move_b">Appui long puis glissement vers un autre quadrant (ou pour réordonner). Le menu ⋮ « Déplacer vers » fait la même chose et reste accessible avec TalkBack.</string>
     <string name="guide_daily_swipe_t">Terminer / retirer</string>
@@ -264,7 +264,7 @@
 
     <!-- Sous-page : focus &amp; pomodoro -->
     <string name="guide_focus_focus_t">Mode Focus</string>
-    <string name="guide_focus_focus_b">« Et maintenant ? » agrège importance et échéance pour faire ressortir LA tâche à faire maintenant, avec un aperçu de la suite.</string>
+    <string name="guide_focus_focus_b">« Et maintenant ? » mélange importance et échéance pour faire ressortir LA tâche à faire maintenant, avec un aperçu de la suite. Le curseur Réglages → Priorité du mode Focus règle le poids de chacune.</string>
     <string name="guide_focus_pomo_t">Pomodoro</string>
     <string name="guide_focus_pomo_b">Un minuteur focus/pause (ex. 25 min de focus, 5 min de pause) qui survit à la fermeture de l\'app, avec notification. Lie une session à une tâche pour lui créditer le temps de concentration.</string>
 
@@ -287,7 +287,7 @@
     <string name="guide_set_palette_t">Palettes</string>
     <string name="guide_set_palette_b">Choisis la palette des couleurs de quadrants, ou crée la tienne (4 couleurs personnalisées).</string>
     <string name="guide_set_backup_t">Sauvegarde</string>
-    <string name="guide_set_backup_b">Exporte toutes tes données (tâches, sous-tâches, étiquettes, réglages) en JSON, et réimporte-les sur un autre appareil.</string>
+    <string name="guide_set_backup_b">Exporte tes données (tâches, sous-tâches, étiquettes, filtres, créneaux, réglages) en JSON et réimporte-les sur un autre appareil. Les pièces jointes, elles, restent sur l\'appareil.</string>
     <string name="guide_set_guide_t">Ce guide</string>
     <string name="guide_set_guide_b">Tu peux masquer le raccourci du guide (l\'icône en haut) depuis Réglages → Aide ; il reste accessible via « Ouvrir le guide ».</string>
     <string name="settings_pomodoro_style">Minuteur « cercle liquide »</string>
@@ -346,4 +346,109 @@
     <string name="shortcut_focus_long">Focus : et maintenant ?</string>
     <string name="shortcut_pomodoro_short">Pomodoro</string>
     <string name="shortcut_pomodoro_long">Ouvrir le Pomodoro</string>
+
+    <!-- Tri, sélection multiple, filtres, sous-tâches/notes enrichies, pièces jointes, planning -->
+    <string name="action_select">Sélectionner</string>
+    <string name="action_undo">Annuler</string>
+    <string name="attachment_add">Joindre un fichier</string>
+    <string name="attachment_error">Impossible de joindre ce fichier.</string>
+    <string name="attachment_no_app">Aucune app pour ouvrir ce fichier.</string>
+    <string name="attachment_too_large">Fichier trop volumineux (10 Mo max).</string>
+    <string name="block_clear">Retirer du planning</string>
+    <string name="block_planned">Planifiée : %1$s</string>
+    <string name="cd_clear_selection">Quitter la sélection</string>
+    <string name="cd_delete_filter">Supprimer le filtre %1$s</string>
+    <string name="cd_deselect">Désélectionner</string>
+    <string name="cd_next_day">Jour suivant</string>
+    <string name="cd_pin_label">Épingler l\'étiquette</string>
+    <string name="cd_planned">Créneau planifié</string>
+    <string name="cd_planning">Planning</string>
+    <string name="cd_planning_conflict">Chevauche un créneau occupé</string>
+    <string name="cd_previous_day">Jour précédent</string>
+    <string name="cd_remove_attachment">Retirer la pièce jointe</string>
+    <string name="cd_select">Sélectionner</string>
+    <string name="cd_select_all">Tout sélectionner</string>
+    <string name="cd_set_label">Étiqueter</string>
+    <string name="cd_sort">Trier</string>
+    <string name="cd_subtask_menu">Options de la sous-tâche</string>
+    <string name="cd_today">Aujourd\'hui</string>
+    <string name="cd_unpin_label">Désépingler l\'étiquette</string>
+    <string name="field_attachments">Pièces jointes</string>
+    <string name="field_label_group">Groupe (optionnel)</string>
+    <string name="field_label_pinned">Épinglée</string>
+    <string name="field_label_pinned_desc">En tête des listes et filtre rapide sur la matrice.</string>
+    <string name="filter_name">Nom du filtre</string>
+    <string name="filter_save">Enregistrer le filtre</string>
+    <string name="labels_pinned">Épinglées</string>
+    <string name="labels_ungrouped">Sans groupe</string>
+    <string name="note_checkbox">Case à cocher</string>
+    <string name="note_edit">Modifier la note</string>
+    <string name="note_preview">Aperçu</string>
+    <string name="planning_busy">Occupé</string>
+    <string name="planning_connect_calendar">Connecte ton agenda (Google Agenda, iCal) dans les réglages pour voir tes créneaux occupés.</string>
+    <string name="planning_drop_to_unschedule">Lâcher ici pour déplanifier</string>
+    <string name="planning_duration">Durée</string>
+    <string name="planning_open_task">Ouvrir la tâche</string>
+    <string name="planning_title">Planning</string>
+    <string name="planning_tray">À planifier (%1$d) · appui long pour glisser, tap = prochain créneau libre</string>
+    <string name="planning_tray_empty">Toutes tes tâches actives sont planifiées.</string>
+    <string name="saved_filters_empty">Aucun filtre. Depuis la recherche de la matrice, touche l\'icône signet pour enregistrer une recherche ou une étiquette.</string>
+    <string name="saved_filters_title">Filtres enregistrés</string>
+    <string name="selection_count">%1$d sélectionnée(s)</string>
+    <string name="settings_calendar_device">Agendas de l\'appareil</string>
+    <string name="settings_calendar_device_desc">Affiche les créneaux occupés de Google Agenda et des autres comptes synchronisés dans le Planning (lecture seule).</string>
+    <string name="settings_focus_weight">Priorité du mode Focus</string>
+    <string name="settings_focus_weight_desc">Règle ce qui compte le plus pour choisir la tâche à faire maintenant (et pour le tri « Priorité »).</string>
+    <string name="settings_focus_weight_due">Échéance</string>
+    <string name="settings_focus_weight_importance">Importance</string>
+    <string name="settings_focus_weight_value">Échéance : %1$d %%</string>
+    <string name="settings_group_calendar">Agenda</string>
+    <string name="settings_ical">Flux iCal</string>
+    <string name="settings_ical_desc">Adresse secrète au format iCal (.ics) d\'un agenda, par exemple Google Agenda, Outlook ou iCloud.</string>
+    <string name="settings_ical_error">Échec : %1$s</string>
+    <string name="settings_ical_ok">%1$d événement(s) trouvé(s)</string>
+    <string name="settings_ical_test">Tester et enregistrer</string>
+    <string name="settings_sort">Tri dans les quadrants</string>
+    <string name="sort_alpha">Alphabétique</string>
+    <string name="sort_created">Création</string>
+    <string name="sort_due">Échéance</string>
+    <string name="sort_manual">Manuel</string>
+    <string name="sort_priority">Priorité</string>
+    <string name="sort_title">Trier par</string>
+    <string name="subtask_due">Échéance…</string>
+    <string name="subtask_promote">Promouvoir en tâche</string>
+    <string name="subtask_promoted">« %1$s » deviendra une tâche</string>
+
+    <!-- Guide : planning, montre, nouveautés de l\'éditeur et du quotidien -->
+    <string name="guide_create_note_t">Note enrichie</string>
+    <string name="guide_create_note_b">Le bouton « Case à cocher » ajoute une ligne « - [ ] » : en aperçu, elle se coche d\'un tap. Les liens (https://…, www.…) deviennent cliquables. Touche l\'aperçu pour revenir à la saisie.</string>
+    <string name="guide_create_attach_t">Pièces jointes</string>
+    <string name="guide_create_attach_b">Joins des fichiers légers (photo, PDF… 10 Mo max) : ils sont copiés dans l\'app et s\'ouvrent d\'un tap.</string>
+    <string name="guide_daily_sort_t">Trier les quadrants</string>
+    <string name="guide_daily_sort_b">L\'icône de tri en haut range les tâches par échéance, priorité, date de création ou ordre alphabétique. En tri « Manuel », tu les ordonnes en les glissant.</string>
+    <string name="guide_daily_select_t">Sélection multiple</string>
+    <string name="guide_daily_select_b">Menu ⋮ → « Sélectionner », puis touche d\'autres tâches. La barre du haut agit sur toute la sélection : déplacer, étiqueter, terminer, retirer.</string>
+    <string name="guide_daily_labels_t">Étiquettes avancées</string>
+    <string name="guide_daily_labels_b">Range tes étiquettes en groupes et épingle les plus utiles : une étiquette épinglée apparaît en tête des listes et comme filtre rapide directement sur la matrice.</string>
+    <string name="guide_planning_title">Planning &amp; agenda</string>
+    <string name="guide_planning_sub">Réserver du temps pour tes tâches</string>
+    <string name="guide_planning_p1">Le Planning (icône calendrier en bas de la matrice) montre ta journée heure par heure. Y placer une tâche, c\'est lui réserver un créneau : le time-blocking.</string>
+    <string name="guide_planning_drag_t">Glisser une tâche</string>
+    <string name="guide_planning_drag_b">Appui long sur une tâche du bac « À planifier », puis dépose-la sur la frise (calage au quart d\'heure). Un simple tap la pose sur le prochain créneau libre.</string>
+    <string name="guide_planning_block_t">Ajuster un créneau</string>
+    <string name="guide_planning_block_b">Touche un créneau pour changer sa durée, ouvrir la tâche ou la déplanifier. Appui long pour le déplacer ; dépose-le sur le bac pour le retirer du planning.</string>
+    <string name="guide_planning_cal_t">Google Agenda &amp; iCal</string>
+    <string name="guide_planning_cal_b">Dans Réglages → Agenda, active la lecture des agendas du téléphone (Google Agenda et autres comptes) ou colle l\'adresse d\'un flux iCal (.ics). Tes rendez-vous apparaissent en gris, en lecture seule.</string>
+    <string name="guide_planning_tip">Un créneau qui chevauche un rendez-vous affiche un petit triangle d\'alerte. Commence par bloquer du temps pour Planifier : c\'est là que se joue le travail de fond.</string>
+    <string name="guide_wear_title">Sur ta montre</string>
+    <string name="guide_wear_sub">Kairós au poignet (Wear OS)</string>
+    <string name="guide_wear_p1">L\'app montre reflète ton téléphone : elle affiche les données qu\'il lui envoie et lui renvoie tes actions.</string>
+    <string name="guide_wear_focus_t">À faire en priorité</string>
+    <string name="guide_wear_focus_b">La tâche du moment et les suivantes, comme le mode Focus. Le bouton ✓ la termine directement depuis le poignet.</string>
+    <string name="guide_wear_pomo_t">Pomodoro</string>
+    <string name="guide_wear_pomo_b">Pendant une session, la montre affiche le temps restant et permet de mettre en pause, reprendre ou réinitialiser.</string>
+    <string name="guide_wear_today_t">Aujourd\'hui &amp; quadrants</string>
+    <string name="guide_wear_today_b">Les créneaux planifiés du jour, puis les 4 quadrants : touche-en un pour parcourir ses tâches (flèches ou glisser vers la gauche pour passer au suivant).</string>
+    <string name="guide_wear_tiles_t">Tuiles</string>
+    <string name="guide_wear_tiles_b">Deux tuiles à ajouter : la matrice (nombre de tâches par quadrant) et « Prochain créneau », qui passe d\'elle-même au créneau suivant.</string>
 </resources>
