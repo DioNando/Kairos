@@ -2,10 +2,11 @@ package com.kairos.app.ui.labels
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -14,7 +15,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.ArrowBack
@@ -48,8 +48,14 @@ import com.kairos.app.ui.components.toColor
 import com.kairos.app.ui.theme.LocalizedOverlay
 
 private val LabelColors = listOf(
-    "#E5645A", "#4FA5A0", "#E0A24E", "#9C9AA6",
-    "#7E6B9E", "#81B29A", "#E07A5F", "#5C7CFA",
+    // Rouges / oranges / jaunes
+    "#E5645A", "#E07A5F", "#F28C38", "#E0A24E", "#E9C46A",
+    // Verts / turquoises
+    "#A3B86C", "#81B29A", "#4CAF7D", "#4FA5A0", "#3BA7C9",
+    // Bleus / violets
+    "#5C7CFA", "#4361EE", "#7E6B9E", "#9B5DE5", "#C77DFF",
+    // Roses / neutres
+    "#F06292", "#D6336C", "#A1887F", "#9C9AA6", "#607D8B",
 )
 
 /** Gestion des étiquettes (catégories) : liste + création/édition + suppression. */
@@ -151,6 +157,7 @@ fun LabelsScreen(
     }
 }
 
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 private fun LabelEditorDialog(
     label: Label?,
@@ -180,16 +187,16 @@ private fun LabelEditorDialog(
                     modifier = Modifier.fillMaxWidth(),
                 )
                 Text(stringResource(R.string.field_label_color), style = MaterialTheme.typography.labelLarge)
-                Row(
-                    modifier = Modifier.horizontalScroll(rememberScrollState()),
+                FlowRow(
                     horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalArrangement = Arrangement.spacedBy(8.dp),
                 ) {
                     LabelColors.forEach { hex ->
                         val selected = hex == colorHex
                         val swatch = hex.toColor()
                         Box(
                             modifier = Modifier
-                                .size(30.dp)
+                                .size(36.dp)
                                 .background(swatch, CircleShape)
                                 .clickable { colorHex = hex },
                             contentAlignment = Alignment.Center,

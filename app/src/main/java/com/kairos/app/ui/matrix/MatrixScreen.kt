@@ -688,7 +688,9 @@ private fun FilterPanel(
         )
         if (labels.isNotEmpty()) {
             Row(
-                modifier = Modifier.horizontalScroll(rememberScrollState()),
+                modifier = Modifier
+                    .horizontalScroll(rememberScrollState())
+                    .padding(bottom = 8.dp),
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
             ) {
                 KairosFilterChip(

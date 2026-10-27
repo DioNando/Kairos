@@ -4,6 +4,8 @@ import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
@@ -78,6 +80,8 @@ import com.kairos.app.domain.ai.EnhancedTask
 import com.kairos.app.domain.recurrence.Recurrence
 import com.kairos.app.ui.components.KairosAssistChip
 import com.kairos.app.ui.components.KairosFilterChip
+import com.kairos.app.ui.components.onAccent
+import com.kairos.app.ui.components.toColor
 import com.kairos.app.ui.theme.LocalizedOverlay
 import com.kairos.app.ui.components.MorphingCheckbox
 import com.kairos.app.ui.components.MorphingIconPill
@@ -422,10 +426,22 @@ fun TaskEditorScreen(
                             label = stringResource(R.string.label_none),
                         )
                         labels.forEach { label ->
+                            // Le chip prend la couleur de la pastille de l'étiquette ; la pastille
+                            // reste visible en tête quand il n'est pas sélectionné.
+                            val swatch = label.colorHex.toColor()
+                            val selected = labelId == label.id
                             KairosFilterChip(
-                                selected = labelId == label.id,
+                                selected = selected,
                                 onClick = { labelId = label.id },
                                 label = label.name,
+                                selectedContainerColor = swatch,
+                                leadingIcon = {
+                                    Box(
+                                        Modifier
+                                            .size(10.dp)
+                                            .background(if (selected) onAccent(swatch) else swatch, CircleShape),
+                                    )
+                                },
                             )
                         }
                     }

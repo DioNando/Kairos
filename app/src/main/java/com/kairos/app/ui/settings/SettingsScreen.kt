@@ -6,8 +6,6 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
-import androidx.compose.foundation.layout.ExperimentalLayoutApi
-import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.consumeWindowInsets
@@ -19,6 +17,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -100,7 +99,7 @@ import kotlinx.coroutines.launch
  * page reprise de Framely : en-têtes de groupe teintés marque + `SettingCard`/`SettingRow`/
  * `SettingBlock`, contenu borné et centré sur grand écran.
  */
-@OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SettingsScreen(
     settings: AppSettings,
@@ -195,7 +194,10 @@ fun SettingsScreen(
                 )
                 SettingDivider()
                 SettingBlock(Icons.Rounded.Translate, stringResource(R.string.settings_language)) {
-                    FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Row(
+                        modifier = Modifier.horizontalScroll(rememberScrollState()),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    ) {
                         val langs = listOf(
                             AppSettings.LANG_SYSTEM to R.string.lang_system,
                             AppSettings.LANG_FR to R.string.lang_fr,
@@ -247,7 +249,10 @@ fun SettingsScreen(
                 if (settings.remindersEnabled) {
                     SettingDivider()
                     SettingBlock(Icons.Rounded.Schedule, stringResource(R.string.reminders_lead)) {
-                        FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        Row(
+                            modifier = Modifier.horizontalScroll(rememberScrollState()),
+                            horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        ) {
                             val leads = listOf(
                                 0 to R.string.reminder_lead_now,
                                 5 to R.string.reminder_lead_5,
@@ -267,7 +272,10 @@ fun SettingsScreen(
                 }
                 SettingDivider()
                 SettingBlock(Icons.Rounded.DeleteSweep, stringResource(R.string.settings_archive_purge)) {
-                    FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Row(
+                        modifier = Modifier.horizontalScroll(rememberScrollState()),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    ) {
                         val options = listOf(
                             0 to R.string.purge_never,
                             7 to R.string.purge_7,
@@ -356,7 +364,10 @@ fun SettingsScreen(
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                     Spacer(Modifier.height(12.dp))
-                    FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Row(
+                        modifier = Modifier.horizontalScroll(rememberScrollState()),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    ) {
                         val providers = listOf(
                             AppSettings.AI_GEMINI to R.string.ai_provider_gemini,
                             AppSettings.AI_OPENROUTER to R.string.ai_provider_openrouter,
