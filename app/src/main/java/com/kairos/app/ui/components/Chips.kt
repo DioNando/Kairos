@@ -20,6 +20,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 
 /** Hauteur commune des chips : plus généreuse que les 32 dp M3 par défaut (cible tactile confortable). */
@@ -65,7 +66,15 @@ private fun KairosPill(
                 if (leadingIcon != null) {
                     Box(Modifier.size(ChipIconSize), contentAlignment = Alignment.Center) { leadingIcon() }
                 }
-                Text(label, maxLines = 1, style = MaterialTheme.typography.labelLarge)
+                // softWrap = false : un libellé trop long est tronqué (…) au lieu d'être coupé au dernier
+                // espace, ce qui masquait la fin du texte tout en gardant sa largeur (vide à droite).
+                Text(
+                    label,
+                    maxLines = 1,
+                    softWrap = false,
+                    overflow = TextOverflow.Ellipsis,
+                    style = MaterialTheme.typography.labelLarge,
+                )
                 if (trailingIcon != null) {
                     Box(Modifier.size(ChipIconSize), contentAlignment = Alignment.Center) { trailingIcon() }
                 }

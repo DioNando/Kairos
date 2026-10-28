@@ -150,18 +150,20 @@ class CompleteTaskAction : ActionCallback {
 @Composable
 private fun FocusContent(items: List<FocusItem>) {
     val context = LocalContext.current
+    // Mêmes rayons que le 2×1 (extérieur 26, cartes 18) ; marge latérale un peu plus large (12) que
+    // la marge verticale (8) pour aérer les cartes, plus longues que sur le 2×1.
     Column(
         modifier = GlanceModifier
             .fillMaxSize()
             .background(GlanceTheme.colors.background)
-            .cornerRadius(20.dp)
-            .padding(10.dp),
+            .cornerRadius(CompactOuterRadius)
+            .padding(horizontal = 12.dp, vertical = CompactInset),
     ) {
         // En-tête : logo + titre → ouvre le mode Focus.
         Row(
             modifier = GlanceModifier
                 .fillMaxWidth()
-                .padding(start = 4.dp, bottom = 8.dp)
+                .padding(start = 6.dp, top = 2.dp, bottom = 8.dp)
                 .clickable(actionStartActivity(Intent(context, MainActivity::class.java).setAction(MainActivity.ACTION_FOCUS))),
             verticalAlignment = Alignment.Vertical.CenterVertically,
         ) {
@@ -206,16 +208,21 @@ private fun FocusContent(items: List<FocusItem>) {
                             fontSize = 12.sp,
                             fontWeight = FontWeight.Bold,
                         ),
-                        modifier = GlanceModifier.padding(start = 4.dp, top = 10.dp, bottom = 2.dp),
+                        modifier = GlanceModifier.padding(start = 6.dp, top = 10.dp, bottom = 2.dp),
                     )
                 }
                 items(items.drop(1), itemId = { it.id }) { item -> UpNextRow(item) }
             }
+            // Respiration en bas de liste : la dernière ligne ne bute pas contre le bord.
+            item { Spacer(GlanceModifier.height(4.dp)) }
         }
     }
 }
 
-/** Rayon extérieur du widget 2×1, marge intérieure, et rayon de la carte (concentrique : 26 − 8). */
+/**
+ * Rayon extérieur des widgets « À faire en priorité », marge intérieure, et rayon des cartes
+ * (concentrique : 26 − 8). Partagé par le 4×2 et le 2×1.
+ */
 private val CompactOuterRadius = 26.dp
 private val CompactInset = 8.dp
 private val CompactCardRadius = 18.dp
@@ -318,7 +325,10 @@ private fun openTaskIntent(context: Context, taskId: Long): Intent =
         .setAction(ReminderNotifications.ACTION_OPEN_TASK)
         .putExtra(ReminderNotifications.EXTRA_TASK_ID, taskId)
 
-/** Tâche prioritaire : carte teintée (accent ~18 %), verbe du quadrant, titre, étiquette, ✓ plein. */
+/**
+ * Tâche prioritaire : carte teintée (accent ~18 %), icône + verbe du quadrant sur une ligne, titre,
+ * étiquette, ✓ plein.
+ */
 @Composable
 private fun PriorityCard(item: FocusItem) {
     val context = LocalContext.current
@@ -326,17 +336,26 @@ private fun PriorityCard(item: FocusItem) {
         modifier = GlanceModifier
             .fillMaxWidth()
             .background(ColorProvider(item.accent.copy(alpha = 0.18f)))
-            .cornerRadius(18.dp)
+            .cornerRadius(CompactCardRadius)
             .padding(start = 14.dp, end = 10.dp, top = 12.dp, bottom = 12.dp)
             .clickable(actionStartActivity(openTaskIntent(context, item.id))),
         verticalAlignment = Alignment.Vertical.CenterVertically,
     ) {
         Column(modifier = GlanceModifier.defaultWeight()) {
-            Text(
-                context.getString(quadrantVerbRes(item.quadrant)),
-                maxLines = 1,
-                style = TextStyle(color = ColorProvider(item.accent), fontSize = 11.sp, fontWeight = FontWeight.Bold),
-            )
+            Row(verticalAlignment = Alignment.Vertical.CenterVertically) {
+                Image(
+                    provider = ImageProvider(quadrantIcon(item.quadrant)),
+                    contentDescription = null,
+                    colorFilter = ColorFilter.tint(ColorProvider(item.accent)),
+                    modifier = GlanceModifier.size(12.dp),
+                )
+                Spacer(GlanceModifier.width(4.dp))
+                Text(
+                    context.getString(quadrantVerbRes(item.quadrant)),
+                    maxLines = 1,
+                    style = TextStyle(color = ColorProvider(item.accent), fontSize = 11.sp, fontWeight = FontWeight.Bold),
+                )
+            }
             Text(
                 item.title,
                 maxLines = 2,
@@ -352,7 +371,7 @@ private fun PriorityCard(item: FocusItem) {
     }
 }
 
-/** Ligne « À suivre » : pastille du quadrant, titre, point d'étiquette, ✓ tonal. */
+/** Ligne « À suivre » : icône du quadrant, titre, point d'étiquette, ✓ tonal. */
 @Composable
 private fun UpNextRow(item: FocusItem) {
     val context = LocalContext.current
@@ -362,12 +381,17 @@ private fun UpNextRow(item: FocusItem) {
             modifier = GlanceModifier
                 .fillMaxWidth()
                 .background(GlanceTheme.colors.surfaceVariant)
-                .cornerRadius(14.dp)
-                .padding(start = 12.dp, end = 6.dp, top = 6.dp, bottom = 6.dp)
+                .cornerRadius(CompactCardRadius)
+                .padding(start = 14.dp, end = 6.dp, top = 6.dp, bottom = 6.dp)
                 .clickable(actionStartActivity(openTaskIntent(context, item.id))),
             verticalAlignment = Alignment.Vertical.CenterVertically,
         ) {
-            Box(GlanceModifier.size(8.dp).background(ColorProvider(item.accent)).cornerRadius(4.dp)) {}
+            Image(
+                provider = ImageProvider(quadrantIcon(item.quadrant)),
+                contentDescription = context.getString(quadrantVerbRes(item.quadrant)),
+                colorFilter = ColorFilter.tint(ColorProvider(item.accent)),
+                modifier = GlanceModifier.size(14.dp),
+            )
             Spacer(GlanceModifier.width(10.dp))
             Text(
                 item.title,

@@ -693,9 +693,12 @@ fun TaskEditorScreen(
                 }
             }
             item {
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
+                // FlowRow : si « Ajouter » + « Découper (IA) » ne tiennent pas sur une ligne, le chip
+                // passe dessous en entier (sinon son libellé était coupé et laissait un vide à droite).
+                FlowRow(
+                    itemVerticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalArrangement = Arrangement.spacedBy(4.dp),
                 ) {
                     TextButton(onClick = { subtaskFields.add(SubtaskField(nextSubtaskKey++, "", false, null)) }) {
                         Icon(Icons.Rounded.Add, contentDescription = null)

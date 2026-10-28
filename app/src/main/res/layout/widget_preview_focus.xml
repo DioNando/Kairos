@@ -1,21 +1,23 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Aperçu du widget « À faire en priorité » : en-tête, carte de la tâche prioritaire (teinte et
-     icône « Faire ») avec son ✓, puis deux tâches « À suivre » (icônes Planifier / Déléguer).
-     Exemples de titres localisés. Rendu à la volée = net à toute taille. -->
+<!-- Aperçu du widget « À faire en priorité » : en-tête, carte de la tâche prioritaire (icône + verbe
+     « Faire », exemple de titre, ✓), puis deux tâches « À suivre » (icônes Planifier / Déléguer).
+     Mêmes proportions que le widget : rayon 26 dp, marges 12 dp (côtés) / 8 dp, cartes 18 dp. Rendu à la volée. -->
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="250dp"
-    android:layout_height="150dp"
-    android:background="@drawable/widget_preview_bg"
+    android:layout_height="160dp"
+    android:background="@drawable/widget_preview_bg_compact"
     android:orientation="vertical"
-    android:padding="10dp">
+    android:paddingHorizontal="12dp"
+    android:paddingVertical="8dp">
 
     <LinearLayout
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:gravity="center_vertical"
         android:orientation="horizontal"
-        android:paddingStart="4dp"
-        android:paddingBottom="6dp">
+        android:paddingStart="6dp"
+        android:paddingTop="2dp"
+        android:paddingBottom="8dp">
 
         <ImageView
             android:layout_width="16dp"
@@ -37,37 +39,58 @@
         android:layout_width="match_parent"
         android:layout_height="0dp"
         android:layout_weight="1"
-        android:background="@drawable/widget_preview_tile"
+        android:background="@drawable/widget_preview_card_compact"
         android:backgroundTint="#33E5645A"
         android:gravity="center_vertical"
         android:orientation="horizontal"
-        android:paddingStart="12dp"
-        android:paddingEnd="8dp">
+        android:paddingStart="14dp"
+        android:paddingEnd="10dp">
 
-        <ImageView
-            android:layout_width="18dp"
-            android:layout_height="18dp"
-            android:src="@drawable/widget_do"
-            android:tint="#E5645A" />
-
-        <TextView
+        <LinearLayout
             android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:layout_marginStart="8dp"
             android:layout_weight="1"
-            android:ellipsize="end"
-            android:maxLines="1"
-            android:text="@string/widget_preview_task_1"
-            android:textColor="#1D1D1B"
-            android:textSize="13sp"
-            android:textStyle="bold" />
+            android:orientation="vertical">
+
+            <LinearLayout
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:gravity="center_vertical"
+                android:orientation="horizontal">
+
+                <ImageView
+                    android:layout_width="12dp"
+                    android:layout_height="12dp"
+                    android:src="@drawable/widget_do"
+                    android:tint="#E5645A" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="4dp"
+                    android:text="@string/quadrant_do"
+                    android:textColor="#E5645A"
+                    android:textSize="10sp"
+                    android:textStyle="bold" />
+            </LinearLayout>
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:ellipsize="end"
+                android:maxLines="1"
+                android:text="@string/widget_preview_task_1"
+                android:textColor="#1D1D1B"
+                android:textSize="13sp"
+                android:textStyle="bold" />
+        </LinearLayout>
 
         <ImageView
-            android:layout_width="28dp"
-            android:layout_height="28dp"
+            android:layout_width="30dp"
+            android:layout_height="30dp"
             android:background="@drawable/widget_preview_tile"
             android:backgroundTint="#E5645A"
-            android:padding="6dp"
+            android:padding="7dp"
             android:src="@drawable/widget_check" />
     </LinearLayout>
 
@@ -76,11 +99,11 @@
         android:layout_width="match_parent"
         android:layout_height="28dp"
         android:layout_marginTop="6dp"
-        android:background="@drawable/widget_preview_tile"
+        android:background="@drawable/widget_preview_card_compact"
         android:backgroundTint="#141D1D1B"
         android:gravity="center_vertical"
         android:orientation="horizontal"
-        android:paddingStart="12dp">
+        android:paddingStart="14dp">
 
         <ImageView
             android:layout_width="14dp"
@@ -91,7 +114,7 @@
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_marginStart="8dp"
+            android:layout_marginStart="10dp"
             android:maxLines="1"
             android:text="@string/widget_preview_task_2"
             android:textColor="#1D1D1B"
@@ -103,11 +126,11 @@
         android:layout_width="match_parent"
         android:layout_height="28dp"
         android:layout_marginTop="6dp"
-        android:background="@drawable/widget_preview_tile"
+        android:background="@drawable/widget_preview_card_compact"
         android:backgroundTint="#141D1D1B"
         android:gravity="center_vertical"
         android:orientation="horizontal"
-        android:paddingStart="12dp">
+        android:paddingStart="14dp">
 
         <ImageView
             android:layout_width="14dp"
@@ -118,7 +141,7 @@
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_marginStart="8dp"
+            android:layout_marginStart="10dp"
             android:maxLines="1"
             android:text="@string/widget_preview_task_3"
             android:textColor="#1D1D1B"
