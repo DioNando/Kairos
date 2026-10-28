@@ -102,11 +102,35 @@ import java.time.format.DateTimeFormatter
 import java.time.format.FormatStyle
 import kotlin.math.roundToInt
 
-/** Hauteur d'une heure sur la frise. */
-private val HourHeight = 64.dp
+/**
+ * Hauteur d'une heure sur la frise. 80 dp → un créneau de 15 min fait 20 dp : assez pour une ligne
+ * de texte compacte ; 45 min laissent la place au titre **et** à l'horaire.
+ */
+private val HourHeight = 80.dp
 
 /** Gouttière des libellés d'heure, à gauche de la frise. */
 private val Gutter = 52.dp
+
+/** Marge au-dessus et au-dessous de la frise : « 00:00 » et « 23:00 » ne sont plus rognés. */
+private val TimelineEdge = 14.dp
+
+/** Épaisseur des traits d'heure / de demi-heure de la frise. */
+private val LineThickness = 1.dp
+
+/**
+ * Espace laissé entre un créneau et les traits qui l'encadrent, **identique en haut et en bas** : le
+ * créneau commence juste sous le trait de début et s'arrête à la même distance du trait de fin.
+ */
+private val BlockGap = 1.5.dp
+
+/** Décalage vertical du haut d'un créneau (sous le trait de début + espace). */
+private val BlockTopInset = LineThickness + BlockGap
+
+/** Hauteur affichée d'un créneau de [minutes] : sa durée, moins les espaces haut et bas. */
+private fun blockHeight(minutes: Float): Dp = HourHeight * (minutes / 60f) - LineThickness - BlockGap * 2
+
+/** Arrondi des créneaux (tâches, rendez-vous, fantôme de dépôt). */
+private val BlockShape = RoundedCornerShape(12.dp)
 
 /** Pas de calage des créneaux (minutes). */
 private const val SNAP_MINUTES = 15
@@ -252,11 +276,15 @@ fun PlanningScreen(
                 title = {
                     Column {
                         Text(stringResource(R.string.planning_title), fontWeight = FontWeight.Bold)
+                        // Date courte (« ven. 30 oct. »), précédée de « Aujourd'hui » le jour même.
+                        val shortDate = DateTimeFormatter.ofPattern("EEE d MMM", locale).format(day)
                         Text(
-                            DateTimeFormatter.ofLocalizedDate(FormatStyle.FULL).withLocale(locale).format(day)
-                                .replaceFirstChar { it.uppercase() },
+                            if (isToday) "${stringResource(R.string.cd_today)} · $shortDate"
+                            else shortDate.replaceFirstChar { it.uppercase() },
                             style = MaterialTheme.typography.labelMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            color = if (isToday) MaterialTheme.colorScheme.primary
+                            else MaterialTheme.colorScheme.onSurfaceVariant,
+                            maxLines = 1,
                         )
                     }
                 },
@@ -354,10 +382,12 @@ fun PlanningScreen(
                             .fillMaxSize()
                             .verticalScroll(scroll),
                     ) {
-                        val laneWidth = maxWidth - Gutter - 8.dp
+                        // 16 dp libres à droite : les créneaux ne collent plus au bord de l'écran.
+                        val laneWidth = maxWidth - Gutter - 16.dp
                         Box(
                             modifier = Modifier
                                 .fillMaxWidth()
+                                .padding(vertical = TimelineEdge)
                                 .height(HourHeight * 24)
                                 .onGloballyPositioned { timelineTop = it.positionInRoot().y },
                         ) {
@@ -405,10 +435,10 @@ fun PlanningScreen(
                             if (ghostTask != null && ghost != null) {
                                 Box(
                                     modifier = Modifier
-                                        .offset(x = Gutter, y = HourHeight * (ghost / 60f))
+                                        .offset(x = Gutter, y = HourHeight * (ghost / 60f) + BlockTopInset)
                                         .width(laneWidth)
-                                        .height(HourHeight * (ghostTask.blockDuration / 60f))
-                                        .clip(RoundedCornerShape(10.dp))
+                                        .height(blockHeight(ghostTask.blockDuration.toFloat()))
+                                        .clip(BlockShape)
                                         .background(quadrantVisual(ghostTask.quadrant).accent.copy(alpha = 0.25f)),
                                 ) {
                                     Text(
@@ -423,24 +453,36 @@ fun PlanningScreen(
                 }
 
                 // Bac « À planifier » : tâches actives sans créneau, par priorité (comme le Focus).
+                // Feuille aux coins supérieurs arrondis, posée sur la frise.
                 Surface(
                     color = MaterialTheme.colorScheme.surfaceContainer,
+                    shape = RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp),
                     modifier = Modifier
                         .fillMaxWidth()
                         .onGloballyPositioned { trayBounds = it.boundsInRoot() },
                 ) {
-                    Column(modifier = Modifier.padding(vertical = 10.dp)) {
+                    Column(modifier = Modifier.padding(top = 14.dp, bottom = 12.dp)) {
                         Text(
                             stringResource(
                                 if (drag.task?.blockStart != null) R.string.planning_drop_to_unschedule
                                 else R.string.planning_tray,
                                 tray.size,
                             ),
-                            style = MaterialTheme.typography.labelLarge,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            modifier = Modifier.padding(horizontal = 16.dp),
+                            style = MaterialTheme.typography.titleSmall,
+                            fontWeight = FontWeight.Bold,
+                            modifier = Modifier.padding(horizontal = 20.dp),
                         )
-                        Spacer(Modifier.height(8.dp))
+                        if (tray.isNotEmpty() && drag.task == null) {
+                            Text(
+                                stringResource(R.string.planning_tray_hint),
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis,
+                                modifier = Modifier.padding(horizontal = 20.dp),
+                            )
+                        }
+                        Spacer(Modifier.height(10.dp))
                         if (tray.isEmpty()) {
                             Text(
                                 stringResource(R.string.planning_tray_empty),
@@ -450,7 +492,7 @@ fun PlanningScreen(
                             )
                         } else {
                             LazyRow(
-                                contentPadding = PaddingValues(horizontal = 12.dp),
+                                contentPadding = PaddingValues(horizontal = 16.dp),
                                 horizontalArrangement = Arrangement.spacedBy(8.dp),
                             ) {
                                 items(tray, key = { it.id }) { task ->
@@ -564,12 +606,14 @@ private fun layoutLanes(items: List<LaneItem>): Map<String, Lane> {
     return result
 }
 
+/** Grille horaire : libellé + ligne pleine à chaque heure, ligne plus discrète à la demi-heure. */
 @Composable
 private fun HourGrid() {
     val lineColor = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)
+    val halfLineColor = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.22f)
     Column {
         repeat(24) { hour ->
-            Row(modifier = Modifier.height(HourHeight)) {
+            Box(modifier = Modifier.fillMaxWidth().height(HourHeight)) {
                 Text(
                     formatMinutes(hour * 60),
                     style = MaterialTheme.typography.labelSmall,
@@ -577,13 +621,21 @@ private fun HourGrid() {
                     modifier = Modifier
                         .width(Gutter)
                         .offset(y = (-7).dp)
-                        .padding(start = 10.dp),
+                        .padding(start = 12.dp),
                 )
                 Box(
                     modifier = Modifier
+                        .padding(start = Gutter)
                         .fillMaxWidth()
                         .height(1.dp)
                         .background(lineColor),
+                )
+                Box(
+                    modifier = Modifier
+                        .padding(start = Gutter + 8.dp, top = HourHeight / 2)
+                        .fillMaxWidth()
+                        .height(1.dp)
+                        .background(halfLineColor),
                 )
             }
         }
@@ -618,10 +670,10 @@ private fun BusyBlock(slot: BusySlot, dayStart: Long, lane: Lane, laneWidth: Dp)
     val width = laneWidth / lane.lanes
     Row(
         modifier = Modifier
-            .offset(x = Gutter + width * lane.lane, y = HourHeight * (startMin / 60f))
+            .offset(x = Gutter + width * lane.lane, y = HourHeight * (startMin / 60f) + BlockTopInset)
             .width(width - 2.dp)
-            .height(HourHeight * ((endMin - startMin) / 60f) - 2.dp)
-            .clip(RoundedCornerShape(10.dp))
+            .height(blockHeight((endMin - startMin).toFloat()))
+            .clip(BlockShape)
             .background(busyColor(slot)),
     ) {
         Box(
@@ -676,9 +728,9 @@ private fun TaskBlock(
     // Mouvement M3 Expressive : un créneau déplacé ou redimensionné glisse (et rebondit) jusqu'à sa
     // nouvelle place au lieu de sauter ; le décalage latéral (chevauchements) suit le même ressort.
     val spatial = MaterialTheme.motionScheme.defaultSpatialSpec<androidx.compose.ui.unit.Dp>()
-    val y by androidx.compose.animation.core.animateDpAsState(HourHeight * (startMin / 60f), spatial, label = "block-y")
+    val y by androidx.compose.animation.core.animateDpAsState(HourHeight * (startMin / 60f) + BlockTopInset, spatial, label = "block-y")
     val h by androidx.compose.animation.core.animateDpAsState(
-        HourHeight * (task.blockDuration / 60f) - 2.dp,
+        blockHeight(task.blockDuration.toFloat()),
         spatial,
         label = "block-h",
     )
@@ -695,7 +747,7 @@ private fun TaskBlock(
             .height(h)
             .alpha(if (dragging) 0.35f else 1f)
             .onGloballyPositioned { origin = it.positionInRoot() }
-            .clip(RoundedCornerShape(10.dp))
+            .clip(BlockShape)
             .background(accent)
             .clickable { menuOpen = true }
             .pointerInput(task.id) {
@@ -709,31 +761,54 @@ private fun TaskBlock(
                     onDragCancel = { endCallbacks.second() },
                 )
             }
-            .padding(horizontal = 8.dp, vertical = 4.dp),
+            // Créneau de 15 min : aucune marge verticale, chaque dp compte.
+            .padding(horizontal = 12.dp, vertical = if (task.blockDuration <= 15) 0.dp else 4.dp),
     ) {
-        Column {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                if (conflict) {
-                    Icon(
-                        Icons.Rounded.WarningAmber,
-                        contentDescription = stringResource(R.string.cd_planning_conflict),
-                        tint = content,
-                        modifier = Modifier.size(14.dp),
-                    )
-                    Spacer(Modifier.size(4.dp))
-                }
+        val range = formatMinutes(startMin.toInt()) + "–" + formatMinutes(startMin.toInt() + task.blockDuration)
+        val conflictIcon: @Composable () -> Unit = {
+            if (conflict) {
+                Icon(
+                    Icons.Rounded.WarningAmber,
+                    contentDescription = stringResource(R.string.cd_planning_conflict),
+                    tint = content,
+                    modifier = Modifier.size(14.dp),
+                )
+                Spacer(Modifier.size(4.dp))
+            }
+        }
+        if (task.blockDuration < 45) {
+            // Créneau court : titre et horaire sur une seule ligne, centrés verticalement (texte
+            // compact pour 15 min, qui n'a la hauteur que d'une petite ligne).
+            val compact = task.blockDuration <= 15
+            Row(modifier = Modifier.fillMaxSize(), verticalAlignment = Alignment.CenterVertically) {
+                conflictIcon()
                 Text(
                     task.title,
-                    style = MaterialTheme.typography.labelLarge,
+                    style = if (compact) MaterialTheme.typography.labelMedium else MaterialTheme.typography.labelLarge,
                     color = content,
-                    maxLines = if (task.blockDuration >= 45) 2 else 1,
+                    maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier.weight(1f),
                 )
+                Spacer(Modifier.size(8.dp))
+                Text(range, style = MaterialTheme.typography.labelSmall, color = content.copy(alpha = 0.8f), maxLines = 1)
             }
-            if (task.blockDuration >= 30) {
+        } else {
+            Column(modifier = Modifier.padding(top = 2.dp)) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    conflictIcon()
+                    Text(
+                        task.title,
+                        style = MaterialTheme.typography.labelLarge,
+                        color = content,
+                        // Deux lignes de titre seulement quand le créneau a la hauteur de les montrer
+                        // avec l'horaire dessous (≥ 1 h 15) ; sinon une ligne, l'horaire reste visible.
+                        maxLines = if (task.blockDuration >= 75) 2 else 1,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                }
                 Text(
-                    formatMinutes(startMin.toInt()) + "–" + formatMinutes(startMin.toInt() + task.blockDuration) +
-                        (label?.let { " · ${it.name}" } ?: ""),
+                    range + (label?.let { " · ${it.name}" } ?: ""),
                     style = MaterialTheme.typography.labelSmall,
                     color = content.copy(alpha = 0.8f),
                     maxLines = 1,
@@ -821,7 +896,7 @@ private fun TrayTask(
                     onDragCancel = { endCallbacks.second() },
                 )
             }
-            .padding(start = 14.dp, end = 18.dp, top = 12.dp, bottom = 12.dp),
+            .padding(start = 14.dp, end = 18.dp, top = 10.dp, bottom = 10.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Box(Modifier.size(10.dp).background(accent, CircleShape))

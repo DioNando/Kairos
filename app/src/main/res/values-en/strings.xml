@@ -390,7 +390,7 @@
     <string name="planning_duration">Duration</string>
     <string name="planning_open_task">Open task</string>
     <string name="planning_title">Planner</string>
-    <string name="planning_tray">To schedule (%1$d) · long-press to drag, tap = next free slot</string>
+    <string name="planning_tray">To schedule (%1$d)</string>
     <string name="planning_tray_empty">All your active tasks are scheduled.</string>
     <string name="saved_filters_empty">No filters yet. From the matrix search, tap the bookmark icon to save a search or a label.</string>
     <string name="saved_filters_title">Saved filters</string>
@@ -462,4 +462,5 @@
     <string name="widget_preview_task_1">Hand in the report</string>
     <string name="widget_preview_task_2">Prepare for the exam</string>
     <string name="widget_preview_task_3">Book a taxi</string>
+    <string name="planning_tray_hint">Long-press to drag · tap: next free slot</string>
 </resources>
