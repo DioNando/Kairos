@@ -221,6 +221,7 @@ fun KairosNavHost(
                 onSave = { viewModel.saveLabel(it) },
                 onDelete = { viewModel.deleteLabel(it) },
                 onTogglePin = { viewModel.setLabelPinned(it.id, !it.pinned) },
+                onReorder = { viewModel.reorderLabels(it) },
                 savedFilters = savedFilters,
                 onDeleteFilter = { viewModel.deleteFilter(it) },
             )

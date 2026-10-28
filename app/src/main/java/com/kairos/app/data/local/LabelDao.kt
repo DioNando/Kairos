@@ -4,6 +4,7 @@ import androidx.room.Dao
 import androidx.room.Insert
 import androidx.room.OnConflictStrategy
 import androidx.room.Query
+import androidx.room.Transaction
 import androidx.room.Update
 import com.kairos.app.data.model.Label
 import kotlinx.coroutines.flow.Flow
@@ -11,10 +12,13 @@ import kotlinx.coroutines.flow.Flow
 @Dao
 interface LabelDao {
 
-    /** Ordre d'affichage : épinglées d'abord, puis sans groupe, puis par groupe, puis par création. */
+    /**
+     * Ordre d'affichage : épinglées d'abord, puis sans groupe, puis par groupe ; dans chaque section,
+     * l'ordre manuel ([Label.position]), puis la création.
+     */
     @Query(
         "SELECT * FROM labels ORDER BY pinned DESC, (groupName = '') DESC, " +
-            "groupName COLLATE NOCASE ASC, createdAt ASC",
+            "groupName COLLATE NOCASE ASC, position ASC, createdAt ASC",
     )
     fun observeAll(): Flow<List<Label>>
 
@@ -33,6 +37,18 @@ interface LabelDao {
     /** Supprime l'étiquette et détache les tâches qui la portaient (labelId -> NULL). */
     @Query("UPDATE tasks SET labelId = NULL WHERE labelId = :id")
     suspend fun detachTasks(id: Long)
+
+    @Query("SELECT COALESCE(MAX(position), -1) FROM labels")
+    suspend fun maxPosition(): Int
+
+    @Query("UPDATE labels SET position = :position WHERE id = :id")
+    suspend fun setPosition(id: Long, position: Int)
+
+    /** Réordonne d'un bloc : [ids] dans l'ordre voulu reçoivent les positions 0, 1, 2… */
+    @Transaction
+    suspend fun reorder(ids: List<Long>) {
+        ids.forEachIndexed { index, id -> setPosition(id, index) }
+    }
 
     @Query("UPDATE labels SET pinned = :pinned WHERE id = :id")
     suspend fun setPinned(id: Long, pinned: Boolean)

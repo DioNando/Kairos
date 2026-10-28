@@ -429,7 +429,7 @@
     <string name="guide_daily_select_t">Sélection multiple</string>
     <string name="guide_daily_select_b">Menu ⋮ → « Sélectionner », puis touche d\'autres tâches. La barre du haut agit sur toute la sélection : déplacer, étiqueter, terminer, retirer.</string>
     <string name="guide_daily_labels_t">Étiquettes avancées</string>
-    <string name="guide_daily_labels_b">Range tes étiquettes en groupes et épingle les plus utiles : une étiquette épinglée apparaît en tête des listes et comme filtre rapide directement sur la matrice.</string>
+    <string name="guide_daily_labels_b">Range tes étiquettes en groupes et épingle les plus utiles : une étiquette épinglée apparaît en tête des listes et comme filtre rapide directement sur la matrice. Pour changer l\'ordre, fais glisser la poignée ⋮⋮ à gauche d\'une étiquette (au sein de sa section).</string>
     <string name="guide_planning_title">Planning &amp; agenda</string>
     <string name="guide_planning_sub">Réserver du temps pour tes tâches</string>
     <string name="guide_planning_p1">Le Planning (icône calendrier en bas de la matrice) montre ta journée heure par heure. Y placer une tâche, c\'est lui réserver un créneau : le time-blocking.</string>
@@ -463,4 +463,6 @@
     <string name="widget_preview_task_2">Préparer l\'examen</string>
     <string name="widget_preview_task_3">Réserver un taxi</string>
     <string name="planning_tray_hint">Appui long pour glisser · tap : prochain créneau libre</string>
+    <string name="cd_move_up">Monter</string>
+    <string name="cd_move_down">Descendre</string>
 </resources>

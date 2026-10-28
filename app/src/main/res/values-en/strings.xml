@@ -429,7 +429,7 @@
     <string name="guide_daily_select_t">Multi-select</string>
     <string name="guide_daily_select_b">⋮ menu → “Select”, then tap other tasks. The top bar acts on the whole selection: move, label, complete, remove.</string>
     <string name="guide_daily_labels_t">Advanced labels</string>
-    <string name="guide_daily_labels_b">Organise labels into groups and pin the ones you use most: a pinned label is listed first and shown as a quick filter right on the matrix.</string>
+    <string name="guide_daily_labels_b">Organise labels into groups and pin the ones you use most: a pinned label is listed first and shown as a quick filter right on the matrix. To reorder, drag the ⋮⋮ handle on the left of a label (within its section).</string>
     <string name="guide_planning_title">Planner &amp; calendar</string>
     <string name="guide_planning_sub">Book time for your tasks</string>
     <string name="guide_planning_p1">The Planner (calendar icon at the bottom of the matrix) shows your day hour by hour. Placing a task there books a slot for it: time-blocking.</string>
@@ -463,4 +463,6 @@
     <string name="widget_preview_task_2">Prepare for the exam</string>
     <string name="widget_preview_task_3">Book a taxi</string>
     <string name="planning_tray_hint">Long-press to drag · tap: next free slot</string>
+    <string name="cd_move_up">Move up</string>
+    <string name="cd_move_down">Move down</string>
 </resources>

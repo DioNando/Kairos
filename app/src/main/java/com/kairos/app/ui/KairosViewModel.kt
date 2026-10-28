@@ -86,6 +86,8 @@ class KairosViewModel(private val repository: KairosRepository) : ViewModel() {
 
     // --- Étiquettes & filtres -------------------------------------------------------------------
 
+    fun reorderLabels(ids: List<Long>) = viewModelScope.launch { repository.reorderLabels(ids) }
+
     fun setLabelPinned(id: Long, pinned: Boolean) = viewModelScope.launch { repository.setLabelPinned(id, pinned) }
 
     fun saveFilter(filter: SavedFilter) = viewModelScope.launch { repository.saveFilter(filter, now()) }

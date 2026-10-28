@@ -49,6 +49,7 @@ class BackupManager(
                 put("createdAt", l.createdAt)
                 put("groupName", l.groupName)
                 put("pinned", l.pinned)
+                put("position", l.position)
             }
         })
 
@@ -112,6 +113,7 @@ class BackupManager(
                 createdAt = o.optLong("createdAt"),
                 groupName = o.optString("groupName", ""),
                 pinned = o.optBoolean("pinned"),
+                position = o.optInt("position"),
             )
         }
         val savedFilters = root.optJSONArray("savedFilters").mapObjects { o ->

@@ -14,7 +14,7 @@ import com.kairos.app.data.model.Task
 
 @Database(
     entities = [Task::class, Label::class, Subtask::class, SavedFilter::class, Attachment::class],
-    version = 4,
+    version = 5,
     exportSchema = false,
 )
 abstract class KairosDatabase : RoomDatabase() {
@@ -96,13 +96,28 @@ abstract class KairosDatabase : RoomDatabase() {
             }
         }
 
+        /**
+         * v4 → v5 : ordre manuel des étiquettes. Les positions initiales reprennent l'ordre de création
+         * (rang de chaque étiquette), pour que rien ne bouge visuellement après la mise à jour.
+         */
+        val MIGRATION_4_5 = object : Migration(4, 5) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("ALTER TABLE `labels` ADD COLUMN `position` INTEGER NOT NULL DEFAULT 0")
+                db.execSQL(
+                    "UPDATE `labels` SET `position` = (SELECT COUNT(*) FROM `labels` AS l2 " +
+                        "WHERE l2.`createdAt` < `labels`.`createdAt` " +
+                        "OR (l2.`createdAt` = `labels`.`createdAt` AND l2.`id` < `labels`.`id`))",
+                )
+            }
+        }
+
         fun getInstance(context: Context): KairosDatabase =
             INSTANCE ?: synchronized(this) {
                 INSTANCE ?: Room.databaseBuilder(
                     context.applicationContext,
                     KairosDatabase::class.java,
                     "kairos.db",
-                ).addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4).build().also { INSTANCE = it }
+                ).addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5).build().also { INSTANCE = it }
             }
     }
 }

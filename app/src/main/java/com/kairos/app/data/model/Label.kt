@@ -19,4 +19,6 @@ data class Label(
     val createdAt: Long = 0,
     @ColumnInfo(defaultValue = "''") val groupName: String = "",
     @ColumnInfo(defaultValue = "0") val pinned: Boolean = false,
+    /** Ordre choisi par l'utilisateur (glisser dans l'écran Étiquettes), au sein de sa section. */
+    @ColumnInfo(defaultValue = "0") val position: Int = 0,
 )

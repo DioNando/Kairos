@@ -2,6 +2,8 @@ package com.kairos.app.ui.labels
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.detectVerticalDragGestures
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -25,6 +27,7 @@ import androidx.compose.material.icons.rounded.Add
 import androidx.compose.material.icons.rounded.Bookmark
 import androidx.compose.material.icons.rounded.Check
 import androidx.compose.material.icons.rounded.Delete
+import androidx.compose.material.icons.rounded.DragIndicator
 import androidx.compose.material.icons.rounded.PushPin
 import androidx.compose.material.icons.outlined.PushPin
 import androidx.compose.material3.AlertDialog
@@ -41,12 +44,25 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TextField
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableFloatStateOf
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.platform.LocalHapticFeedback
+import androidx.compose.ui.semantics.CustomAccessibilityAction
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.customActions
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.zIndex
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -87,12 +103,72 @@ fun LabelsScreen(
     onTogglePin: (Label) -> Unit = {},
     savedFilters: List<SavedFilter> = emptyList(),
     onDeleteFilter: (Long) -> Unit = {},
+    onReorder: (List<Long>) -> Unit = {},
 ) {
     var editing by remember { mutableStateOf<Label?>(null) }
     var showEditor by remember { mutableStateOf(false) }
     var pendingDelete by remember { mutableStateOf<Label?>(null) }
+
+    // Ordre affiché : copie locale de la liste, réordonnée en direct pendant un glisser puis
+    // enregistrée au lâcher. Hors glisser, elle suit la base.
+    var ordered by remember { mutableStateOf(labels) }
+    var draggingId by remember { mutableStateOf<Long?>(null) }
+    var dragOffset by remember { mutableFloatStateOf(0f) }
+    LaunchedEffect(labels) { if (draggingId == null) ordered = labels }
+    val listState = rememberLazyListState()
+    val haptic = LocalHapticFeedback.current
+
     // Ordre de la base conservé (épinglées, sans groupe, puis par groupe) : on coupe en sections.
-    val sections = remember(labels) { labels.groupBy { if (it.pinned) null else it.groupName } }
+    val sections = remember(ordered) { ordered.groupBy { sectionOf(it) } }
+
+    /** Déplace [id] d'un cran dans sa section ([step] = −1 monter, +1 descendre) et enregistre. */
+    fun moveBy(id: Long, step: Int) {
+        val label = ordered.firstOrNull { it.id == id } ?: return
+        val section = ordered.filter { sectionOf(it) == sectionOf(label) }
+        val target = section.getOrNull(section.indexOf(label) + step) ?: return
+        ordered = ordered.toMutableList().apply {
+            val from = indexOf(label)
+            val to = indexOf(target)
+            removeAt(from)
+            add(to, label)
+        }
+        onReorder(ordered.filter { sectionOf(it) == sectionOf(label) }.map { it.id })
+    }
+
+    /**
+     * Pendant le glisser : quand le centre de la ligne saisie passe sur une voisine **de la même
+     * section**, on échange leurs places ; le décalage est compensé pour que la ligne reste sous le
+     * doigt.
+     */
+    fun onDragBy(delta: Float) {
+        val id = draggingId ?: return
+        dragOffset += delta
+        val items = listState.layoutInfo.visibleItemsInfo
+        val current = items.firstOrNull { it.key == id } ?: return
+        val center = current.offset + current.size / 2f + dragOffset
+        val label = ordered.firstOrNull { it.id == id } ?: return
+        val target = items.firstOrNull { info ->
+            val key = info.key as? Long ?: return@firstOrNull false
+            key != id && center > info.offset && center < info.offset + info.size &&
+                ordered.firstOrNull { it.id == key }?.let { sectionOf(it) == sectionOf(label) } == true
+        } ?: return
+        val targetLabel = ordered.first { it.id == target.key }
+        ordered = ordered.toMutableList().apply {
+            val to = indexOf(targetLabel)
+            remove(label)
+            add(to, label)
+        }
+        dragOffset += (current.offset - target.offset).toFloat()
+        haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+    }
+
+    fun endDrag() {
+        val id = draggingId ?: return
+        val label = ordered.firstOrNull { it.id == id }
+        draggingId = null
+        dragOffset = 0f
+        if (label != null) onReorder(ordered.filter { sectionOf(it) == sectionOf(label) }.map { it.id })
+    }
     val groups = remember(labels) { labels.map { it.groupName }.filter { it.isNotBlank() }.distinct().sorted() }
     val labelsById = remember(labels) { labels.associateBy { it.id } }
     val pinnedHeader = stringResource(R.string.labels_pinned)
@@ -111,6 +187,7 @@ fun LabelsScreen(
         },
     ) { padding ->
         LazyColumn(
+            state = listState,
             modifier = Modifier
                 .fillMaxSize()
                 .padding(padding)
@@ -128,11 +205,38 @@ fun LabelsScreen(
                     item(key = "header-${group ?: "pinned"}") { SectionHeader(header) }
                 }
                 items(sectionLabels, key = { it.id }) { label ->
+                    val dragging = draggingId == label.id
+                    val index = sectionLabels.indexOf(label)
                     LabelRow(
                         label = label,
+                        dragging = dragging,
+                        canMoveUp = index > 0,
+                        canMoveDown = index < sectionLabels.lastIndex,
                         onEdit = { editing = label; showEditor = true },
                         onTogglePin = { onTogglePin(label) },
                         onDelete = { pendingDelete = label },
+                        onDragStart = {
+                            haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                            draggingId = label.id
+                            dragOffset = 0f
+                        },
+                        onDrag = { onDragBy(it) },
+                        onDragEnd = { endDrag() },
+                        onMoveUp = { moveBy(label.id, -1) },
+                        onMoveDown = { moveBy(label.id, +1) },
+                        // La ligne saisie suit le doigt (au-dessus des autres) ; les autres glissent
+                        // en douceur vers leur nouvelle place.
+                        modifier = if (dragging) {
+                            Modifier
+                                .zIndex(1f)
+                                .graphicsLayer {
+                                    translationY = dragOffset
+                                    scaleX = 1.02f
+                                    scaleY = 1.02f
+                                }
+                        } else {
+                            Modifier.animateItem()
+                        },
                     )
                 }
             }
@@ -240,17 +344,78 @@ private fun SectionHeader(title: String) {
     )
 }
 
+/** Section d'une étiquette : les épinglées ensemble, sinon son groupe ("" = sans groupe). */
+private fun sectionOf(label: Label): String? = if (label.pinned) null else label.groupName
+
+/**
+ * Ligne d'étiquette : poignée de réordonnancement (glisser), pastille, nom, épingle, suppression.
+ * La poignée expose aussi « Monter » / « Descendre » à TalkBack (le glisser n'y est pas accessible).
+ */
 @OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
-private fun LabelRow(label: Label, onEdit: () -> Unit, onTogglePin: () -> Unit, onDelete: () -> Unit) {
+private fun LabelRow(
+    label: Label,
+    dragging: Boolean,
+    canMoveUp: Boolean,
+    canMoveDown: Boolean,
+    onEdit: () -> Unit,
+    onTogglePin: () -> Unit,
+    onDelete: () -> Unit,
+    onDragStart: () -> Unit,
+    onDrag: (Float) -> Unit,
+    onDragEnd: () -> Unit,
+    onMoveUp: () -> Unit,
+    onMoveDown: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    val currentOnDrag by rememberUpdatedState(onDrag)
+    val currentOnDragEnd by rememberUpdatedState(onDragEnd)
+    val currentOnDragStart by rememberUpdatedState(onDragStart)
+    val moveUpLabel = stringResource(R.string.cd_move_up)
+    val moveDownLabel = stringResource(R.string.cd_move_down)
     Row(
-        modifier = Modifier
+        modifier = modifier
             .fillMaxWidth()
-            .background(MaterialTheme.colorScheme.surfaceContainerHighest, KairosFieldShape)
+            .shadow(if (dragging) 8.dp else 0.dp, KairosFieldShape)
+            .background(
+                if (dragging) MaterialTheme.colorScheme.surfaceContainerHigh
+                else MaterialTheme.colorScheme.surfaceContainerHighest,
+                KairosFieldShape,
+            )
             .clickable(onClick = onEdit)
-            .padding(start = 14.dp, top = 4.dp, bottom = 4.dp),
+            .padding(top = 4.dp, bottom = 4.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
+        // Poignée : glisser verticalement pour réordonner (dans la section de l'étiquette).
+        Box(
+            modifier = Modifier
+                .size(width = 40.dp, height = 48.dp)
+                .pointerInput(label.id) {
+                    detectVerticalDragGestures(
+                        onDragStart = { currentOnDragStart() },
+                        onVerticalDrag = { change, amount ->
+                            change.consume()
+                            currentOnDrag(amount)
+                        },
+                        onDragEnd = { currentOnDragEnd() },
+                        onDragCancel = { currentOnDragEnd() },
+                    )
+                }
+                .semantics {
+                    contentDescription = label.name
+                    customActions = listOfNotNull(
+                        if (canMoveUp) CustomAccessibilityAction(moveUpLabel) { onMoveUp(); true } else null,
+                        if (canMoveDown) CustomAccessibilityAction(moveDownLabel) { onMoveDown(); true } else null,
+                    )
+                },
+            contentAlignment = Alignment.Center,
+        ) {
+            Icon(
+                Icons.Rounded.DragIndicator,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
         Box(
             modifier = Modifier
                 .size(18.dp)

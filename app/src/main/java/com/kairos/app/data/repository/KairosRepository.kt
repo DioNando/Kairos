@@ -206,10 +206,16 @@ class KairosRepository(
 
     // --- Étiquettes -----------------------------------------------------------------------------
 
+    /** Crée (en fin de liste) ou met à jour une étiquette. */
     suspend fun saveLabel(label: Label, now: Long): Long =
-        if (label.id == 0L) labelDao.insert(label.copy(createdAt = now)) else {
+        if (label.id == 0L) {
+            labelDao.insert(label.copy(createdAt = now, position = labelDao.maxPosition() + 1))
+        } else {
             labelDao.update(label); label.id
         }
+
+    /** Nouvel ordre manuel des étiquettes ([ids] = ordre voulu d'une section). */
+    suspend fun reorderLabels(ids: List<Long>) = labelDao.reorder(ids)
 
     suspend fun deleteLabel(id: Long) {
         labelDao.detachTasks(id)
