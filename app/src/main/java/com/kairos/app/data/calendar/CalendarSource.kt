@@ -23,6 +23,9 @@ data class BusySlot(
     val color: Int? = null,
 )
 
+/** Lecture des agendas : [incomplete] = une source a échoué, des rendez-vous peuvent manquer à [slots]. */
+data class BusyResult(val slots: List<BusySlot> = emptyList(), val incomplete: Boolean = false)
+
 /**
  * Lit les créneaux occupés de deux sources, fusionnées :
  * - les **agendas de l'appareil** (`CalendarContract`) — couvre Google Agenda et tout compte
@@ -39,19 +42,25 @@ class CalendarSource(private val context: Context, private val client: OkHttpCli
         ContextCompat.checkSelfPermission(context, Manifest.permission.READ_CALENDAR) ==
             PackageManager.PERMISSION_GRANTED
 
-    /** Créneaux occupés intersectant [from, to[, triés par début. Une source en échec est ignorée. */
-    suspend fun busySlots(from: Long, to: Long, deviceCalendars: Boolean, icalUrl: String): List<BusySlot> {
-        val device = if (deviceCalendars && hasPermission()) {
-            runCatching { deviceSlots(from, to) }.getOrDefault(emptyList())
-        } else {
-            emptyList()
+    /**
+     * Créneaux occupés intersectant [from, to[, triés par début. Une source en échec (ou une permission
+     * retirée) n'empêche pas de lire l'autre, mais le résultat est alors signalé incomplet.
+     */
+    suspend fun busySlots(from: Long, to: Long, deviceCalendars: Boolean, icalUrl: String): BusyResult {
+        val device = when {
+            !deviceCalendars -> Result.success(emptyList())
+            !hasPermission() -> Result.failure(SecurityException())
+            else -> runCatching { deviceSlots(from, to) }
         }
         val ical = if (icalUrl.isNotBlank()) {
-            runCatching { icalEvents(icalUrl).flatMap { it.occurrences(from, to) } }.getOrDefault(emptyList())
+            runCatching { icalEvents(icalUrl).flatMap { it.occurrences(from, to) } }
         } else {
-            emptyList()
+            Result.success(emptyList())
         }
-        return (device + ical).sortedBy { it.start }
+        return BusyResult(
+            slots = (device.getOrDefault(emptyList()) + ical.getOrDefault(emptyList())).sortedBy { it.start },
+            incomplete = device.isFailure || ical.isFailure,
+        )
     }
 
     /** Vérifie un flux iCal (téléchargement + lecture) et renvoie son nombre d'événements. */

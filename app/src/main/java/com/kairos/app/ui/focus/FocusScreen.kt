@@ -43,6 +43,7 @@ import com.kairos.app.data.model.Task
 import com.kairos.app.domain.focus.FocusSelector
 import com.kairos.app.ui.components.formatDue
 import com.kairos.app.ui.components.quadrantVisual
+import com.kairos.app.ui.components.rememberMinuteClock
 import com.kairos.app.ui.components.toColor
 
 /** Mode « Et maintenant ? » : sort LA tâche à faire en premier, indépendamment des quadrants. */
@@ -55,8 +56,12 @@ fun FocusScreen(
     onComplete: (Task) -> Unit,
     onOpenTask: (Task) -> Unit,
     focusDueWeight: Int = FocusSelector.DEFAULT_DUE_WEIGHT,
+    subtaskDues: Map<Long, Long> = emptyMap(),
 ) {
-    val ranked = remember(tasks, focusDueWeight) { FocusSelector.rank(tasks, focusDueWeight) }
+    val now = rememberMinuteClock()
+    val ranked = remember(tasks, focusDueWeight, now, subtaskDues) {
+        FocusSelector.rank(tasks, focusDueWeight, now, subtaskDues)
+    }
     val next = ranked.firstOrNull()
     val upNext = remember(ranked) { ranked.drop(1).take(3) }
     val labelsById = remember(labels) { labels.associateBy { it.id } }

@@ -181,6 +181,9 @@ class MainActivity : ComponentActivity() {
                                 onSetReminderLead = { scope.launch { settingsRepository.setReminderLeadMinutes(it) } },
                                 onSetQuadrantSort = { scope.launch { settingsRepository.setQuadrantSort(it) } },
                                 onSetFocusDueWeight = { scope.launch { settingsRepository.setFocusDueWeight(it) } },
+                                onSetPlanningHours = { start, end ->
+                                    scope.launch { settingsRepository.setPlanningHours(start, end) }
+                                },
                                 onSetCalendarEnabled = { scope.launch { settingsRepository.setCalendarEnabled(it) } },
                                 onSetIcalUrl = { scope.launch { settingsRepository.setIcalUrl(it) } },
                                 onTestIcal = { app.calendarSource.testIcal(it) },

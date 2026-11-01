@@ -2,7 +2,6 @@ package com.kairos.app.domain.sort
 
 import com.kairos.app.data.model.AppSettings
 import com.kairos.app.data.model.Task
-import com.kairos.app.domain.focus.FocusSelector
 import java.text.Collator
 
 /**
@@ -12,10 +11,9 @@ import java.text.Collator
  */
 object TaskSort {
 
-    fun apply(tasks: List<Task>, sort: Int, focusDueWeight: Int, now: Long): List<Task> = when (sort) {
+    fun apply(tasks: List<Task>, sort: Int): List<Task> = when (sort) {
         AppSettings.SORT_DUE -> tasks.sortedWith(compareBy(nullsLast()) { it.dueAt })
         AppSettings.SORT_CREATED -> tasks.sortedByDescending { it.createdAt }
-        AppSettings.SORT_PRIORITY -> tasks.sortedWith(FocusSelector.comparator(focusDueWeight, now))
         AppSettings.SORT_ALPHA -> {
             // Collator : ordre alphabétique naturel (accents et casse ignorés : « école » avant « Zèbre »).
             val collator = Collator.getInstance().apply { strength = Collator.PRIMARY }

@@ -41,6 +41,8 @@ class SettingsRepository(private val context: Context) {
         val FOCUS_DUE_WEIGHT = intPreferencesKey("focus_due_weight")
         val CALENDAR_ENABLED = booleanPreferencesKey("calendar_enabled")
         val ICAL_URL = stringPreferencesKey("ical_url")
+        val PLANNING_START_HOUR = intPreferencesKey("planning_start_hour")
+        val PLANNING_END_HOUR = intPreferencesKey("planning_end_hour")
     }
 
     val settings: Flow<AppSettings> = context.dataStore.data.map { prefs ->
@@ -66,19 +68,29 @@ class SettingsRepository(private val context: Context) {
             aiProvider = prefs[Keys.AI_PROVIDER] ?: AppSettings.AI_GEMINI,
             remindersEnabled = prefs[Keys.REMINDERS_ENABLED] ?: true,
             reminderLeadMinutes = prefs[Keys.REMINDER_LEAD_MIN] ?: 0,
-            quadrantSort = prefs[Keys.QUADRANT_SORT] ?: AppSettings.SORT_MANUAL,
+            quadrantSort = AppSettings.normalizeSort(prefs[Keys.QUADRANT_SORT] ?: AppSettings.SORT_MANUAL),
             focusDueWeight = prefs[Keys.FOCUS_DUE_WEIGHT] ?: 30,
+            planningStartHour = prefs[Keys.PLANNING_START_HOUR] ?: 8,
+            planningEndHour = prefs[Keys.PLANNING_END_HOUR] ?: 20,
             calendarEnabled = prefs[Keys.CALENDAR_ENABLED] ?: false,
             icalUrl = prefs[Keys.ICAL_URL] ?: "",
         )
     }
 
     suspend fun setQuadrantSort(sort: Int) {
-        context.dataStore.edit { it[Keys.QUADRANT_SORT] = sort.coerceIn(0, AppSettings.SORT_ALPHA) }
+        context.dataStore.edit { it[Keys.QUADRANT_SORT] = AppSettings.normalizeSort(sort) }
     }
 
     suspend fun setFocusDueWeight(weight: Int) {
         context.dataStore.edit { it[Keys.FOCUS_DUE_WEIGHT] = weight.coerceIn(0, 100) }
+    }
+
+    suspend fun setPlanningHours(start: Int, end: Int) {
+        context.dataStore.edit {
+            val first = start.coerceIn(0, 23)
+            it[Keys.PLANNING_START_HOUR] = first
+            it[Keys.PLANNING_END_HOUR] = end.coerceIn(first + 1, 24)
+        }
     }
 
     suspend fun setCalendarEnabled(value: Boolean) {
@@ -187,6 +199,8 @@ class SettingsRepository(private val context: Context) {
             prefs[Keys.REMINDER_LEAD_MIN] = s.reminderLeadMinutes
             prefs[Keys.QUADRANT_SORT] = s.quadrantSort
             prefs[Keys.FOCUS_DUE_WEIGHT] = s.focusDueWeight
+            prefs[Keys.PLANNING_START_HOUR] = s.planningStartHour
+            prefs[Keys.PLANNING_END_HOUR] = s.planningEndHour
             prefs[Keys.CALENDAR_ENABLED] = s.calendarEnabled
             prefs[Keys.ICAL_URL] = s.icalUrl
         }

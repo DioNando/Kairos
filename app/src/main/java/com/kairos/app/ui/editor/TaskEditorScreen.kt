@@ -93,6 +93,7 @@ import com.kairos.app.data.model.Label
 import com.kairos.app.data.model.Quadrant
 import com.kairos.app.data.model.Subtask
 import com.kairos.app.data.model.Task
+import com.kairos.app.data.model.TimeBlock
 import com.kairos.app.data.repository.AttachmentStore
 import com.kairos.app.domain.ai.Classification
 import com.kairos.app.domain.ai.EnhancedTask
@@ -109,6 +110,7 @@ import com.kairos.app.ui.components.RichNoteView
 import com.kairos.app.ui.components.dueStatus
 import com.kairos.app.ui.components.formatBlock
 import com.kairos.app.ui.components.formatDue
+import com.kairos.app.ui.components.formatDuration
 import com.kairos.app.ui.components.kairosFieldColors
 import com.kairos.app.ui.components.onAccent
 import com.kairos.app.ui.components.quadrantVisual
@@ -116,6 +118,9 @@ import com.kairos.app.ui.components.toColor
 import com.kairos.app.ui.components.toggleNoteCheckbox
 import com.kairos.app.ui.theme.LocalizedOverlay
 import kotlinx.coroutines.launch
+
+/** Durées estimées proposées (minutes). */
+private val EstimateChoices = listOf(15, 30, 45, 60, 90, 120, 180, 240)
 
 /**
  * Ligne de checklist en cours d'édition : état Compose local (titre, coché, échéance propre) avec une
@@ -160,6 +165,9 @@ fun TaskEditorScreen(
         { _, _ -> Result.failure(IllegalStateException()) },
     onPickAttachment: suspend (Uri) -> Result<Attachment> = { Result.failure(IllegalStateException()) },
     onOpenAttachment: (Attachment) -> Unit = {},
+    /** Prochaine session planifiée de la tâche, et retrait de toutes ses sessions à venir. */
+    nextBlock: TimeBlock? = null,
+    onClearBlocks: () -> Unit = {},
     onBack: () -> Unit,
     onSave: (task: Task, subtasks: List<Subtask>, promoted: List<Subtask>, attachments: List<Attachment>) -> Unit,
     onDelete: (Task) -> Unit,
@@ -173,7 +181,7 @@ fun TaskEditorScreen(
     var important by remember { mutableStateOf(task?.important ?: defaultQuadrant.important) }
     var urgent by remember { mutableStateOf(task?.urgent ?: defaultQuadrant.urgent) }
     var dueAt by remember { mutableStateOf(task?.dueAt) }
-    var blockStart by remember { mutableStateOf(task?.blockStart) }
+    var estimateMinutes by remember { mutableStateOf(task?.estimateMinutes ?: 0) }
     var labelId by remember { mutableStateOf(task?.labelId) }
     var recurrence by remember { mutableStateOf(task?.recurrence ?: 0) }
 
@@ -242,8 +250,7 @@ fun TaskEditorScreen(
                 dueAt = dueAt,
                 labelId = labelId,
                 recurrence = recurrence,
-                blockStart = blockStart,
-                blockMinutes = if (blockStart == null) 0 else base.blockMinutes,
+                estimateMinutes = estimateMinutes,
             ),
             subtasks,
             promoted.filter { it.title.isNotBlank() }.map { it.toSubtask(0) },
@@ -515,8 +522,7 @@ fun TaskEditorScreen(
                             TextButton(onClick = { dueAt = null }) { Text(stringResource(R.string.due_clear)) }
                         }
                     }
-                    blockStart?.let { start ->
-                        val end = start + (task?.blockDuration ?: Task.DEFAULT_BLOCK_MINUTES) * 60_000L
+                    nextBlock?.let { block ->
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             Icon(
                                 Icons.Rounded.Schedule,
@@ -526,11 +532,11 @@ fun TaskEditorScreen(
                             )
                             Spacer(Modifier.size(6.dp))
                             Text(
-                                stringResource(R.string.block_planned, formatBlock(start, end)),
+                                stringResource(R.string.block_planned, formatBlock(block.start, block.end)),
                                 style = MaterialTheme.typography.bodySmall,
                                 modifier = Modifier.weight(1f),
                             )
-                            TextButton(onClick = { blockStart = null }) { Text(stringResource(R.string.block_clear)) }
+                            TextButton(onClick = onClearBlocks) { Text(stringResource(R.string.block_clear)) }
                         }
                     }
                     // Suggestion animée : échéance proche mais tâche non urgente.
@@ -549,6 +555,30 @@ fun TaskEditorScreen(
                             TextButton(onClick = { urgent = true }) {
                                 Text(stringResource(R.string.suggest_urgent_action))
                             }
+                        }
+                    }
+                }
+            }
+
+            // Durée estimée : indépendante de l'échéance, elle sert au planning.
+            item {
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Text(stringResource(R.string.estimate_title), style = MaterialTheme.typography.labelLarge)
+                    Row(
+                        modifier = Modifier.horizontalScroll(rememberScrollState()),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    ) {
+                        KairosFilterChip(
+                            selected = estimateMinutes == 0,
+                            onClick = { estimateMinutes = 0 },
+                            label = stringResource(R.string.estimate_none),
+                        )
+                        EstimateChoices.forEach { minutes ->
+                            KairosFilterChip(
+                                selected = estimateMinutes == minutes,
+                                onClick = { estimateMinutes = minutes },
+                                label = formatDuration(minutes),
+                            )
                         }
                     }
                 }

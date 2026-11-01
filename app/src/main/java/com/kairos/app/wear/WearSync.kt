@@ -7,6 +7,7 @@ import com.google.android.gms.wearable.Wearable
 import com.kairos.app.data.model.Label
 import com.kairos.app.data.model.Quadrant
 import com.kairos.app.data.model.Task
+import com.kairos.app.data.model.TimeBlock
 import com.kairos.app.domain.focus.FocusSelector
 import com.kairos.app.domain.sort.TaskSort
 import com.kairos.app.ui.pomodoro.PomodoroState
@@ -86,8 +87,14 @@ object WearSync {
      * aperçu « À suivre », avec la pastille d'étiquette quand la tâche en a une. [labels] résout
      * `Task.labelId` ; chaîne vide quand la tâche n'a pas d'étiquette.
      */
-    fun pushFocus(context: Context, tasks: List<Task>, labels: Map<Long, Label>, dueWeight: Int) {
-        val ranked = FocusSelector.rank(tasks, dueWeight).take(FOCUS_SIZE)
+    fun pushFocus(
+        context: Context,
+        tasks: List<Task>,
+        labels: Map<Long, Label>,
+        dueWeight: Int,
+        subtaskDues: Map<Long, Long>,
+    ) {
+        val ranked = FocusSelector.rank(tasks, dueWeight, subtaskDues = subtaskDues).take(FOCUS_SIZE)
         val request = PutDataMapRequest.create(FOCUS_PATH).apply {
             dataMap.putLongArray(KEY_IDS, ranked.map { it.id }.toLongArray())
             dataMap.putStringArray(KEY_TITLES, ranked.map { it.title }.toTypedArray())
@@ -125,11 +132,10 @@ object WearSync {
      * navigation par quadrant sur la montre. Tableaux parallèles : id, titre, quadrant, couleur
      * d'étiquette ; plafonnés à [QUADRANT_SIZE] par quadrant.
      */
-    fun pushQuadrants(context: Context, tasks: List<Task>, labels: Map<Long, Label>, sort: Int, dueWeight: Int) {
-        val now = System.currentTimeMillis()
+    fun pushQuadrants(context: Context, tasks: List<Task>, labels: Map<Long, Label>, sort: Int) {
         val active = tasks.filter { it.isActive }
         val items = Quadrant.entries.flatMap { q ->
-            TaskSort.apply(active.filter { it.quadrant == q }, sort, dueWeight, now).take(QUADRANT_SIZE)
+            TaskSort.apply(active.filter { it.quadrant == q }, sort).take(QUADRANT_SIZE)
         }
         val request = PutDataMapRequest.create(QUADRANTS_PATH).apply {
             dataMap.putLongArray(KEY_IDS, items.map { it.id }.toLongArray())
@@ -147,19 +153,21 @@ object WearSync {
      * Publie les créneaux planifiés (time-blocking) des [PLANNING_DAYS] prochains jours, triés : la
      * montre en tire « Aujourd'hui » et la tuile « Prochain créneau » (filtrage local, l'heure avance).
      */
-    fun pushPlanning(context: Context, tasks: List<Task>) {
+    fun pushPlanning(context: Context, tasks: List<Task>, timeBlocks: List<TimeBlock>) {
         val zone = ZoneId.systemDefault()
         val from = LocalDate.now(zone).atStartOfDay(zone).toInstant().toEpochMilli()
         val to = LocalDate.now(zone).plusDays(PLANNING_DAYS).atStartOfDay(zone).toInstant().toEpochMilli()
-        val blocks = tasks
-            .filter { it.isActive && it.blockStart != null && it.blockStart in from until to }
-            .sortedBy { it.blockStart }
+        val tasksById = tasks.filter { it.isActive }.associateBy { it.id }
+        val blocks = timeBlocks
+            .filter { !it.isDone && it.start in from until to && it.taskId in tasksById }
+            .sortedBy { it.start }
+        val blockTasks = blocks.map { tasksById.getValue(it.taskId) }
         val request = PutDataMapRequest.create(PLANNING_PATH).apply {
-            dataMap.putLongArray(KEY_IDS, blocks.map { it.id }.toLongArray())
-            dataMap.putStringArray(KEY_TITLES, blocks.map { it.title }.toTypedArray())
-            dataMap.putIntegerArrayList(KEY_QUADRANTS, ArrayList(blocks.map { it.quadrant.ordinal }))
-            dataMap.putLongArray(KEY_STARTS, blocks.map { it.blockStart!! }.toLongArray())
-            dataMap.putLongArray(KEY_ENDS, blocks.map { it.blockEnd!! }.toLongArray())
+            dataMap.putLongArray(KEY_IDS, blockTasks.map { it.id }.toLongArray())
+            dataMap.putStringArray(KEY_TITLES, blockTasks.map { it.title }.toTypedArray())
+            dataMap.putIntegerArrayList(KEY_QUADRANTS, ArrayList(blockTasks.map { it.quadrant.ordinal }))
+            dataMap.putLongArray(KEY_STARTS, blocks.map { it.start }.toLongArray())
+            dataMap.putLongArray(KEY_ENDS, blocks.map { it.end }.toLongArray())
         }.asPutDataRequest().setUrgent()
         runCatching { Wearable.getDataClient(context).putDataItem(request) }
     }

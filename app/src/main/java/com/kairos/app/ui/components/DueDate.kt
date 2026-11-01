@@ -1,7 +1,13 @@
 package com.kairos.app.ui.components
 
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.produceState
 import androidx.compose.ui.platform.LocalConfiguration
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.compose.LocalLifecycleOwner
+import androidx.lifecycle.repeatOnLifecycle
+import kotlinx.coroutines.delay
 import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneId
@@ -22,6 +28,24 @@ fun dueStatus(dueAt: Long?, now: Long, thresholdHours: Int, completed: Boolean):
 }
 
 /**
+ * Heure courante, rafraîchie chaque minute tant que l'écran est visible et dès qu'il le redevient :
+ * le classement et l'état des échéances évoluent même si aucune tâche ne change.
+ */
+@Composable
+fun rememberMinuteClock(): Long {
+    val lifecycle = LocalLifecycleOwner.current.lifecycle
+    val now by produceState(System.currentTimeMillis(), lifecycle) {
+        lifecycle.repeatOnLifecycle(Lifecycle.State.STARTED) {
+            while (true) {
+                value = System.currentTimeMillis()
+                delay(60_000L)
+            }
+        }
+    }
+    return now
+}
+
+/**
  * Formate une échéance **compacte** : « 30 juil. · 09:00 » (l'année n'apparaît que si elle diffère de
  * l'année courante). Bien plus lisible qu'une date longue dans une carte étroite.
  */
@@ -33,6 +57,13 @@ fun formatDue(dueAt: Long): String {
     val sameYear = date.year == LocalDate.now(zone).year
     val pattern = if (sameYear) "d MMM · HH:mm" else "d MMM yyyy · HH:mm"
     return DateTimeFormatter.ofPattern(pattern, locale).format(date)
+}
+
+/** Formate une durée : « 45 min », « 2 h », « 1 h 30 ». */
+fun formatDuration(minutes: Int): String = when {
+    minutes < 60 -> "$minutes min"
+    minutes % 60 == 0 -> "${minutes / 60} h"
+    else -> "${minutes / 60} h ${"%02d".format(minutes % 60)}"
 }
 
 /**

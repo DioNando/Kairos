@@ -33,9 +33,9 @@ class NewFeaturesLogicTest {
         val a = Task(id = 1, title = "Zèbre", dueAt = now + 2 * hour)
         val b = Task(id = 2, title = "école", dueAt = null)
         val c = Task(id = 3, title = "Banane", dueAt = now + hour)
-        assertEquals(listOf(3L, 1L, 2L), TaskSort.apply(listOf(a, b, c), AppSettings.SORT_DUE, 30, now).map { it.id })
-        assertEquals(listOf(3L, 2L, 1L), TaskSort.apply(listOf(a, b, c), AppSettings.SORT_ALPHA, 30, now).map { it.id })
-        assertEquals(listOf(1L, 2L, 3L), TaskSort.apply(listOf(a, b, c), AppSettings.SORT_MANUAL, 30, now).map { it.id })
+        assertEquals(listOf(3L, 1L, 2L), TaskSort.apply(listOf(a, b, c), AppSettings.SORT_DUE).map { it.id })
+        assertEquals(listOf(3L, 2L, 1L), TaskSort.apply(listOf(a, b, c), AppSettings.SORT_ALPHA).map { it.id })
+        assertEquals(listOf(1L, 2L, 3L), TaskSort.apply(listOf(a, b, c), AppSettings.SORT_MANUAL).map { it.id })
     }
 
     @Test

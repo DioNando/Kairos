@@ -27,7 +27,7 @@ Les déplacer, c'est reclasser la tâche.
 
 - **Matrice 2×2** (ou **vue en listes / swim lanes**, réglable) avec compteur par quadrant.
 - **Tri configurable** des quadrants (icône de tri de la matrice ou Réglages) : manuel (glisser),
-  échéance, priorité (score du mode Focus), date de création, alphabétique.
+  échéance, date de création, alphabétique.
 - **Recherche & filtre** : une barre de recherche (titre / note) et un **filtre par étiquette**
   transversal, dépliés depuis l'icône loupe de la matrice, pour retrouver une tâche parmi beaucoup.
   **Filtres enregistrés** (icône signet) réappliqués d'un tap, gérés depuis l'écran Étiquettes.
@@ -45,17 +45,23 @@ Les déplacer, c'est reclasser la tâche.
 - **Notes enrichies** : lignes `- [ ]` rendues en **cases à cocher** cliquables, **liens** cliquables
   (aperçu interactif / saisie), **pièces jointes légères** (copiées dans l'app, 10 Mo max, ouvertes
   via FileProvider).
-- **Time-blocking (Planning)** : vue jour en frise horaire ; on **glisse** une tâche du bac « À
-  planifier » sur un créneau (calage au quart d'heure), on la déplace / redimensionne / déplanifie ;
-  un tap la pose sur le **prochain créneau libre**. Alerte en cas de chevauchement.
+- **Time-blocking (Planning)** : bandeau des **7 jours** avec leur charge, temps libre restant, et deux
+  vues d'une journée. L'**agenda** liste sessions et **temps libres** : un tap sur un temps libre
+  propose les tâches par priorité. La **frise** tient toute la journée à l'écran : appui long pour
+  déplacer une session au quart d'heure (jamais dans le passé, fantôme rouge en cas de conflit).
+  **Remplir ma journée** propose des sessions à valider. Les sessions **manquées** remontent en tête,
+  à cocher ou replacer. Chaque session se termine, se redimensionne ou se déplace depuis sa feuille,
+  et lance un **focus** lié à la tâche. Journée réglable (8 h–20 h par défaut).
+- **Durée estimée** par tâche : un gros travail se répartit sur **plusieurs sessions** ; la tâche se
+  termine avec sa dernière session, une fois l'estimation couverte.
 - **Agendas externes** (lecture seule) : créneaux occupés des **agendas du téléphone** (Google Agenda
   et comptes synchronisés, via `CalendarContract`) et d'un **flux iCal** (.ics / webcal, récurrences
   simples gérées), affichés dans le Planning.
 - **Échéances non intrusives** : une échéance proche fait **pulser** la tâche et **propose** de la
   passer en urgent — elle ne déplace jamais la tâche de force.
 - **Tâches récurrentes** (quotidienne / hebdo / mensuelle) : à la complétion, la tâche **avance sur
-  place** (échéance suivante, sous-tâches décochées) et reste sur le board — une seule occurrence
-  vivante, pas d'accumulation dans l'archive.
+  place** (prochaine échéance à venir, même si des occurrences ont été manquées ; sous-tâches
+  décochées) et reste sur le board — une seule occurrence vivante, pas d'accumulation dans l'archive.
 - **Rappels d'échéance** (WorkManager) : notification à l'approche de l'échéance des tâches qui en
   ont une, avec **délai d'anticipation réglable** (à l'heure / 5 / 15 / 30 / 60 min avant) ; un appui
   sur la notification **ouvre la tâche**. Resynchronisés automatiquement à chaque changement.
@@ -64,9 +70,11 @@ Les déplacer, c'est reclasser la tâche.
 - **Widget « À faire en priorité »** (Glance, 4×2 redimensionnable) : la tâche du moment (carte
   teintée par son quadrant) et « À suivre », même classement que le mode Focus ; un **✓ termine** la
   tâche sans ouvrir l'app, un appui l'ouvre dans l'éditeur, l'en-tête ouvre le mode Focus. Variante
-  **fine 2×1** : la seule tâche prioritaire, sur la couleur de son quadrant, avec son ✓.
+  **fine 2×1** : la seule tâche prioritaire, sur la couleur de son quadrant, avec son ✓. Classement
+  recalculé **toutes les heures** (avec celui de la montre), car il évolue avec les échéances.
 - **Mode Focus « Et maintenant ? »** : sort **LA** tâche prioritaire, plus un aperçu « À suivre ».
-  Score **pondérable** (Réglages : importance ↔ échéance), partagé avec le tri « Priorité » et la montre.
+  Score **pondérable** (Réglages : importance ↔ échéance), partagé avec les widgets et la montre ;
+  l'échéance d'une tâche est la plus proche entre la sienne et celles de ses sous-tâches non faites.
 - **Étiquettes** transversales (catégories) avec couleur (20 teintes), indépendantes des quadrants,
   rangées en **groupes** ; une étiquette **épinglée** passe en tête et sert de **filtre rapide**
   directement sur la matrice.
@@ -108,8 +116,8 @@ Application **100 % locale**, sans backend, calquée (en allégé) sur l'archi d
   archive, guide, éditeur).
 - **État** : `KairosViewModel` (tâches, étiquettes, sous-tâches, filtres, pièces jointes) et
   `PomodoroEngine` à portée application.
-- **Données** : **Room** (`Task`, `Label`, `Subtask`, `SavedFilter`, `Attachment` — schéma v4 +
-  migrations) + **DataStore** (réglages et session Pomodoro) + fichiers privés (pièces jointes,
+- **Données** : **Room** (`Task`, `Label`, `Subtask`, `SavedFilter`, `Attachment`, `TimeBlock` —
+  schéma v6 + migrations) + **DataStore** (réglages et session Pomodoro) + fichiers privés (pièces jointes,
   `AttachmentStore`, balayage des orphelins au démarrage).
 - **Agendas** : `CalendarSource` (CalendarContract + flux iCal via OkHttp, cache 15 min) +
   `IcalParser` (VEVENT, TZID, journées entières, RRULE simples, EXDATE).
@@ -121,11 +129,11 @@ Application **100 % locale**, sans backend, calquée (en allégé) sur l'archi d
 
 ```
 com.kairos.app
-├── data/            model (Task, Label, Subtask, SavedFilter, Attachment, Quadrant, AppSettings, LlmProvider) · local (Room) · calendar (CalendarSource, IcalParser) · remote (LLM : Gemini/OpenRouter) · reminder (Scheduler/Worker/Notifications, WorkManager) · repository (dont SecureCredentialStore, AttachmentStore) · PomodoroSessionStore
-├── domain/          backup (export/import JSON) · focus (FocusSelector, score pondéré) · sort (TaskSort) · recurrence (Recurrence) · ai (NoteEnhancer : reformuler/classer/découper)
+├── data/            model (Task, TimeBlock, Label, Subtask, SavedFilter, Attachment, Quadrant, AppSettings, LlmProvider) · local (Room) · calendar (CalendarSource, IcalParser) · remote (LLM : Gemini/OpenRouter) · reminder (Scheduler/Worker/Notifications, WorkManager) · repository (dont SecureCredentialStore, AttachmentStore) · PomodoroSessionStore
+├── domain/          backup (export/import JSON) · focus (FocusSelector, score pondéré) · planning (DayPlan) · sort (TaskSort) · recurrence (Recurrence) · ai (NoteEnhancer : reformuler/classer/découper)
 ├── pomodoro/        PomodoroService · PomodoroNotifications
 ├── wear/            WearSync (DataItems vers la montre) · WearActionService (actions reçues de la montre)
-├── widget/          KairosWidget · KairosWidgetReceiver (Glance)
+├── widget/          KairosWidget · KairosWidgetReceiver (Glance) · PriorityRefreshWorker (classement horaire)
 └── ui/              matrix (recherche, filtres, tri, sélection) · editor · planning · focus · labels · archive · settings · pomodoro · onboarding · guide · theme · components · navigation
 
 com.kairos.wear      (module wear)
@@ -181,9 +189,9 @@ espace à idées pour faire mûrir l'app.*
 - [x] **Notifications d'échéance** (WorkManager) : rappel avant l'heure due (délai d'anticipation
   réglable). _À venir : report « snooze » depuis la notification._
 - [ ] **Rappels récurrents** et **plages horaires** (ne pas notifier la nuit / le week-end).
-- [ ] **Estimation de durée** par tâche + **budget de temps** quotidien.
-- [x] **Time-blocking** : glisser une tâche dans un créneau d'agenda. _À venir : vue semaine,
-  rappel au début d'un créneau._
+- [x] **Estimation de durée** par tâche, répartie en sessions. _À venir : budget de temps quotidien._
+- [x] **Time-blocking** : agenda des temps libres, frise compacte, remplissage proposé. _À venir :
+  vue semaine, rappel au début d'une session._
 - [x] **Intégration Google Agenda / iCal** (lecture des créneaux occupés). _À venir : écrire les
   créneaux dans l'agenda._
 
@@ -196,7 +204,7 @@ espace à idées pour faire mûrir l'app.*
 ### Recherche & organisation
 - [x] **Recherche & filtre** par mot-clé (titre / note) et par étiquette. _À venir : filtre par
   échéance / quadrant._
-- [x] **Tri configurable** dans un quadrant (échéance, création, priorité, alphabétique).
+- [x] **Tri configurable** dans un quadrant (échéance, création, alphabétique).
   _À venir : tri propre à chaque quadrant._
 - [x] **Réglage de la priorité du mode Focus** (pondérer échéance vs importance).
 - [x] **Sélection multiple** et **actions en lot** (déplacer / étiqueter / terminer / retirer).

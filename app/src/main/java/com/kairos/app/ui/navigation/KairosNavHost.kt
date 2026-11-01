@@ -8,8 +8,10 @@ import android.content.Intent
 import android.net.Uri
 import android.widget.Toast
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.lifecycle.ViewModelProvider
@@ -21,21 +23,26 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import com.kairos.app.R
-import com.kairos.app.data.calendar.BusySlot
+import com.kairos.app.data.calendar.BusyResult
 import com.kairos.app.data.model.AppSettings
 import com.kairos.app.data.model.SavedFilter
 import com.kairos.app.data.model.Quadrant
 import com.kairos.app.data.model.Task
 import com.kairos.app.domain.ai.Classification
 import com.kairos.app.domain.ai.EnhancedTask
+import com.kairos.app.domain.focus.FocusSelector
+import com.kairos.app.domain.planning.DayPlan
 import com.kairos.app.ui.KairosViewModel
 import com.kairos.app.ui.archive.ArchiveScreen
+import com.kairos.app.ui.components.rememberMinuteClock
 import com.kairos.app.ui.editor.TaskEditorScreen
 import com.kairos.app.ui.focus.FocusScreen
 import com.kairos.app.ui.guide.GuideScreen
 import com.kairos.app.ui.labels.LabelsScreen
+import com.kairos.app.ui.matrix.LocalNextBlocks
 import com.kairos.app.ui.matrix.MatrixScreen
 import com.kairos.app.ui.planning.PlanningScreen
+import com.kairos.app.ui.pomodoro.PomodoroPhase
 import com.kairos.app.ui.pomodoro.PomodoroViewModel
 import com.kairos.app.ui.pomodoro.PomodoroScreen
 import com.kairos.app.ui.settings.SettingsScreen
@@ -82,11 +89,12 @@ fun KairosNavHost(
     onImport: () -> Unit,
     onSetQuadrantSort: (Int) -> Unit = {},
     onSetFocusDueWeight: (Int) -> Unit = {},
+    onSetPlanningHours: (start: Int, end: Int) -> Unit = { _, _ -> },
     onSetCalendarEnabled: (Boolean) -> Unit = {},
     onSetIcalUrl: (String) -> Unit = {},
     onTestIcal: suspend (String) -> Result<Int> = { Result.failure(IllegalStateException()) },
     /** Créneaux occupés des agendas sur [from, to[ (time-blocking). */
-    loadBusy: suspend (from: Long, to: Long) -> List<BusySlot> = { _, _ -> emptyList() },
+    loadBusy: suspend (from: Long, to: Long) -> BusyResult = { _, _ -> BusyResult() },
     /** Signal (compteur) d'ouverture directe du Pomodoro depuis une notification ou un raccourci. */
     pomodoroLaunch: Int = 0,
     /** Raccourcis d'application : compteurs déclencheurs (nouvelle tâche / Focus). */
@@ -100,6 +108,8 @@ fun KairosNavHost(
     val tasks by viewModel.tasks.collectAsStateWithLifecycle()
     val labels by viewModel.labels.collectAsStateWithLifecycle()
     val subtasks by viewModel.subtasks.collectAsStateWithLifecycle()
+    val subtaskDues = remember(subtasks) { FocusSelector.subtaskDues(subtasks) }
+    val timeBlocks by viewModel.timeBlocks.collectAsStateWithLifecycle()
     val subtaskProgress by viewModel.subtaskProgress.collectAsStateWithLifecycle()
     val savedFilters by viewModel.savedFilters.collectAsStateWithLifecycle()
     val attachments by viewModel.attachments.collectAsStateWithLifecycle()
@@ -153,13 +163,15 @@ fun KairosNavHost(
         popExitTransition = { fadeOut(tween(180)) },
     ) {
         composable(Routes.MATRIX) {
-            MatrixScreen(
+            val clock = rememberMinuteClock()
+            val nextBlocks = remember(timeBlocks, clock) { DayPlan.nextBlocks(timeBlocks, clock) }
+            CompositionLocalProvider(LocalNextBlocks provides nextBlocks) { MatrixScreen(
                 tasks = tasks,
                 labels = labels,
                 subtaskProgress = subtaskProgress,
                 pomodoro = pomodoroState,
                 urgencyThresholdHours = settings.urgencyThresholdHours,
-                now = System.currentTimeMillis(),
+                now = clock,
                 swimLanes = settings.swimLanes,
                 onQuickAdd = { title, q ->
                     viewModel.saveTask(Task(title = title, important = q.important, urgent = q.urgent))
@@ -178,7 +190,6 @@ fun KairosNavHost(
                 showGuide = settings.showGuide,
                 onOpenGuide = { navController.navigate(Routes.GUIDE) },
                 quadrantSort = settings.quadrantSort,
-                focusDueWeight = settings.focusDueWeight,
                 onSetQuadrantSort = onSetQuadrantSort,
                 savedFilters = savedFilters,
                 onSaveFilter = { name, query, labelId ->
@@ -189,7 +200,7 @@ fun KairosNavHost(
                 onCompleteMany = { viewModel.completeMany(it) },
                 onRemoveMany = { viewModel.removeMany(it) },
                 onOpenPlanning = { navController.navigate(Routes.PLANNING) },
-            )
+            ) }
         }
         composable(Routes.FOCUS) {
             FocusScreen(
@@ -199,16 +210,34 @@ fun KairosNavHost(
                 onComplete = { viewModel.setCompleted(it.id, true) },
                 onOpenTask = { openExisting(it) },
                 focusDueWeight = settings.focusDueWeight,
+                subtaskDues = subtaskDues,
             )
         }
         composable(Routes.PLANNING) {
             PlanningScreen(
                 tasks = tasks,
+                timeBlocks = timeBlocks,
                 labels = labels,
                 focusDueWeight = settings.focusDueWeight,
+                subtaskDues = subtaskDues,
+                startHour = settings.planningStartHour,
+                endHour = settings.planningEndHour,
                 calendarConfigured = settings.calendarEnabled || settings.icalUrl.isNotBlank(),
                 loadBusy = loadBusy,
-                onSetBlock = { task, start, minutes -> viewModel.setBlock(task.id, start, minutes) },
+                onAddBlock = { task, start, minutes -> viewModel.addBlock(task.id, start, minutes) },
+                onUpdateBlock = { viewModel.updateBlock(it) },
+                onRemoveBlock = { viewModel.removeBlock(it.id) },
+                onCompleteBlock = { viewModel.completeBlock(it.id) },
+                onCompleteTask = { viewModel.setCompleted(it.id, true) },
+                onStartFocus = { task ->
+                    pomodoroViewModel.setLinkedTask(task.id)
+                    // Une session déjà en cours continue, simplement liée à cette tâche.
+                    if (!pomodoroState.active) {
+                        pomodoroViewModel.selectPhase(PomodoroPhase.FOCUS)
+                        pomodoroViewModel.start()
+                    }
+                    navController.navigate(Routes.POMODORO)
+                },
                 onOpenTask = { openExisting(it) },
                 onOpenSettings = { navController.navigate(Routes.SETTINGS) },
                 onBack = { navController.popBackStack() },
@@ -254,6 +283,7 @@ fun KairosNavHost(
                 onBack = { navController.popBackStack() },
                 onSetQuadrantSort = onSetQuadrantSort,
                 onSetFocusDueWeight = onSetFocusDueWeight,
+                onSetPlanningHours = onSetPlanningHours,
                 onSetCalendarEnabled = onSetCalendarEnabled,
                 onSetIcalUrl = onSetIcalUrl,
                 onTestIcal = onTestIcal,
@@ -296,7 +326,10 @@ fun KairosNavHost(
             val editorTask = tasks.firstOrNull { it.id == taskId }
             val editorSubtasks = subtasks.filter { it.taskId == taskId }.sortedBy { it.position }
             val editorAttachments = attachments.filter { it.taskId == taskId }
+            val editorNextBlock = DayPlan.nextBlocks(timeBlocks.filter { it.taskId == taskId }, System.currentTimeMillis())[taskId]
             TaskEditorScreen(
+                nextBlock = editorNextBlock,
+                onClearBlocks = { viewModel.clearBlocks(taskId) },
                 task = editorTask,
                 defaultQuadrant = Quadrant.entries.getOrElse(quadrantOrdinal) { Quadrant.SCHEDULE },
                 labels = labels,

@@ -50,6 +50,10 @@ data class AppSettings(
     /** Mode Focus : poids de l'échéance face à l'importance (0 = importance seule, 100 = échéance seule). */
     val focusDueWeight: Int = 30,
     // --- Agenda (time-blocking) ---
+    /** Journée du Planning : le temps libre se compte de cette heure (0–23)… */
+    val planningStartHour: Int = 8,
+    /** …à celle-ci (1–24, exclue). */
+    val planningEndHour: Int = 20,
     /** Lit les créneaux occupés des agendas de l'appareil (Google Agenda…), permission requise. */
     val calendarEnabled: Boolean = false,
     /** Flux iCal (.ics) optionnel lu en plus des agendas de l'appareil. Vide = aucun. */
@@ -70,7 +74,13 @@ data class AppSettings(
         const val SORT_MANUAL = 0
         const val SORT_DUE = 1
         const val SORT_CREATED = 2
-        const val SORT_PRIORITY = 3
         const val SORT_ALPHA = 4
+
+        /** Ancien tri « Priorité » : dans un quadrant, il donnait le même ordre que [SORT_DUE]. */
+        private const val SORT_LEGACY_PRIORITY = 3
+
+        /** Tri valide à partir d'une valeur enregistrée, éventuellement ancienne (réglage, sauvegarde). */
+        fun normalizeSort(sort: Int): Int =
+            if (sort == SORT_LEGACY_PRIORITY) SORT_DUE else sort.coerceIn(SORT_MANUAL, SORT_ALPHA)
     }
 }

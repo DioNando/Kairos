@@ -99,6 +99,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.SideEffect
+import androidx.compose.runtime.compositionLocalOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableStateOf
@@ -136,6 +137,7 @@ import com.kairos.app.data.model.Label
 import com.kairos.app.data.model.Quadrant
 import com.kairos.app.data.model.SavedFilter
 import com.kairos.app.data.model.Task
+import com.kairos.app.data.model.TimeBlock
 import com.kairos.app.domain.recurrence.Recurrence
 import com.kairos.app.domain.sort.TaskSort
 import com.kairos.app.ui.SubtaskProgress
@@ -180,6 +182,9 @@ private const val LanesScrollKey = "lanes"
  * snackbar « Annuler » ici). On **glisse** une ligne (appui long) vers un autre quadrant ou pour la
  * réordonner, ou on utilise le menu ⋮ (chemin accessible). Navigation + ajout en **barre basse**.
  */
+/** Prochaine session planifiée de chaque tâche, affichée sur sa ligne de la matrice. */
+val LocalNextBlocks = compositionLocalOf<Map<Long, TimeBlock>> { emptyMap() }
+
 @Composable
 fun MatrixScreen(
     tasks: List<Task>,
@@ -204,7 +209,6 @@ fun MatrixScreen(
     showGuide: Boolean,
     onOpenGuide: () -> Unit,
     quadrantSort: Int = AppSettings.SORT_MANUAL,
-    focusDueWeight: Int = 30,
     onSetQuadrantSort: (Int) -> Unit = {},
     savedFilters: List<SavedFilter> = emptyList(),
     onSaveFilter: (name: String, query: String, labelId: Long?) -> Unit = { _, _, _ -> },
@@ -344,7 +348,7 @@ fun MatrixScreen(
             val cellContent: @Composable (Quadrant, Modifier, Boolean) -> Unit = { quadrant, modifier, lazy ->
                 QuadrantCell(
                     quadrant = quadrant,
-                    tasks = TaskSort.apply(filtered.filter { it.quadrant == quadrant }, quadrantSort, focusDueWeight, now),
+                    tasks = TaskSort.apply(filtered.filter { it.quadrant == quadrant }, quadrantSort),
                     labelsById = labelsById,
                     subtaskProgress = subtaskProgress,
                     urgencyThresholdHours = urgencyThresholdHours,
@@ -821,7 +825,6 @@ private fun SortMenu(current: Int, onSelect: (Int) -> Unit) {
                 listOf(
                     AppSettings.SORT_MANUAL to R.string.sort_manual,
                     AppSettings.SORT_DUE to R.string.sort_due,
-                    AppSettings.SORT_PRIORITY to R.string.sort_priority,
                     AppSettings.SORT_CREATED to R.string.sort_created,
                     AppSettings.SORT_ALPHA to R.string.sort_alpha,
                 ).forEach { (value, res) ->
@@ -1355,8 +1358,9 @@ private fun TaskRowContent(
             )
             // Méta en FlowRow : label / récurrence / sous-tâches / échéance passent **à la ligne**
             // au lieu de s'écraser (carte étroite en grille 2×2). Chaque info sur une seule ligne.
+            val nextBlock = LocalNextBlocks.current[task.id]
             val hasMeta = label != null || task.recurrenceType != Recurrence.NONE ||
-                (progress != null && progress.total > 0) || task.dueAt != null || task.blockStart != null
+                (progress != null && progress.total > 0) || task.dueAt != null || nextBlock != null
             if (hasMeta) {
                 FlowRow(
                     modifier = Modifier.padding(top = 3.dp),
@@ -1400,7 +1404,7 @@ private fun TaskRowContent(
                             )
                         }
                     }
-                    if (task.blockStart != null) {
+                    if (nextBlock != null) {
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             Icon(
                                 Icons.Rounded.Schedule,
@@ -1410,7 +1414,7 @@ private fun TaskRowContent(
                             )
                             Spacer(Modifier.size(2.dp))
                             Text(
-                                formatBlock(task.blockStart, task.blockEnd ?: task.blockStart),
+                                formatBlock(nextBlock.start, nextBlock.end),
                                 style = MaterialTheme.typography.labelSmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                                 maxLines = 1,

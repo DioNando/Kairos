@@ -7,6 +7,7 @@ import com.kairos.app.data.model.AppSettings
 import com.kairos.app.data.model.Label
 import com.kairos.app.data.model.LlmProvider
 import com.kairos.app.data.model.Task
+import com.kairos.app.data.model.TimeBlock
 import com.kairos.app.data.remote.GeminiConfig
 import com.kairos.app.data.remote.GeminiHttpService
 import com.kairos.app.data.remote.OpenRouterConfig
@@ -22,11 +23,13 @@ import com.kairos.app.widget.KairosFocusCompactWidget
 import com.kairos.app.widget.KairosFocusWidget
 import com.kairos.app.widget.KairosWidget
 import com.kairos.app.widget.KairosRowWidget
+import com.kairos.app.widget.PriorityRefreshWorker
 import androidx.glance.appwidget.updateAll
 import com.kairos.app.domain.ai.DynamicNoteEnhancer
 import com.kairos.app.domain.ai.LlmNoteEnhancer
 import com.kairos.app.domain.ai.NoteEnhancer
 import com.kairos.app.domain.backup.BackupManager
+import com.kairos.app.domain.focus.FocusSelector
 import com.kairos.app.pomodoro.PomodoroNotifications
 import com.kairos.app.pomodoro.PomodoroService
 import com.kairos.app.ui.pomodoro.PomodoroDurations
@@ -43,6 +46,15 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import okhttp3.OkHttpClient
+
+/** État complet poussé vers la montre à chaque changement. */
+private data class WearSnapshot(
+    val tasks: List<Task>,
+    val subtaskDues: Map<Long, Long>,
+    val timeBlocks: List<TimeBlock>,
+    val labels: List<Label>,
+    val settings: AppSettings,
+)
 
 /**
  * Conteneur de dépendances minimaliste (pas de framework DI) : base et repositories créés
@@ -62,6 +74,7 @@ class KairosApp : Application() {
             savedFilterDao = database.savedFilterDao(),
             attachmentDao = database.attachmentDao(),
             attachmentStore = attachmentStore,
+            timeBlockDao = database.timeBlockDao(),
         )
     }
 
@@ -76,6 +89,7 @@ class KairosApp : Application() {
             labelDao = database.labelDao(),
             subtaskDao = database.subtaskDao(),
             savedFilterDao = database.savedFilterDao(),
+            timeBlockDao = database.timeBlockDao(),
             settingsRepository = settingsRepository,
         )
     }
@@ -169,10 +183,31 @@ class KairosApp : Application() {
         )
     }
 
+    /**
+     * Republie le classement « À faire en priorité » (widgets, montre), qui évolue avec l'heure même
+     * quand aucune donnée ne change.
+     */
+    suspend fun refreshPriorities() {
+        val tasks = database.taskDao().getAll()
+        val labels = database.labelDao().getAll().associateBy { it.id }
+        val subtaskDues = FocusSelector.subtaskDues(database.subtaskDao().getAll())
+        val settings = settingsRepository.settings.first()
+        try {
+            KairosFocusWidget().updateAll(this)
+            KairosFocusCompactWidget().updateAll(this)
+        } catch (_: Throwable) {
+            // Widget indisponible / non posé : sans conséquence.
+        }
+        runCatching { WearSync.pushFocus(this, tasks, labels, settings.focusDueWeight, subtaskDues) }
+    }
+
     override fun onCreate() {
         super.onCreate()
         PomodoroNotifications.createChannels(this)
         ReminderNotifications.createChannel(this)
+        PriorityRefreshWorker.schedule(this)
+        // Ne réagit qu'aux sous-tâches qui changent le classement (cocher une case sans échéance : non).
+        val subtaskDues = repository.subtasks.map { FocusSelector.subtaskDues(it) }.distinctUntilChanged()
         // Crée les étiquettes par défaut au premier lancement (saisie immédiate).
         applicationScope.launch { repository.seedIfEmpty(System.currentTimeMillis()) }
         // Purge l'archive selon le réglage (tâches archivées trop anciennes), une fois au démarrage,
@@ -214,7 +249,7 @@ class KairosApp : Application() {
         // (les tuiles suivent la **palette de quadrants** choisie → un changement de palette doit se
         // propager au widget, pas seulement à l'app).
         applicationScope.launch {
-            combine(repository.tasks, settingsRepository.settings) { _, _ -> }.collect {
+            combine(repository.tasks, subtaskDues, settingsRepository.settings) { _, _, _ -> }.collect {
                 try {
                     KairosWidget().updateAll(this@KairosApp)
                     KairosRowWidget().updateAll(this@KairosApp)
@@ -232,19 +267,19 @@ class KairosApp : Application() {
         applicationScope.launch {
             combine(
                 repository.tasks,
+                subtaskDues,
+                repository.timeBlocks,
                 repository.labels,
                 settingsRepository.settings,
-            ) { tasks: List<Task>, labels: List<Label>, settings: AppSettings ->
-                Triple(tasks, labels, settings)
-            }.collect { (tasks, labels, settings) ->
+            ) { tasks: List<Task>, dues: Map<Long, Long>, blocks: List<TimeBlock>, labels: List<Label>, settings: AppSettings ->
+                WearSnapshot(tasks, dues, blocks, labels, settings)
+            }.collect { (tasks, dues, blocks, labels, settings) ->
                 val palette = settings.toAccentPalette()
                 val labelsById = labels.associateBy { it.id }
                 runCatching { WearSync.pushCounts(this@KairosApp, tasks) }
-                runCatching { WearSync.pushFocus(this@KairosApp, tasks, labelsById, settings.focusDueWeight) }
-                runCatching {
-                    WearSync.pushQuadrants(this@KairosApp, tasks, labelsById, settings.quadrantSort, settings.focusDueWeight)
-                }
-                runCatching { WearSync.pushPlanning(this@KairosApp, tasks) }
+                runCatching { WearSync.pushFocus(this@KairosApp, tasks, labelsById, settings.focusDueWeight, dues) }
+                runCatching { WearSync.pushQuadrants(this@KairosApp, tasks, labelsById, settings.quadrantSort) }
+                runCatching { WearSync.pushPlanning(this@KairosApp, tasks, blocks) }
                 runCatching { WearSync.pushPalette(this@KairosApp, palette) }
             }
         }

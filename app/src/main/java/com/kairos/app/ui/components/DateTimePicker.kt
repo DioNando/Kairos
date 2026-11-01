@@ -18,13 +18,29 @@ import androidx.compose.ui.res.stringResource
 import com.kairos.app.R
 import com.kairos.app.ui.theme.LocalizedOverlay
 import java.time.Instant
+import java.time.LocalDate
 import java.time.LocalDateTime
 import java.time.LocalTime
 import java.time.ZoneId
 
 /**
+ * Heure proposée pour une nouvelle échéance le jour [day] : 9:00, sauf aujourd'hui passé 9:00 — une
+ * tâche serait en retard dès sa création, donc en tête du classement — où l'on propose l'heure pleine
+ * suivante (23:59 au plus tard).
+ */
+internal fun defaultDueTime(day: LocalDate, now: LocalDateTime): LocalTime {
+    val morning = LocalTime.of(9, 0)
+    return when {
+        day != now.toLocalDate() || now.toLocalTime() < morning -> morning
+        now.hour == 23 -> LocalTime.of(23, 59)
+        else -> LocalTime.of(now.hour + 1, 0)
+    }
+}
+
+/**
  * Sélection d'une date **puis** d'une heure (deux dialogs enchaînés). [initial] préremplit les deux
- * étapes (sinon aujourd'hui à 9:00) ; [onPicked] reçoit l'instant choisi (epoch millis).
+ * étapes (sinon aujourd'hui, à l'heure de [defaultDueTime]) ; [onPicked] reçoit l'instant choisi
+ * (epoch millis).
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -54,18 +70,20 @@ fun DateTimePickerDialogs(
             LocalizedOverlay { DatePicker(state = dateState) }
         }
     } else {
+        // Le DatePicker renvoie minuit **UTC** du jour choisi : on relit le jour en UTC.
+        val day = Instant.ofEpochMilli(date).atZone(ZoneId.of("UTC")).toLocalDate()
         val existing = initial?.let { LocalDateTime.ofInstant(Instant.ofEpochMilli(it), zone) }
+        val proposed = existing?.toLocalTime()
+            ?: defaultDueTime(day, LocalDateTime.ofInstant(Instant.ofEpochMilli(now), zone))
         val timeState = rememberTimePickerState(
-            initialHour = existing?.hour ?: 9,
-            initialMinute = existing?.minute ?: 0,
+            initialHour = proposed.hour,
+            initialMinute = proposed.minute,
             is24Hour = true,
         )
         AlertDialog(
             onDismissRequest = onDismiss,
             confirmButton = {
                 TextButton(onClick = {
-                    // Le DatePicker renvoie minuit **UTC** du jour choisi : on relit le jour en UTC.
-                    val day = Instant.ofEpochMilli(date).atZone(ZoneId.of("UTC")).toLocalDate()
                     val picked = LocalDateTime.of(day, LocalTime.of(timeState.hour, timeState.minute))
                     onPicked(picked.atZone(zone).toInstant().toEpochMilli())
                 }) { Text(okLabel) }

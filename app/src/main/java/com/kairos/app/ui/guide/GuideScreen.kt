@@ -278,6 +278,7 @@ private fun ColumnScope.CreateDetail() {
     Para(stringResource(R.string.guide_create_p1))
     Point(Icons.Rounded.PriorityHigh, stringResource(R.string.guide_create_classify_t), stringResource(R.string.guide_create_classify_b))
     Point(Icons.Rounded.Event, stringResource(R.string.guide_create_due_t), stringResource(R.string.guide_create_due_b))
+    Point(Icons.Rounded.Schedule, stringResource(R.string.guide_create_estimate_t), stringResource(R.string.guide_create_estimate_b))
     Point(Icons.Rounded.Label, stringResource(R.string.guide_create_label_t), stringResource(R.string.guide_create_label_b))
     Point(Icons.Rounded.Repeat, stringResource(R.string.guide_create_rec_t), stringResource(R.string.guide_create_rec_b))
     Point(Icons.Rounded.Checklist, stringResource(R.string.guide_create_sub_t), stringResource(R.string.guide_create_sub_b))

@@ -9,6 +9,7 @@ import com.kairos.app.data.model.Quadrant
 import com.kairos.app.data.model.SavedFilter
 import com.kairos.app.data.model.Subtask
 import com.kairos.app.data.model.Task
+import com.kairos.app.data.model.TimeBlock
 import com.kairos.app.data.repository.KairosRepository
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -36,6 +37,9 @@ class KairosViewModel(private val repository: KairosRepository) : ViewModel() {
 
     val attachments: StateFlow<List<Attachment>> =
         repository.attachments.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
+
+    val timeBlocks: StateFlow<List<TimeBlock>> =
+        repository.timeBlocks.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
 
     /** Compteur terminées/total par tâche, dérivé du flux des sous-tâches. */
     val subtaskProgress: StateFlow<Map<Long, SubtaskProgress>> =
@@ -81,8 +85,16 @@ class KairosViewModel(private val repository: KairosRepository) : ViewModel() {
 
     // --- Time-blocking --------------------------------------------------------------------------
 
-    fun setBlock(taskId: Long, start: Long?, minutes: Int) =
-        viewModelScope.launch { repository.setBlock(taskId, start, minutes) }
+    fun addBlock(taskId: Long, start: Long, minutes: Int) =
+        viewModelScope.launch { repository.addBlock(taskId, start, minutes) }
+
+    fun updateBlock(block: TimeBlock) = viewModelScope.launch { repository.updateBlock(block) }
+
+    fun removeBlock(blockId: Long) = viewModelScope.launch { repository.removeBlock(blockId) }
+
+    fun clearBlocks(taskId: Long) = viewModelScope.launch { repository.clearBlocks(taskId) }
+
+    fun completeBlock(blockId: Long) = viewModelScope.launch { repository.completeBlock(blockId, now()) }
 
     // --- Étiquettes & filtres -------------------------------------------------------------------
 

@@ -81,7 +81,8 @@ private suspend fun loadFocus(context: Context): List<FocusItem> {
         ?.let { runCatching { it.settingsRepository.settings.first() }.getOrNull() }
     val palette = settings?.toAccentPalette() ?: AppPalettes[0]
     val weight = settings?.focusDueWeight ?: FocusSelector.DEFAULT_DUE_WEIGHT
-    return FocusSelector.rank(tasks, weight).take(FOCUS_SIZE).map { task ->
+    val subtaskDues = FocusSelector.subtaskDues(db.subtaskDao().getAll())
+    return FocusSelector.rank(tasks, weight, subtaskDues = subtaskDues).take(FOCUS_SIZE).map { task ->
         val label = task.labelId?.let { labels[it] }
         FocusItem(
             id = task.id,

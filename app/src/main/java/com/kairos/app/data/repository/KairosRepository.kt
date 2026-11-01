@@ -5,12 +5,15 @@ import com.kairos.app.data.local.LabelDao
 import com.kairos.app.data.local.SavedFilterDao
 import com.kairos.app.data.local.SubtaskDao
 import com.kairos.app.data.local.TaskDao
+import com.kairos.app.data.local.TimeBlockDao
 import com.kairos.app.data.model.Attachment
 import com.kairos.app.data.model.Label
 import com.kairos.app.data.model.Quadrant
 import com.kairos.app.data.model.SavedFilter
 import com.kairos.app.data.model.Subtask
 import com.kairos.app.data.model.Task
+import com.kairos.app.data.model.TimeBlock
+import com.kairos.app.domain.planning.DayPlan
 import com.kairos.app.domain.recurrence.Recurrence
 import kotlinx.coroutines.flow.Flow
 
@@ -25,8 +28,10 @@ class KairosRepository(
     private val savedFilterDao: SavedFilterDao,
     private val attachmentDao: AttachmentDao,
     private val attachmentStore: AttachmentStore,
+    private val timeBlockDao: TimeBlockDao,
 ) {
     val tasks: Flow<List<Task>> = taskDao.observeAll()
+    val timeBlocks: Flow<List<TimeBlock>> = timeBlockDao.observeAll()
     val labels: Flow<List<Label>> = labelDao.observeAll()
     val subtasks: Flow<List<Subtask>> = subtaskDao.observeAll()
     val savedFilters: Flow<List<SavedFilter>> = savedFilterDao.observeAll()
@@ -133,7 +138,7 @@ class KairosRepository(
      * Marque une tâche terminée ([completedAt] renseignée) ou active (null).
      *
      * Pour une tâche **récurrente**, la complétion ne l'archive **pas** : elle **avance sur place**
-     * (échéance passée à la suivante, temps de focus remis à zéro, sous-tâches décochées) et reste
+     * (échéance passée à la prochaine à venir, temps de focus remis à zéro, sous-tâches décochées) et reste
      * active sur le board. Il n'y a donc **jamais** qu'une seule occurrence vivante d'une récurrence
      * — pas d'accumulation dans l'archive, pas de doublon possible via restauration. Pour arrêter la
      * répétition, on retire la tâche à la main.
@@ -141,8 +146,10 @@ class KairosRepository(
     suspend fun setCompleted(taskId: Long, completedAt: Long?) {
         val task = taskDao.getById(taskId) ?: return
         if (completedAt != null && task.recurrenceType != Recurrence.NONE) {
-            val nextDue = task.recurrenceType.next(task.dueAt ?: completedAt)
+            val nextDue = task.recurrenceType.next(task.dueAt ?: completedAt, after = completedAt)
             taskDao.update(task.copy(dueAt = nextDue, completedAt = null, focusSeconds = 0))
+            // Les sessions concernaient l'occurrence terminée : la suivante repart à planifier.
+            timeBlockDao.deleteForTask(task.id)
             subtaskDao.forTask(task.id).forEach { sub ->
                 if (sub.done) subtaskDao.update(sub.copy(done = false))
             }
@@ -180,9 +187,26 @@ class KairosRepository(
 
     // --- Time-blocking --------------------------------------------------------------------------
 
-    /** Planifie [taskId] sur le créneau [start] (null = retire du planning) pour [minutes]. */
-    suspend fun setBlock(taskId: Long, start: Long?, minutes: Int) =
-        taskDao.setBlock(taskId, start, if (start == null) 0 else minutes)
+    suspend fun addBlock(taskId: Long, start: Long, minutes: Int) =
+        timeBlockDao.insert(TimeBlock(taskId = taskId, start = start, minutes = minutes))
+
+    suspend fun updateBlock(block: TimeBlock) = timeBlockDao.update(block)
+
+    suspend fun removeBlock(blockId: Long) = timeBlockDao.deleteById(blockId)
+
+    /** Retire du planning toutes les sessions à venir de [taskId]. */
+    suspend fun clearBlocks(taskId: Long) = timeBlockDao.deleteOpenForTask(taskId)
+
+    /**
+     * Termine une session, et la tâche avec elle s'il n'en reste rien à faire ([DayPlan.finishesTask]).
+     * Une tâche récurrente avance alors sur place, comme à toute complétion.
+     */
+    suspend fun completeBlock(blockId: Long, now: Long) {
+        val block = timeBlockDao.getById(blockId) ?: return
+        val task = taskDao.getById(block.taskId) ?: return
+        timeBlockDao.update(block.copy(doneAt = now))
+        if (DayPlan.finishesTask(task, timeBlockDao.forTask(task.id), blockId)) setCompleted(task.id, now)
+    }
 
     /** Suppression **définitive** (uniquement depuis l'archive). */
     suspend fun deleteTask(taskId: Long) = taskDao.deleteById(taskId)

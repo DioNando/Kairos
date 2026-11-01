@@ -4,11 +4,13 @@ import com.kairos.app.data.local.LabelDao
 import com.kairos.app.data.local.SavedFilterDao
 import com.kairos.app.data.local.SubtaskDao
 import com.kairos.app.data.local.TaskDao
+import com.kairos.app.data.local.TimeBlockDao
 import com.kairos.app.data.model.AppSettings
 import com.kairos.app.data.model.Label
 import com.kairos.app.data.model.SavedFilter
 import com.kairos.app.data.model.Subtask
 import com.kairos.app.data.model.Task
+import com.kairos.app.data.model.TimeBlock
 import com.kairos.app.data.repository.SettingsRepository
 import kotlinx.coroutines.flow.first
 import org.json.JSONArray
@@ -29,6 +31,7 @@ class BackupManager(
     private val labelDao: LabelDao,
     private val subtaskDao: SubtaskDao,
     private val savedFilterDao: SavedFilterDao,
+    private val timeBlockDao: TimeBlockDao,
     private val settingsRepository: SettingsRepository,
 ) {
 
@@ -78,8 +81,17 @@ class BackupManager(
                 if (t.removedAt != null) put("removedAt", t.removedAt)
                 put("recurrence", t.recurrence)
                 put("focusSeconds", t.focusSeconds)
-                if (t.blockStart != null) put("blockStart", t.blockStart)
-                put("blockMinutes", t.blockMinutes)
+                put("estimateMinutes", t.estimateMinutes)
+            }
+        })
+
+        root.put("timeBlocks", timeBlockDao.getAll().toJsonArray { b ->
+            JSONObject().apply {
+                put("id", b.id)
+                put("taskId", b.taskId)
+                put("start", b.start)
+                put("minutes", b.minutes)
+                if (b.doneAt != null) put("doneAt", b.doneAt)
             }
         })
 
@@ -140,8 +152,27 @@ class BackupManager(
                 removedAt = if (o.has("removedAt") && !o.isNull("removedAt")) o.getLong("removedAt") else null,
                 recurrence = o.optInt("recurrence"),
                 focusSeconds = o.optInt("focusSeconds"),
-                blockStart = o.optLongOrNull("blockStart"),
-                blockMinutes = o.optInt("blockMinutes"),
+                estimateMinutes = o.optInt("estimateMinutes"),
+            )
+        }
+        // Avant le format 4, le créneau unique d'une tâche était porté par la tâche elle-même.
+        val legacyBlocks = root.optJSONArray("tasks").mapObjects { o ->
+            o.optLongOrNull("blockStart")?.let { start ->
+                TimeBlock(
+                    taskId = o.getLong("id"),
+                    start = start,
+                    minutes = o.optInt("blockMinutes").takeIf { it > 0 } ?: Task.DEFAULT_BLOCK_MINUTES,
+                    doneAt = o.optLongOrNull("completedAt"),
+                )
+            }
+        }.filterNotNull()
+        val timeBlocks = legacyBlocks + root.optJSONArray("timeBlocks").mapObjects { o ->
+            TimeBlock(
+                id = o.getLong("id"),
+                taskId = o.getLong("taskId"),
+                start = o.getLong("start"),
+                minutes = o.getInt("minutes"),
+                doneAt = o.optLongOrNull("doneAt"),
             )
         }
         val subtasks = root.optJSONArray("subtasks").mapObjects { o ->
@@ -157,6 +188,7 @@ class BackupManager(
         val settings = root.optJSONObject("settings")?.toSettings()
 
         // 2) Remplacer : vider puis réinsérer en conservant les ids.
+        timeBlockDao.clear()
         subtaskDao.clear()
         taskDao.clear()
         savedFilterDao.clear()
@@ -165,6 +197,7 @@ class BackupManager(
         savedFilters.forEach { savedFilterDao.insert(it) }
         tasks.forEach { taskDao.insert(it) }
         subtasks.forEach { subtaskDao.insert(it) }
+        timeBlocks.forEach { timeBlockDao.insert(it) }
         settings?.let { settingsRepository.applyAll(it) }
 
         return ImportResult(tasks = tasks.size, labels = labels.size)
@@ -196,6 +229,8 @@ class BackupManager(
         put("reminderLeadMinutes", reminderLeadMinutes)
         put("quadrantSort", quadrantSort)
         put("focusDueWeight", focusDueWeight)
+        put("planningStartHour", planningStartHour)
+        put("planningEndHour", planningEndHour)
         put("calendarEnabled", calendarEnabled)
         put("icalUrl", icalUrl)
     }
@@ -224,12 +259,14 @@ class BackupManager(
         reminderLeadMinutes = optInt("reminderLeadMinutes", 0),
         quadrantSort = optInt("quadrantSort", AppSettings.SORT_MANUAL),
         focusDueWeight = optInt("focusDueWeight", 30),
+        planningStartHour = optInt("planningStartHour", 8),
+        planningEndHour = optInt("planningEndHour", 20),
         calendarEnabled = optBoolean("calendarEnabled"),
         icalUrl = optString("icalUrl", ""),
     )
 
     private companion object {
-        const val FORMAT_VERSION = 3
+        const val FORMAT_VERSION = 4
     }
 }
 

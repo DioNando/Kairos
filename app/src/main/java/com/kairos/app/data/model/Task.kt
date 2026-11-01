@@ -41,10 +41,8 @@ data class Task(
     @ColumnInfo(defaultValue = "0") val recurrence: Int = 0,
     /** Temps de concentration cumulé (secondes) via les sessions Pomodoro liées. */
     @ColumnInfo(defaultValue = "0") val focusSeconds: Int = 0,
-    /** Time-blocking : début du créneau d'agenda réservé à la tâche (epoch millis), null = non planifiée. */
-    val blockStart: Long? = null,
-    /** Durée du créneau (minutes). 0 = durée par défaut ([DEFAULT_BLOCK_MINUTES]). */
-    @ColumnInfo(defaultValue = "0") val blockMinutes: Int = 0,
+    /** Durée estimée (minutes), répartie en sessions dans le Planning. 0 = non estimée. */
+    @ColumnInfo(defaultValue = "0") val estimateMinutes: Int = 0,
 ) {
     val quadrant: Quadrant get() = Quadrant.of(important, urgent)
 
@@ -64,12 +62,6 @@ data class Task(
     val archivedAt: Long? get() = completedAt ?: removedAt
 
     val recurrenceType: Recurrence get() = Recurrence.of(recurrence)
-
-    /** Durée effective du créneau planifié (minutes). */
-    val blockDuration: Int get() = if (blockMinutes > 0) blockMinutes else DEFAULT_BLOCK_MINUTES
-
-    /** Fin du créneau planifié (epoch millis), ou null si non planifiée. */
-    val blockEnd: Long? get() = blockStart?.let { it + blockDuration * 60_000L }
 
     companion object {
         const val DEFAULT_BLOCK_MINUTES = 30

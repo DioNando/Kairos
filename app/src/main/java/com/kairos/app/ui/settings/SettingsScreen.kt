@@ -64,6 +64,7 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.RangeSlider
 import androidx.compose.material3.Slider
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Switch
@@ -102,6 +103,7 @@ import com.kairos.app.ui.components.toColor
 import com.kairos.app.ui.theme.AppPalettes
 import com.kairos.app.ui.theme.dynamicColorSupported
 import kotlinx.coroutines.launch
+import kotlin.math.roundToInt
 
 /**
  * Écran Réglages : sections regroupées en **cartes** Material You (Apparence / Tâches & priorités /
@@ -138,6 +140,7 @@ fun SettingsScreen(
     onBack: () -> Unit,
     onSetQuadrantSort: (Int) -> Unit = {},
     onSetFocusDueWeight: (Int) -> Unit = {},
+    onSetPlanningHours: (start: Int, end: Int) -> Unit = { _, _ -> },
     onSetCalendarEnabled: (Boolean) -> Unit = {},
     onSetIcalUrl: (String) -> Unit = {},
     onTestIcal: suspend (String) -> Result<Int> = { Result.failure(IllegalStateException()) },
@@ -261,7 +264,6 @@ fun SettingsScreen(
                         listOf(
                             AppSettings.SORT_MANUAL to R.string.sort_manual,
                             AppSettings.SORT_DUE to R.string.sort_due,
-                            AppSettings.SORT_PRIORITY to R.string.sort_priority,
                             AppSettings.SORT_CREATED to R.string.sort_created,
                             AppSettings.SORT_ALPHA to R.string.sort_alpha,
                         ).forEach { (value, res) ->
@@ -374,6 +376,27 @@ fun SettingsScreen(
                 val permissionLauncher = rememberLauncherForActivityResult(
                     ActivityResultContracts.RequestPermission(),
                 ) { granted -> onSetCalendarEnabled(granted) }
+                SettingBlock(Icons.Rounded.Schedule, stringResource(R.string.settings_planning_hours)) {
+                    Text(
+                        stringResource(
+                            R.string.settings_planning_hours_value,
+                            settings.planningStartHour,
+                            settings.planningEndHour,
+                        ),
+                        style = MaterialTheme.typography.bodyMedium,
+                    )
+                    RangeSlider(
+                        value = settings.planningStartHour.toFloat()..settings.planningEndHour.toFloat(),
+                        onValueChange = { range ->
+                            val start = range.start.roundToInt()
+                            val end = range.endInclusive.roundToInt()
+                            if (start < end) onSetPlanningHours(start, end)
+                        },
+                        valueRange = 0f..24f,
+                        steps = 23,
+                    )
+                }
+                SettingDivider()
                 SettingRow(
                     icon = Icons.Rounded.CalendarMonth,
                     title = stringResource(R.string.settings_calendar_device),
