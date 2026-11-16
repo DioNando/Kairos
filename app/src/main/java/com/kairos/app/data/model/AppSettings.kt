@@ -39,6 +39,10 @@ data class AppSettings(
     // --- Assistant IA (reformulation des notes) ---
     /** Fournisseur IA primaire : 0 = Gemini, 1 = OpenRouter (l'autre sert de repli). */
     val aiProvider: Int = AI_GEMINI,
+    /** Modèle Gemini utilisé (identifiant API, ex. `gemini-flash-latest`). */
+    val geminiModel: String = DEFAULT_GEMINI_MODEL,
+    /** Modèle OpenRouter utilisé (identifiant API, ex. `vendor/model:free`). */
+    val openRouterModel: String = DEFAULT_OPENROUTER_MODEL,
     // --- Rappels d'échéance ---
     /** Notifie à l'approche de l'échéance des tâches actives qui en ont une. */
     val remindersEnabled: Boolean = true,
@@ -66,6 +70,10 @@ data class AppSettings(
 
         const val AI_GEMINI = 0
         const val AI_OPENROUTER = 1
+
+        /** Alias Google qui pointe toujours vers le Flash courant : ne se périme pas. */
+        const val DEFAULT_GEMINI_MODEL = "gemini-flash-latest"
+        const val DEFAULT_OPENROUTER_MODEL = "nex-agi/nex-n2-pro:free"
 
         const val LANG_SYSTEM = 0
         const val LANG_FR = 1

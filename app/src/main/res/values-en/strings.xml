@@ -187,6 +187,12 @@
     <string name="ai_provider_openrouter">OpenRouter</string>
     <string name="ai_key_gemini">Gemini API key</string>
     <string name="ai_key_openrouter">OpenRouter API key</string>
+    <string name="ai_model_gemini">Gemini model</string>
+    <string name="ai_model_openrouter">OpenRouter model</string>
+    <string name="ai_model_test">Test the model</string>
+    <string name="ai_model_ok">The model responds</string>
+    <string name="ai_models_choose">Choose a model</string>
+    <string name="ai_models_failed">Couldn\'t load the model list.</string>
     <string name="ai_reformulate">Reformulate (AI)</string>
     <string name="ai_revert">Restore original</string>
     <string name="ai_classify">Suggest classification (AI)</string>
@@ -198,6 +204,18 @@
     <string name="ai_test_no_key">Enter a key for this provider first.</string>
     <string name="cd_key_show">Show key</string>
     <string name="cd_key_hide">Hide key</string>
+    <string name="ai_key_edit">Edit</string>
+    <string name="ai_key_delete">Delete</string>
+    <string name="ai_key_save">Save</string>
+    <string name="ai_key_cancel">Cancel</string>
+    <string name="ai_key_continue">Continue</string>
+    <string name="ai_key_new">New key</string>
+    <string name="ai_key_locked">Encrypted on the device, protected by your fingerprint or PIN</string>
+    <string name="ai_key_unlocked">Unlocked — locks again when you leave the app</string>
+    <string name="ai_key_auth_subtitle">Confirm your identity to change the key</string>
+    <string name="ai_key_edit_title">Change the key?</string>
+    <string name="ai_key_delete_title">Delete the key?</string>
+    <string name="ai_key_no_lock">Your phone has no fingerprint or screen lock: the key can\'t be protected by authentication. Set up a screen lock in Android settings to protect it better.</string>
 
     <!-- Guide / Help -->
     <string name="cd_guide">Guide</string>

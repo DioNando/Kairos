@@ -7,12 +7,14 @@ package com.kairos.app.data.remote
  */
 class OpenRouterConfig(
     private val keyProvider: () -> String,
-    // Modèle gratuit OpenRouter (suffixe :free) — correct en français et en suivi d'instructions.
-    val model: String = "nex-agi/nex-n2-pro:free",
+    /** Modèle lu à chaque appel (choisi dans les réglages). */
+    private val modelProvider: () -> String = { "nex-agi/nex-n2-pro:free" },
     val baseUrl: String = "https://openrouter.ai/api/v1",
 ) {
     /** Clé courante (lue à chaque appel, jamais mémorisée). */
     val apiKey: String get() = keyProvider().trim()
+
+    val model: String get() = modelProvider().trim()
 
     val isEnabled: Boolean get() = apiKey.isNotBlank()
 }

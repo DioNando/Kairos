@@ -43,6 +43,7 @@ class GeminiHttpService(
                         throw when (response.code) {
                             401, 403 -> LlmException.Unauthorized(PROVIDER)
                             429 -> LlmException.RateLimited(PROVIDER)
+                            404 -> LlmException.ModelNotFound(PROVIDER)
                             else -> LlmException.Http(PROVIDER, response.code)
                         }
                     }
@@ -52,6 +53,55 @@ class GeminiHttpService(
                 throw LlmException.Network(PROVIDER, e)
             }
             parseText(body)
+        }
+    }
+
+    /**
+     * Liste les modèles Gemini utilisables en génération (`supportedGenerationMethods` contient
+     * `generateContent`), identifiants sans le préfixe `models/`.
+     */
+    override suspend fun listModels(): List<String> = withContext(Dispatchers.IO) {
+        val request = Request.Builder()
+            .url("${config.baseUrl}/models?pageSize=1000")
+            .header("x-goog-api-key", config.apiKey)
+            .get()
+            .build()
+        val body = try {
+            client.newCall(request).execute().use { response ->
+                val text = response.body?.string().orEmpty()
+                if (!response.isSuccessful) {
+                    throw when (response.code) {
+                        400, 401, 403 -> LlmException.Unauthorized(PROVIDER)
+                        429 -> LlmException.RateLimited(PROVIDER)
+                        else -> LlmException.Http(PROVIDER, response.code)
+                    }
+                }
+                text
+            }
+        } catch (e: IOException) {
+            throw LlmException.Network(PROVIDER, e)
+        }
+        try {
+            val models = JSONObject(body).optJSONArray("models") ?: JSONArray()
+            (0 until models.length()).map { models.getJSONObject(it) }
+                .filter { m ->
+                    val methods = m.optJSONArray("supportedGenerationMethods") ?: return@filter false
+                    (0 until methods.length()).any { methods.optString(it) == "generateContent" }
+                }
+                .map { it.optString("name").removePrefix("models/") }
+                .filter { it.startsWith("gemini") && NON_TEXT.none { tag -> it.contains(tag) } }
+                .distinct()
+                // Alias « -latest » en tête (suivent toujours le modèle courant), puis version
+                // décroissante : l'API liste encore d'anciens modèles qui répondent 404.
+                .sortedWith(
+                    compareBy<String>(
+                        { !it.endsWith("-latest") },
+                        { -(VERSION.find(it)?.groupValues?.get(1)?.toDoubleOrNull() ?: 0.0) },
+                        { it },
+                    ),
+                )
+        } catch (e: Exception) {
+            throw LlmException.Parse(PROVIDER, e)
         }
     }
 
@@ -74,6 +124,10 @@ class GeminiHttpService(
 
     private companion object {
         const val PROVIDER = "Gemini"
+
+        /** Variantes non textuelles (voix, image, temps réel, embeddings…) inutiles ici. */
+        val NON_TEXT = listOf("tts", "image", "live", "audio", "embedding", "robotics", "computer-use", "aqa")
+        val VERSION = Regex("gemini-(\\d+(?:\\.\\d+)?)")
         val JSON_MEDIA_TYPE = "application/json; charset=utf-8".toMediaType()
     }
 }

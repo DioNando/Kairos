@@ -35,6 +35,8 @@ class SettingsRepository(private val context: Context) {
         val LONG_BREAK_MIN = intPreferencesKey("pomodoro_long_break_min")
         val CYCLES_BEFORE_LONG = intPreferencesKey("pomodoro_cycles_before_long")
         val AI_PROVIDER = intPreferencesKey("ai_provider")
+        val GEMINI_MODEL = stringPreferencesKey("gemini_model")
+        val OPENROUTER_MODEL = stringPreferencesKey("openrouter_model")
         val REMINDERS_ENABLED = booleanPreferencesKey("reminders_enabled")
         val REMINDER_LEAD_MIN = intPreferencesKey("reminder_lead_minutes")
         val QUADRANT_SORT = intPreferencesKey("quadrant_sort")
@@ -66,6 +68,8 @@ class SettingsRepository(private val context: Context) {
             longBreakMinutes = prefs[Keys.LONG_BREAK_MIN] ?: 15,
             cyclesBeforeLongBreak = prefs[Keys.CYCLES_BEFORE_LONG] ?: 4,
             aiProvider = prefs[Keys.AI_PROVIDER] ?: AppSettings.AI_GEMINI,
+            geminiModel = prefs[Keys.GEMINI_MODEL]?.ifBlank { null } ?: AppSettings.DEFAULT_GEMINI_MODEL,
+            openRouterModel = prefs[Keys.OPENROUTER_MODEL]?.ifBlank { null } ?: AppSettings.DEFAULT_OPENROUTER_MODEL,
             remindersEnabled = prefs[Keys.REMINDERS_ENABLED] ?: true,
             reminderLeadMinutes = prefs[Keys.REMINDER_LEAD_MIN] ?: 0,
             quadrantSort = AppSettings.normalizeSort(prefs[Keys.QUADRANT_SORT] ?: AppSettings.SORT_MANUAL),
@@ -155,6 +159,15 @@ class SettingsRepository(private val context: Context) {
         context.dataStore.edit { it[Keys.AI_PROVIDER] = provider.coerceIn(0, 1) }
     }
 
+    /** Modèle d'un fournisseur ; vide = modèle par défaut. */
+    suspend fun setAiModel(provider: Int, model: String) {
+        val key = if (provider == AppSettings.AI_OPENROUTER) Keys.OPENROUTER_MODEL else Keys.GEMINI_MODEL
+        context.dataStore.edit {
+            val trimmed = model.trim()
+            if (trimmed.isEmpty()) it.remove(key) else it[key] = trimmed
+        }
+    }
+
     suspend fun setRemindersEnabled(value: Boolean) {
         context.dataStore.edit { it[Keys.REMINDERS_ENABLED] = value }
     }
@@ -195,6 +208,8 @@ class SettingsRepository(private val context: Context) {
             prefs[Keys.LONG_BREAK_MIN] = s.longBreakMinutes
             prefs[Keys.CYCLES_BEFORE_LONG] = s.cyclesBeforeLongBreak
             prefs[Keys.AI_PROVIDER] = s.aiProvider
+            prefs[Keys.GEMINI_MODEL] = s.geminiModel
+            prefs[Keys.OPENROUTER_MODEL] = s.openRouterModel
             prefs[Keys.REMINDERS_ENABLED] = s.remindersEnabled
             prefs[Keys.REMINDER_LEAD_MIN] = s.reminderLeadMinutes
             prefs[Keys.QUADRANT_SORT] = s.quadrantSort

@@ -10,6 +10,7 @@ import com.kairos.app.data.model.Task
 import com.kairos.app.data.model.TimeBlock
 import com.kairos.app.data.remote.GeminiConfig
 import com.kairos.app.data.remote.GeminiHttpService
+import com.kairos.app.data.remote.LlmService
 import com.kairos.app.data.remote.OpenRouterConfig
 import com.kairos.app.data.remote.OpenRouterHttpService
 import com.kairos.app.data.reminder.ReminderNotifications
@@ -106,12 +107,19 @@ class KairosApp : Application() {
     @Volatile
     private var aiPrimaryProvider: Int = AppSettings.AI_GEMINI
 
-    // Clé saisie dans l'app prioritaire ; sinon repli sur la clé de build (.env / local.properties).
+    /** Modèles choisis dans les réglages, lus dynamiquement par les configs. */
+    @Volatile
+    private var geminiModel: String = AppSettings.DEFAULT_GEMINI_MODEL
+
+    @Volatile
+    private var openRouterModel: String = AppSettings.DEFAULT_OPENROUTER_MODEL
+
+    // Clés saisies uniquement dans l'app (store chiffré) : aucune clé n'est embarquée dans l'APK.
     private val geminiConfig by lazy {
-        GeminiConfig({ secureCredentialStore.geminiKey ?: BuildConfig.GEMINI_API_KEY })
+        GeminiConfig({ secureCredentialStore.geminiKey.orEmpty() }, { geminiModel })
     }
     private val openRouterConfig by lazy {
-        OpenRouterConfig({ secureCredentialStore.openRouterKey ?: BuildConfig.OPENROUTER_API_KEY })
+        OpenRouterConfig({ secureCredentialStore.openRouterKey.orEmpty() }, { openRouterModel })
     }
 
     private fun providerEnabled(provider: LlmProvider): Boolean = when (provider) {
@@ -120,12 +128,16 @@ class KairosApp : Application() {
     }
 
     /** Un reformulateur par fournisseur (clé lue live via la config). Réutilisé par la chaîne et le test. */
-    private val aiEnhancers: Map<LlmProvider, LlmNoteEnhancer> by lazy {
+    private val aiServices: Map<LlmProvider, LlmService> by lazy {
         val client = OkHttpClient()
         mapOf(
-            LlmProvider.GEMINI to LlmNoteEnhancer(GeminiHttpService(geminiConfig, client)),
-            LlmProvider.OPENROUTER to LlmNoteEnhancer(OpenRouterHttpService(openRouterConfig, client)),
+            LlmProvider.GEMINI to GeminiHttpService(geminiConfig, client),
+            LlmProvider.OPENROUTER to OpenRouterHttpService(openRouterConfig, client),
         )
+    }
+
+    private val aiEnhancers: Map<LlmProvider, LlmNoteEnhancer> by lazy {
+        aiServices.mapValues { LlmNoteEnhancer(it.value) }
     }
 
     /**
@@ -140,13 +152,26 @@ class KairosApp : Application() {
     }
 
     /**
-     * Teste la connexion d'un **fournisseur précis** (clé in-app ou repli .env) par un appel minimal.
+     * Teste la connexion d'un **fournisseur précis** (clé saisie + modèle choisi) par un appel minimal.
      * Échoue d'emblée si aucune clé n'est configurée pour ce fournisseur.
      */
     suspend fun testAi(provider: Int): Result<Unit> {
         val p = if (provider == AppSettings.AI_OPENROUTER) LlmProvider.OPENROUTER else LlmProvider.GEMINI
         if (!providerEnabled(p)) return Result.failure(IllegalStateException(getString(R.string.ai_test_no_key)))
         return aiEnhancers.getValue(p).testConnection()
+    }
+
+    /** Modèles disponibles chez un fournisseur (requiert sa clé, sauf OpenRouter dont la liste est publique). */
+    suspend fun listAiModels(provider: Int): Result<List<String>> {
+        val p = if (provider == AppSettings.AI_OPENROUTER) LlmProvider.OPENROUTER else LlmProvider.GEMINI
+        if (p == LlmProvider.GEMINI && !providerEnabled(p)) {
+            return Result.failure(IllegalStateException(getString(R.string.ai_test_no_key)))
+        }
+        return try {
+            Result.success(aiServices.getValue(p).listModels())
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
     }
 
     /** Clé API courante d'un fournisseur (pour préremplir les réglages). */
@@ -231,6 +256,8 @@ class KairosApp : Application() {
                 )
                 pomodoroEngine.onDurationsChanged()
                 aiPrimaryProvider = it.aiProvider
+                geminiModel = it.geminiModel
+                openRouterModel = it.openRouterModel
             }
         }
         // Restaure une session Pomodoro en cours après un redémarrage du process.

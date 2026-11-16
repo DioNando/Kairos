@@ -225,6 +225,8 @@ class BackupManager(
         put("longBreakMinutes", longBreakMinutes)
         put("cyclesBeforeLongBreak", cyclesBeforeLongBreak)
         put("aiProvider", aiProvider)
+        put("geminiModel", geminiModel)
+        put("openRouterModel", openRouterModel)
         put("remindersEnabled", remindersEnabled)
         put("reminderLeadMinutes", reminderLeadMinutes)
         put("quadrantSort", quadrantSort)
@@ -255,6 +257,8 @@ class BackupManager(
         longBreakMinutes = optInt("longBreakMinutes", 15),
         cyclesBeforeLongBreak = optInt("cyclesBeforeLongBreak", 4),
         aiProvider = optInt("aiProvider"),
+        geminiModel = optString("geminiModel", "").ifBlank { AppSettings.DEFAULT_GEMINI_MODEL },
+        openRouterModel = optString("openRouterModel", "").ifBlank { AppSettings.DEFAULT_OPENROUTER_MODEL },
         remindersEnabled = optBoolean("remindersEnabled", true),
         reminderLeadMinutes = optInt("reminderLeadMinutes", 0),
         quadrantSort = optInt("quadrantSort", AppSettings.SORT_MANUAL),

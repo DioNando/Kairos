@@ -92,9 +92,11 @@ Les déplacer, c'est reclasser la tâche.
 - **Assistant IA** (optionnel) : trois actions dans l'éditeur — **reformuler** toute la tâche d'un
   coup (titre, note **et** sous-tâches, avec « Rétablir l'original »), **suggérer le classement**
   (axes Important / Urgent → quadrant, ajustable), et **découper en sous-tâches** (checklist d'étapes
-  concrètes). Via Gemini ou OpenRouter (repli automatique de l'un sur l'autre). Clé de repli possible
-  via `.env` ; sinon clé saisie dans les réglages, stockée **chiffrée** sur l'appareil (jamais dans
-  les sauvegardes). Fonctions masquées tant qu'aucune clé n'existe.
+  concrètes). Via Gemini ou OpenRouter (repli automatique de l'un sur l'autre), **modèle au choix**
+  pour chacun (liste chargée depuis l'API ou identifiant libre). Clés saisies uniquement dans les
+  réglages, stockées **chiffrées** sur l'appareil (jamais dans l'APK ni les sauvegardes) ; les
+  modifier ou les supprimer demande l'empreinte ou le code du téléphone. Fonctions masquées tant
+  qu'aucune clé n'existe.
 - **Enregistrement automatique** de l'éditeur : les modifications sont sauvegardées à la sortie
   (pas de bouton « Enregistrer » à oublier) ; une tâche créée sans titre n'est pas conservée.
 - **Sauvegarde locale** : export / import JSON des tâches, sous-tâches, étiquettes, filtres
@@ -160,10 +162,7 @@ seule à partir de l'heure de fin. Les deux APK partagent l'`applicationId` `com
 ```
 
 - `minSdk 26`, `compileSdk 37`, Kotlin 2.2, AGP 9, Compose BOM 2026.05 + Material 3 1.5 (Expressive).
-- **Clés IA (facultatives)** : pour un repli automatique sans saisie dans l'app, renseigner
-  `GEMINI_API_KEY` / `OPENROUTER_API_KEY` dans un fichier `.env` à la racine (gitignoré) ou
-  `gemini.api.key` / `openrouter.api.key` dans `local.properties`. Sans clé, la reformulation reste
-  simplement masquée. _(La clé de build est incluse en clair dans l'APK : à réserver aux builds privés.)_
+- **Clés IA** : aucune clé n'est embarquée au build ; elles se saisissent dans Réglages → Assistant IA.
 - Sur Windows, si la sortie Gradle streamée fait planter le terminal, rediriger vers un fichier :
   `Start-Process cmd '/c <chemin absolu>\gradlew.bat assembleDebug --console=plain' -RedirectStandardOutput out.txt`.
 
@@ -236,7 +235,7 @@ espace à idées pour faire mûrir l'app.*
 
 ### Assistance (IA, optionnelle)
 - [x] **Reformulation / mise au propre** du titre, de la note et des sous-tâches en un geste
-  (Gemini / OpenRouter, clés chiffrées, repli `.env`).
+  (Gemini / OpenRouter, clés chiffrées et protégées, modèle au choix).
 - [x] **Classement suggéré** : proposer les axes Important / Urgent (donc le quadrant) depuis le titre / la note.
 - [x] **Découpage en sous-tâches** suggéré pour une grande tâche.
 - [ ] **Résumé** d'une note longue.

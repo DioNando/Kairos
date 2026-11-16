@@ -42,6 +42,7 @@ class OpenRouterHttpService(
                         throw when (response.code) {
                             401, 403 -> LlmException.Unauthorized(PROVIDER)
                             429 -> LlmException.RateLimited(PROVIDER)
+                            404 -> LlmException.ModelNotFound(PROVIDER)
                             else -> LlmException.Http(PROVIDER, response.code)
                         }
                     }
@@ -51,6 +52,39 @@ class OpenRouterHttpService(
                 throw LlmException.Network(PROVIDER, e)
             }
             parseContent(body)
+        }
+    }
+
+    /** Liste les modèles OpenRouter (les gratuits `:free` en tête, puis ordre alphabétique). */
+    override suspend fun listModels(): List<String> = withContext(Dispatchers.IO) {
+        val request = Request.Builder()
+            .url("${config.baseUrl}/models")
+            .apply { if (config.apiKey.isNotBlank()) header("Authorization", "Bearer ${config.apiKey}") }
+            .get()
+            .build()
+        val body = try {
+            client.newCall(request).execute().use { response ->
+                val text = response.body?.string().orEmpty()
+                if (!response.isSuccessful) {
+                    throw when (response.code) {
+                        401, 403 -> LlmException.Unauthorized(PROVIDER)
+                        429 -> LlmException.RateLimited(PROVIDER)
+                        else -> LlmException.Http(PROVIDER, response.code)
+                    }
+                }
+                text
+            }
+        } catch (e: IOException) {
+            throw LlmException.Network(PROVIDER, e)
+        }
+        try {
+            val data = JSONObject(body).optJSONArray("data") ?: JSONArray()
+            (0 until data.length()).map { data.getJSONObject(it).optString("id") }
+                .filter { it.isNotBlank() }
+                .distinct()
+                .sortedWith(compareBy<String>({ !it.endsWith(":free") }, { it }))
+        } catch (e: Exception) {
+            throw LlmException.Parse(PROVIDER, e)
         }
     }
 

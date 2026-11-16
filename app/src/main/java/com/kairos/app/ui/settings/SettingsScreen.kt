@@ -1,5 +1,18 @@
 package com.kairos.app.ui.settings
 
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.FilledTonalButton
+import androidx.compose.material.icons.rounded.Lock
+import androidx.compose.material.icons.rounded.LockOpen
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.DisposableEffect
+import androidx.compose.ui.text.font.FontFamily
+import androidx.lifecycle.LifecycleEventObserver
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.compose.LocalLifecycleOwner
+import com.kairos.app.ui.security.AuthResult
+import com.kairos.app.ui.security.SecureWindow
+import com.kairos.app.ui.security.rememberDeviceAuth
 import android.Manifest
 import android.content.pm.PackageManager
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -16,6 +29,7 @@ import androidx.compose.foundation.layout.consumeWindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -39,6 +53,7 @@ import androidx.compose.material.icons.rounded.Brightness6
 import androidx.compose.material.icons.rounded.CheckCircle
 import androidx.compose.material.icons.rounded.DeleteSweep
 import androidx.compose.material.icons.rounded.ErrorOutline
+import androidx.compose.material.icons.rounded.ArrowDropDown
 import androidx.compose.material.icons.rounded.FileDownload
 import androidx.compose.material.icons.rounded.FileUpload
 import androidx.compose.material.icons.rounded.HelpOutline
@@ -56,6 +71,8 @@ import androidx.compose.material.icons.rounded.WaterDrop
 import androidx.compose.material.icons.rounded.WifiTethering
 import androidx.compose.material3.ButtonGroupDefaults
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.HorizontalDivider
@@ -94,6 +111,7 @@ import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.window.PopupProperties
 import com.kairos.app.R
 import com.kairos.app.data.model.AppSettings
 import com.kairos.app.ui.components.KairosFilterChip
@@ -135,6 +153,8 @@ fun SettingsScreen(
     onSetAiProvider: (Int) -> Unit,
     onSetAiKey: (provider: Int, key: String) -> Unit,
     onTestAi: suspend (provider: Int) -> Result<Unit>,
+    onSetAiModel: (provider: Int, model: String) -> Unit,
+    onListAiModels: suspend (provider: Int) -> Result<List<String>>,
     onExport: () -> Unit,
     onImport: () -> Unit,
     onBack: () -> Unit,
@@ -513,12 +533,32 @@ fun SettingsScreen(
                         onValueChange = { onSetAiKey(AppSettings.AI_GEMINI, it) },
                         onTest = onTestAi,
                     )
+                    Spacer(Modifier.height(4.dp))
+                    AiModelField(
+                        label = stringResource(R.string.ai_model_gemini),
+                        value = settings.geminiModel,
+                        defaultModel = AppSettings.DEFAULT_GEMINI_MODEL,
+                        provider = AppSettings.AI_GEMINI,
+                        onValueChange = { onSetAiModel(AppSettings.AI_GEMINI, it) },
+                        onListModels = onListAiModels,
+                        onTest = onTestAi,
+                    )
                     Spacer(Modifier.height(12.dp))
                     AiKeyField(
                         label = stringResource(R.string.ai_key_openrouter),
                         value = openRouterKey,
                         provider = AppSettings.AI_OPENROUTER,
                         onValueChange = { onSetAiKey(AppSettings.AI_OPENROUTER, it) },
+                        onTest = onTestAi,
+                    )
+                    Spacer(Modifier.height(4.dp))
+                    AiModelField(
+                        label = stringResource(R.string.ai_model_openrouter),
+                        value = settings.openRouterModel,
+                        defaultModel = AppSettings.DEFAULT_OPENROUTER_MODEL,
+                        provider = AppSettings.AI_OPENROUTER,
+                        onValueChange = { onSetAiModel(AppSettings.AI_OPENROUTER, it) },
+                        onListModels = onListAiModels,
                         onTest = onTestAi,
                     )
                 }
@@ -707,10 +747,15 @@ private fun CustomColorRow(label: String, value: String, onValueChange: (String)
     }
 }
 
+/** Action protégée sur une clé API, en attente d'authentification. */
+private enum class KeyAction { EDIT, DELETE }
+
 /**
- * Champ de saisie d'une clé API : masqué par défaut, avec bascule d'affichage. Sauvegarde à la volée.
- * Un bouton **« Tester »** vérifie la connexion du fournisseur (clé valide + réseau) par un appel minimal ;
- * le résultat (succès / message d'erreur) s'affiche sous le champ.
+ * Clé API **protégée** (même mécanisme que Darijas) : une fois enregistrée, elle n'apparaît que masquée
+ * (« AIza ••••• 1a2B »). La modifier ou la supprimer demande l'empreinte / le visage ou le code de
+ * l'appareil (BiometricPrompt) ; sans verrouillage d'écran, une confirmation explicite la remplace.
+ * Pendant l'édition, captures d'écran et aperçu des apps récentes sont bloqués, et le champ se
+ * reverrouille dès que l'app passe en arrière-plan. Un bouton **« Tester »** vérifie la clé enregistrée.
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -721,79 +766,296 @@ private fun AiKeyField(
     onValueChange: (String) -> Unit,
     onTest: suspend (provider: Int) -> Result<Unit>,
 ) {
-    var text by remember { mutableStateOf(value) }
-    var hidden by remember { mutableStateOf(true) }
+    var unlocked by rememberSaveable { mutableStateOf(false) }
+    var draft by rememberSaveable { mutableStateOf("") }
+    var shown by remember { mutableStateOf(false) }
+    var pending by remember { mutableStateOf<KeyAction?>(null) }
+    var fallbackFor by remember { mutableStateOf<KeyAction?>(null) }
     val scope = rememberCoroutineScope()
     var testing by remember { mutableStateOf(false) }
     // Résultat du dernier test (null = aucun test depuis la dernière modification de la clé).
     var result by remember { mutableStateOf<Result<Unit>?>(null) }
 
+    val hasKey = value.isNotBlank()
+    val editing = !hasKey || unlocked
+
+    fun lock() { unlocked = false; shown = false; draft = "" }
+
+    fun proceed(action: KeyAction) {
+        when (action) {
+            KeyAction.EDIT -> { draft = value; shown = false; unlocked = true }
+            KeyAction.DELETE -> { onValueChange(""); result = null; lock() }
+        }
+    }
+
+    val authenticate = rememberDeviceAuth(
+        title = label,
+        subtitle = stringResource(R.string.ai_key_auth_subtitle),
+    ) { auth ->
+        val action = pending
+        pending = null
+        when (auth) {
+            AuthResult.SUCCESS -> action?.let(::proceed)
+            AuthResult.UNAVAILABLE -> fallbackFor = action
+            AuthResult.CANCELLED -> Unit
+        }
+    }
+    val request: (KeyAction) -> Unit = { action -> pending = action; authenticate() }
+
+    // Reverrouille dès que l'app passe en arrière-plan.
+    val lifecycleOwner = LocalLifecycleOwner.current
+    DisposableEffect(lifecycleOwner) {
+        val observer = LifecycleEventObserver { _, event ->
+            if (event == Lifecycle.Event.ON_STOP) lock()
+        }
+        lifecycleOwner.lifecycle.addObserver(observer)
+        onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
+    }
+    // Clé lisible à l'écran : pas de capture ni d'aperçu dans les apps récentes.
+    SecureWindow(active = hasKey && unlocked)
+
     Column(modifier = Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        TextField(
-            value = text,
-            // Modifier la clé invalide le dernier résultat de test.
-            onValueChange = { text = it; onValueChange(it); result = null },
-            label = { Text(label) },
-            singleLine = true,
-            visualTransformation = if (hidden) PasswordVisualTransformation() else VisualTransformation.None,
-            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
-            trailingIcon = {
-                IconButton(onClick = { hidden = !hidden }) {
-                    Icon(
-                        if (hidden) Icons.Rounded.Visibility else Icons.Rounded.VisibilityOff,
-                        contentDescription = stringResource(
-                            if (hidden) R.string.cd_key_show else R.string.cd_key_hide,
-                        ),
+        if (!editing) {
+            // --- Verrouillée : aperçu masqué + actions protégées ---------------------------------
+            Surface(color = MaterialTheme.colorScheme.surfaceContainerHighest, shape = KairosFieldShape) {
+                Column(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 10.dp)) {
+                    Text(
+                        label,
+                        style = MaterialTheme.typography.labelMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                    Spacer(Modifier.height(4.dp))
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Icon(
+                            Icons.Rounded.Lock,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.secondary,
+                            modifier = Modifier.size(18.dp),
+                        )
+                        Spacer(Modifier.width(10.dp))
+                        Text(
+                            maskKey(value),
+                            style = MaterialTheme.typography.bodyLarge,
+                            fontFamily = FontFamily.Monospace,
+                            maxLines = 1,
+                            modifier = Modifier.weight(1f),
+                        )
+                    }
+                    Spacer(Modifier.height(4.dp))
+                    Text(
+                        stringResource(R.string.ai_key_locked),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                 }
-            },
-            shape = KairosFieldShape,
-            colors = kairosFieldColors(),
-            modifier = Modifier.fillMaxWidth(),
-        )
-        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-            TextButton(
-                onClick = {
-                    result = null
-                    testing = true
-                    scope.launch {
-                        val r = onTest(provider)
-                        result = r
-                        testing = false
-                    }
-                },
-                enabled = !testing,
+            }
+            Row(
+                modifier = Modifier.horizontalScroll(rememberScrollState()),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(4.dp),
             ) {
-                if (testing) {
-                    CircularProgressIndicator(modifier = Modifier.size(16.dp), strokeWidth = 2.dp)
-                    Spacer(Modifier.width(8.dp))
-                    Text(stringResource(R.string.ai_test_running))
-                } else {
-                    Icon(Icons.Rounded.WifiTethering, contentDescription = null, modifier = Modifier.size(18.dp))
+                FilledTonalButton(onClick = { request(KeyAction.EDIT) }) {
+                    Icon(Icons.Rounded.LockOpen, contentDescription = null, modifier = Modifier.size(18.dp))
                     Spacer(Modifier.width(6.dp))
-                    Text(stringResource(R.string.ai_test))
+                    Text(stringResource(R.string.ai_key_edit))
+                }
+                TextButton(onClick = { request(KeyAction.DELETE) }) { Text(stringResource(R.string.ai_key_delete)) }
+                TextButton(
+                    onClick = {
+                        result = null
+                        testing = true
+                        scope.launch {
+                            result = onTest(provider)
+                            testing = false
+                        }
+                    },
+                    enabled = !testing,
+                ) {
+                    if (testing) {
+                        CircularProgressIndicator(modifier = Modifier.size(16.dp), strokeWidth = 2.dp)
+                        Spacer(Modifier.width(8.dp))
+                        Text(stringResource(R.string.ai_test_running))
+                    } else {
+                        Icon(Icons.Rounded.WifiTethering, contentDescription = null, modifier = Modifier.size(18.dp))
+                        Spacer(Modifier.width(6.dp))
+                        Text(stringResource(R.string.ai_test))
+                    }
                 }
             }
             val r = result
             if (r != null && !testing) {
-                if (r.isSuccess) {
+                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                     Icon(
-                        Icons.Rounded.CheckCircle,
+                        if (r.isSuccess) Icons.Rounded.CheckCircle else Icons.Rounded.ErrorOutline,
                         contentDescription = null,
-                        tint = MaterialTheme.colorScheme.primary,
+                        tint = if (r.isSuccess) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.error,
                         modifier = Modifier.size(18.dp),
                     )
                     Text(
-                        stringResource(R.string.ai_test_ok),
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.primary,
+                        text = if (r.isSuccess) stringResource(R.string.ai_test_ok)
+                        else r.exceptionOrNull()?.message ?: stringResource(R.string.ai_test_failed),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = if (r.isSuccess) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.error,
+                    )
+                }
+            }
+        } else {
+            // --- Saisie (première clé, ou après authentification) --------------------------------
+            TextField(
+                value = draft,
+                onValueChange = { draft = it },
+                label = { Text(if (hasKey) stringResource(R.string.ai_key_new) else label) },
+                supportingText = if (hasKey) {
+                    { Text(stringResource(R.string.ai_key_unlocked)) }
+                } else null,
+                singleLine = true,
+                visualTransformation = if (shown) VisualTransformation.None else PasswordVisualTransformation(),
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
+                trailingIcon = {
+                    IconButton(onClick = { shown = !shown }) {
+                        Icon(
+                            if (shown) Icons.Rounded.VisibilityOff else Icons.Rounded.Visibility,
+                            contentDescription = stringResource(
+                                if (shown) R.string.cd_key_hide else R.string.cd_key_show,
+                            ),
+                        )
+                    }
+                },
+                shape = KairosFieldShape,
+                colors = kairosFieldColors(),
+                modifier = Modifier.fillMaxWidth(),
+            )
+            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                FilledTonalButton(
+                    onClick = { onValueChange(draft.trim()); result = null; lock() },
+                    enabled = draft.isNotBlank() && draft.trim() != value,
+                ) { Text(stringResource(R.string.ai_key_save)) }
+                if (hasKey) {
+                    TextButton(onClick = { lock() }) { Text(stringResource(R.string.ai_key_cancel)) }
+                }
+            }
+        }
+    }
+
+    fallbackFor?.let { action ->
+        AlertDialog(
+            onDismissRequest = { fallbackFor = null },
+            title = {
+                Text(stringResource(if (action == KeyAction.DELETE) R.string.ai_key_delete_title else R.string.ai_key_edit_title))
+            },
+            text = { Text(stringResource(R.string.ai_key_no_lock)) },
+            confirmButton = {
+                TextButton(onClick = { fallbackFor = null; proceed(action) }) {
+                    Text(
+                        stringResource(if (action == KeyAction.DELETE) R.string.ai_key_delete else R.string.ai_key_continue),
+                        fontWeight = FontWeight.SemiBold,
+                    )
+                }
+            },
+            dismissButton = { TextButton(onClick = { fallbackFor = null }) { Text(stringResource(R.string.ai_key_cancel)) } },
+        )
+    }
+}
+
+/** « AIzaSyD…1a2B » → « AIza ••••••••• 1a2B » : assez pour reconnaître la clé, pas pour la réutiliser. */
+private fun maskKey(key: String): String =
+    if (key.length <= 8) "•".repeat(key.length.coerceAtLeast(8))
+    else key.take(4) + " ••••••••• " + key.takeLast(4)
+
+/**
+ * Choix du modèle d'un fournisseur : champ libre (identifiant API) + liste des modèles disponibles,
+ * chargée à la demande depuis l'API et filtrée par le texte saisi. Vide = modèle par défaut.
+ */
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun AiModelField(
+    label: String,
+    value: String,
+    defaultModel: String,
+    provider: Int,
+    onValueChange: (String) -> Unit,
+    onListModels: suspend (provider: Int) -> Result<List<String>>,
+    onTest: suspend (provider: Int) -> Result<Unit>,
+) {
+    var text by remember { mutableStateOf(value) }
+    var testing by remember { mutableStateOf(false) }
+    // Résultat du dernier test, oublié dès que le modèle saisi change.
+    var testResult by remember(text) { mutableStateOf<Result<Unit>?>(null) }
+    val scope = rememberCoroutineScope()
+    var loading by remember { mutableStateOf(false) }
+    var models by remember { mutableStateOf<List<String>>(emptyList()) }
+    var error by remember { mutableStateOf<String?>(null) }
+    var expanded by remember { mutableStateOf(false) }
+    val failedText = stringResource(R.string.ai_models_failed)
+
+    fun select(model: String) {
+        text = model
+        onValueChange(model)
+        expanded = false
+    }
+
+    Column(modifier = Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+        Box(modifier = Modifier.fillMaxWidth()) {
+            TextField(
+                value = text,
+                onValueChange = { text = it; onValueChange(it) },
+                label = { Text(label) },
+                placeholder = { Text(defaultModel) },
+                singleLine = true,
+                trailingIcon = {
+                    if (loading) {
+                        CircularProgressIndicator(modifier = Modifier.size(20.dp), strokeWidth = 2.dp)
+                    } else {
+                        IconButton(onClick = {
+                            if (models.isNotEmpty()) {
+                                expanded = !expanded
+                            } else {
+                                error = null
+                                loading = true
+                                scope.launch {
+                                    onListModels(provider)
+                                        .onSuccess { models = it; expanded = it.isNotEmpty() }
+                                        .onFailure { error = it.message ?: failedText }
+                                    loading = false
+                                }
+                            }
+                        }) {
+                            Icon(
+                                Icons.Rounded.ArrowDropDown,
+                                contentDescription = stringResource(R.string.ai_models_choose),
+                            )
+                        }
+                    }
+                },
+                shape = KairosFieldShape,
+                colors = kairosFieldColors(),
+                modifier = Modifier.fillMaxWidth(),
+            )
+            val query = text.trim()
+            // Si le texte saisi est exactement un modèle de la liste, on montre toute la liste.
+            val filtered = if (query.isEmpty() || models.contains(query)) models
+            else models.filter { it.contains(query, ignoreCase = true) }
+            DropdownMenu(
+                expanded = expanded && filtered.isNotEmpty(),
+                onDismissRequest = { expanded = false },
+                properties = PopupProperties(focusable = false),
+                modifier = Modifier.heightIn(max = 320.dp),
+            ) {
+                filtered.forEach { model ->
+                    DropdownMenuItem(
+                        text = {
+                            Text(
+                                model,
+                                style = MaterialTheme.typography.bodyMedium,
+                                fontWeight = if (model == query) FontWeight.SemiBold else FontWeight.Normal,
+                            )
+                        },
+                        onClick = { select(model) },
                     )
                 }
             }
         }
-        // Message d'erreur sur toute la largeur (peut être long : « Gemini : clé API invalide… »).
-        val r = result
-        if (r != null && !testing && r.isFailure) {
+        error?.let {
             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                 Icon(
                     Icons.Rounded.ErrorOutline,
@@ -801,10 +1063,45 @@ private fun AiKeyField(
                     tint = MaterialTheme.colorScheme.error,
                     modifier = Modifier.size(18.dp),
                 )
+                Text(it, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.error)
+            }
+        }
+        TextButton(
+            onClick = {
+                testResult = null
+                testing = true
+                scope.launch {
+                    // Le modèle saisi est enregistré à la volée : le test porte sur lui.
+                    testResult = onTest(provider)
+                    testing = false
+                }
+            },
+            enabled = !testing,
+        ) {
+            if (testing) {
+                CircularProgressIndicator(modifier = Modifier.size(16.dp), strokeWidth = 2.dp)
+                Spacer(Modifier.width(8.dp))
+                Text(stringResource(R.string.ai_test_running))
+            } else {
+                Icon(Icons.Rounded.WifiTethering, contentDescription = null, modifier = Modifier.size(18.dp))
+                Spacer(Modifier.width(6.dp))
+                Text(stringResource(R.string.ai_model_test))
+            }
+        }
+        val r = testResult
+        if (r != null && !testing) {
+            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                Icon(
+                    if (r.isSuccess) Icons.Rounded.CheckCircle else Icons.Rounded.ErrorOutline,
+                    contentDescription = null,
+                    tint = if (r.isSuccess) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.error,
+                    modifier = Modifier.size(18.dp),
+                )
                 Text(
-                    text = r.exceptionOrNull()?.message ?: stringResource(R.string.ai_test_failed),
+                    text = if (r.isSuccess) stringResource(R.string.ai_model_ok)
+                    else r.exceptionOrNull()?.message ?: stringResource(R.string.ai_test_failed),
                     style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.error,
+                    color = if (r.isSuccess) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.error,
                 )
             }
         }

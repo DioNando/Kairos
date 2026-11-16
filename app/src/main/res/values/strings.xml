@@ -187,6 +187,12 @@
     <string name="ai_provider_openrouter">OpenRouter</string>
     <string name="ai_key_gemini">Clé API Gemini</string>
     <string name="ai_key_openrouter">Clé API OpenRouter</string>
+    <string name="ai_model_gemini">Modèle Gemini</string>
+    <string name="ai_model_openrouter">Modèle OpenRouter</string>
+    <string name="ai_model_test">Tester le modèle</string>
+    <string name="ai_model_ok">Le modèle répond</string>
+    <string name="ai_models_choose">Choisir un modèle</string>
+    <string name="ai_models_failed">Impossible de charger la liste des modèles.</string>
     <string name="ai_reformulate">Reformuler (IA)</string>
     <string name="ai_revert">Rétablir l\'original</string>
     <string name="ai_classify">Suggérer le classement (IA)</string>
@@ -198,6 +204,18 @@
     <string name="ai_test_no_key">Renseigne d\'abord une clé pour ce fournisseur.</string>
     <string name="cd_key_show">Afficher la clé</string>
     <string name="cd_key_hide">Masquer la clé</string>
+    <string name="ai_key_edit">Modifier</string>
+    <string name="ai_key_delete">Supprimer</string>
+    <string name="ai_key_save">Enregistrer</string>
+    <string name="ai_key_cancel">Annuler</string>
+    <string name="ai_key_continue">Continuer</string>
+    <string name="ai_key_new">Nouvelle clé</string>
+    <string name="ai_key_locked">Chiffrée sur l\'appareil, protégée par ton empreinte ou ton code</string>
+    <string name="ai_key_unlocked">Déverrouillée — se reverrouille en quittant l\'app</string>
+    <string name="ai_key_auth_subtitle">Confirme ton identité pour modifier la clé</string>
+    <string name="ai_key_edit_title">Modifier la clé ?</string>
+    <string name="ai_key_delete_title">Supprimer la clé ?</string>
+    <string name="ai_key_no_lock">Ton téléphone n\'a ni empreinte ni code de verrouillage : la clé ne peut pas être protégée par une authentification. Active un verrouillage d\'écran dans les paramètres Android pour mieux la protéger.</string>
 
     <!-- Guide / Aide -->
     <string name="cd_guide">Guide</string>

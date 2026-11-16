@@ -5,25 +5,6 @@ plugins {
     alias(libs.plugins.ksp)
 }
 
-/**
- * Lit une variable du fichier `.env` (racine du projet, gitignoré). Sert de repli aux clés API IA
- * (Gemini, OpenRouter) quand aucune clé n'est saisie dans l'app. Retourne "" si absent.
- */
-fun readEnv(key: String): String {
-    val envFile = rootProject.file(".env")
-    if (!envFile.exists()) return ""
-    envFile.readLines().forEach { line ->
-        val trimmed = line.trim()
-        if (trimmed.isEmpty() || trimmed.startsWith("#")) return@forEach
-        val idx = trimmed.indexOf('=')
-        if (idx <= 0) return@forEach
-        if (trimmed.substring(0, idx).trim() == key) {
-            return trimmed.substring(idx + 1).trim().trim('"', '\'')
-        }
-    }
-    return ""
-}
-
 android {
     namespace = "com.kairos.app"
     // compileSdk 37 requis par Compose 1.12.0-alpha03 (tiré par material3 1.5.0-alpha — M3 Expressive).
@@ -38,18 +19,6 @@ android {
         versionName = "1.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
-
-        // Clés API IA de repli : local.properties prioritaire, sinon .env. Absente -> "" -> repli
-        // inactif (l'utilisateur peut toujours saisir une clé dans les réglages, prioritaire).
-        val geminiKey = (project.findProperty("gemini.api.key") as String?)
-            ?.takeIf { it.isNotBlank() }
-            ?: readEnv("GEMINI_API_KEY")
-        buildConfigField("String", "GEMINI_API_KEY", "\"${geminiKey.replace("\\", "\\\\").replace("\"", "\\\"")}\"")
-
-        val openRouterKey = (project.findProperty("openrouter.api.key") as String?)
-            ?.takeIf { it.isNotBlank() }
-            ?: readEnv("OPENROUTER_API_KEY")
-        buildConfigField("String", "OPENROUTER_API_KEY", "\"${openRouterKey.replace("\\", "\\\\").replace("\"", "\\\"")}\"")
     }
 
     buildTypes {
@@ -75,8 +44,6 @@ android {
 
     buildFeatures {
         compose = true
-        // Expose GEMINI_API_KEY / OPENROUTER_API_KEY (repli .env) via BuildConfig.
-        buildConfig = true
     }
 
     testOptions {
@@ -92,6 +59,10 @@ dependencies {
     implementation(libs.androidx.lifecycle.viewmodel.compose)
     implementation(libs.androidx.lifecycle.runtime.compose)
     implementation(libs.androidx.activity.compose)
+    // Authentification (empreinte / code de l'appareil) avant de modifier une clé API. biometric 1.1.0
+    // tire un vieux fragment (1.2.x) incompatible avec l'API ActivityResult → fragment moderne forcé.
+    implementation(libs.androidx.biometric)
+    implementation(libs.androidx.fragment)
 
     implementation(platform(libs.androidx.compose.bom))
     implementation(libs.androidx.ui)

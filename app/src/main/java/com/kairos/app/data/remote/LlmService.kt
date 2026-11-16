@@ -9,6 +9,7 @@ import kotlinx.coroutines.delay
 sealed class LlmException(message: String) : Exception(message) {
     class Unauthorized(provider: String) : LlmException("$provider : clé API invalide ou expirée")
     class RateLimited(provider: String) : LlmException("$provider : limite/quota atteint (429), réessayez plus tard")
+    class ModelNotFound(provider: String) : LlmException("$provider : modèle introuvable, choisissez-en un autre dans les réglages")
     class Http(provider: String, val code: Int) : LlmException("$provider : erreur HTTP $code")
     class Network(provider: String, cause: Throwable) : LlmException("$provider : réseau indisponible (${cause.message})")
     class Parse(provider: String, cause: Throwable) : LlmException("$provider : réponse illisible (${cause.message})")
@@ -18,6 +19,9 @@ sealed class LlmException(message: String) : Exception(message) {
 /** Service de génération de texte (un prompt → un texte). Implémentations : Gemini, OpenRouter. */
 interface LlmService {
     suspend fun generate(prompt: String): String
+
+    /** Identifiants des modèles de génération de texte disponibles pour la clé courante. */
+    suspend fun listModels(): List<String>
 }
 
 /**

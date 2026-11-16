@@ -5,11 +5,11 @@ import android.content.res.Configuration
 import android.net.Uri
 import android.os.Bundle
 import android.widget.Toast
-import androidx.activity.ComponentActivity
 import androidx.activity.compose.LocalActivityResultRegistryOwner
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.fragment.app.FragmentActivity
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.tween
@@ -45,7 +45,8 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
-class MainActivity : ComponentActivity() {
+/** FragmentActivity (et non ComponentActivity) : requis par BiometricPrompt (clés API). */
+class MainActivity : FragmentActivity() {
 
     /** Compteur incrémenté à chaque intent « ouvrir le Pomodoro » (notification ou raccourci). */
     private val pomodoroLaunch = mutableIntStateOf(0)
@@ -155,6 +156,8 @@ class MainActivity : ComponentActivity() {
                                 onSetAiProvider = { scope.launch { settingsRepository.setAiProvider(it) } },
                                 onSetAiKey = { provider, key -> app.setAiKey(provider, key); aiKeysVersion++ },
                                 onTestAi = { provider -> app.testAi(provider) },
+                                onSetAiModel = { provider, model -> scope.launch { settingsRepository.setAiModel(provider, model) } },
+                                onListAiModels = { provider -> app.listAiModels(provider) },
                                 onSetThemeMode = { scope.launch { settingsRepository.setThemeMode(it) } },
                                 onSetLanguage = { scope.launch { settingsRepository.setLanguage(it) } },
                                 onSetDynamicColor = { scope.launch { settingsRepository.setDynamicColor(it) } },
