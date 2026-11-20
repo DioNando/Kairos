@@ -11,3 +11,7 @@
     public static **[] values();
     public static ** valueOf(java.lang.String);
 }
+
+# Glance retrouve les widgets à mettre à jour par leur classe (updateAll) : si R8 fusionne des
+# GlanceAppWidget qui se ressemblent, un widget en dessine un autre. On garde chaque classe distincte.
+-keep class * extends androidx.glance.appwidget.GlanceAppWidget
