@@ -1,6 +1,11 @@
 package com.kairos.app
 
 import android.app.Application
+import android.app.WallpaperManager
+import android.content.res.Configuration
+import android.os.Build
+import android.os.Handler
+import android.os.Looper
 import com.kairos.app.data.calendar.CalendarSource
 import com.kairos.app.data.local.KairosDatabase
 import com.kairos.app.data.model.AppSettings
@@ -40,11 +45,14 @@ import com.kairos.app.wear.WearSync
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.distinctUntilChangedBy
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import okhttp3.OkHttpClient
 
@@ -97,6 +105,47 @@ class KairosApp : Application() {
 
     /** Portée liée au cycle de vie du process, pour le travail hors UI (export/import). */
     val applicationScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
+
+    /**
+     * Incrémenté quand les couleurs système peuvent avoir changé (fond d'écran, configuration) → force
+     * une nouvelle résolution de la palette d'accent. Utile pour la palette **Material You** : sans lui,
+     * widgets et montre garderaient les anciennes couleurs jusqu'au prochain changement de tâche/réglage.
+     */
+    private val systemColorsTick = MutableStateFlow(0)
+
+    /** Palette d'accent effective, re-résolue à chaque réglage **ou** changement de couleurs système. */
+    private val accentPalette by lazy {
+        combine(settingsRepository.settings, systemColorsTick) { settings, _ -> settings.toAccentPalette(this) }
+            .distinctUntilChanged()
+    }
+
+    override fun onConfigurationChanged(newConfig: Configuration) {
+        super.onConfigurationChanged(newConfig)
+        // La nouvelle palette système (overlay Material You) arrive sous forme de changement de config.
+        systemColorsTick.update { it + 1 }
+    }
+
+    /**
+     * Écoute les changements de couleurs du fond d'écran. Le système recalcule ses palettes
+     * tonales un peu après le callback → deux relectures décalées ; `distinctUntilChanged` sur la palette
+     * évite tout envoi en double.
+     */
+    private fun watchWallpaperColors() {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O_MR1) return
+        runCatching {
+            WallpaperManager.getInstance(this).addOnColorsChangedListener(
+                { _, _ ->
+                    applicationScope.launch {
+                        delay(1_500)
+                        systemColorsTick.update { it + 1 }
+                        delay(4_000)
+                        systemColorsTick.update { it + 1 }
+                    }
+                },
+                Handler(Looper.getMainLooper()),
+            )
+        }
+    }
 
     // --- Assistant IA (reformulation des notes) -------------------------------------------------
 
@@ -276,7 +325,7 @@ class KairosApp : Application() {
         // (les tuiles suivent la **palette de quadrants** choisie → un changement de palette doit se
         // propager au widget, pas seulement à l'app).
         applicationScope.launch {
-            combine(repository.tasks, subtaskDues, settingsRepository.settings) { _, _, _ -> }.collect {
+            combine(repository.tasks, subtaskDues, settingsRepository.settings, accentPalette) { _, _, _, _ -> }.collect {
                 try {
                     KairosWidget().updateAll(this@KairosApp)
                     KairosRowWidget().updateAll(this@KairosApp)
@@ -301,15 +350,18 @@ class KairosApp : Application() {
             ) { tasks: List<Task>, dues: Map<Long, Long>, blocks: List<TimeBlock>, labels: List<Label>, settings: AppSettings ->
                 WearSnapshot(tasks, dues, blocks, labels, settings)
             }.collect { (tasks, dues, blocks, labels, settings) ->
-                val palette = settings.toAccentPalette(this@KairosApp)
                 val labelsById = labels.associateBy { it.id }
                 runCatching { WearSync.pushCounts(this@KairosApp, tasks) }
                 runCatching { WearSync.pushFocus(this@KairosApp, tasks, labelsById, settings.focusDueWeight, dues) }
                 runCatching { WearSync.pushQuadrants(this@KairosApp, tasks, labelsById, settings.quadrantSort) }
                 runCatching { WearSync.pushPlanning(this@KairosApp, tasks, blocks) }
-                runCatching { WearSync.pushPalette(this@KairosApp, palette) }
             }
         }
+        // Palette de quadrants vers la montre : à chaque changement effectif (réglage ou couleurs système).
+        applicationScope.launch {
+            accentPalette.collect { palette -> runCatching { WearSync.pushPalette(this@KairosApp, palette) } }
+        }
+        watchWallpaperColors()
         // Pomodoro vers la montre : uniquement aux transitions (marche/pause, phase, remise à zéro) —
         // en marche la montre décompte seule à partir de l'heure de fin, pas d'envoi par seconde.
         applicationScope.launch {
