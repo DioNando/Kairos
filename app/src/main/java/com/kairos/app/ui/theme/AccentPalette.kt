@@ -1,5 +1,8 @@
 package com.kairos.app.ui.theme
 
+import android.content.Context
+import android.os.Build
+import androidx.annotation.RequiresApi
 import androidx.compose.runtime.compositionLocalOf
 import androidx.compose.ui.graphics.Color
 import com.kairos.app.data.model.AppSettings
@@ -54,16 +57,44 @@ val AppPalettes: List<AccentPalette> = listOf(
     ),
 )
 
+/**
+ * Identifiant de la palette **Material You** : hors de la plage des presets et inférieur à l'index
+ * « Personnalisée » (`AppPalettes.size`), pour ne jamais décaler les identifiants déjà enregistrés.
+ */
+const val DYNAMIC_PALETTE_ID = -1
+
+/** Nom affiché de la palette dynamique. */
+const val DYNAMIC_PALETTE_NAME = "Material You"
+
+/**
+ * Palette tirée des couleurs dynamiques du système (Android 12+), ton 60 de chaque palette tonale :
+ * Faire = primaire, Planifier = tertiaire, Déléguer = secondaire, Supprimer = neutre variante.
+ * Suit le fond d'écran : elle est relue à chaque résolution.
+ */
+@RequiresApi(Build.VERSION_CODES.S)
+fun dynamicAccentPalette(context: Context): AccentPalette {
+    fun c(id: Int) = Color(context.getColor(id))
+    return AccentPalette(
+        name = DYNAMIC_PALETTE_NAME,
+        doColor = c(android.R.color.system_accent1_400),
+        scheduleColor = c(android.R.color.system_accent3_400),
+        delegateColor = c(android.R.color.system_accent2_400),
+        eliminateColor = c(android.R.color.system_neutral2_400),
+    )
+}
+
 /** Palette d'accent courante, fournie au niveau racine selon les réglages. */
 val LocalAccentPalette = compositionLocalOf { AppPalettes[0] }
 
 /**
- * Palette d'accent effective pour ces [AppSettings] : un preset de [AppPalettes] si `paletteId` est dans
+ * Palette d'accent effective pour ces [AppSettings] : la palette Material You ([DYNAMIC_PALETTE_ID]), un preset de [AppPalettes] si `paletteId` est dans
  * la plage, sinon la palette **personnalisée** construite depuis les 4 couleurs hex. Source unique de
  * vérité partagée par l'app ([com.kairos.app.MainActivity]) ET les widgets ([com.kairos.app.widget]).
  */
-fun AppSettings.toAccentPalette(): AccentPalette =
-    if (paletteId in AppPalettes.indices) {
+fun AppSettings.toAccentPalette(context: Context): AccentPalette =
+    if (paletteId == DYNAMIC_PALETTE_ID) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) dynamicAccentPalette(context) else AppPalettes[0]
+    } else if (paletteId in AppPalettes.indices) {
         AppPalettes[paletteId]
     } else {
         AccentPalette(

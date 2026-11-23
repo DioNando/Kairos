@@ -81,7 +81,7 @@ private suspend fun loadQuadrants(context: Context): Map<Quadrant, WidgetQuadran
 private suspend fun resolvePalette(context: Context): AccentPalette {
     val app = context.applicationContext as? KairosApp ?: return AppPalettes[0]
     val settings = runCatching { app.settingsRepository.settings.first() }.getOrNull()
-    return settings?.toAccentPalette() ?: AppPalettes[0]
+    return settings?.toAccentPalette(context) ?: AppPalettes[0]
 }
 
 /**

@@ -119,6 +119,9 @@ import com.kairos.app.ui.components.KairosFieldShape
 import com.kairos.app.ui.components.kairosFieldColors
 import com.kairos.app.ui.components.toColor
 import com.kairos.app.ui.theme.AppPalettes
+import com.kairos.app.ui.theme.DYNAMIC_PALETTE_ID
+import com.kairos.app.ui.theme.DYNAMIC_PALETTE_NAME
+import com.kairos.app.ui.theme.dynamicAccentPalette
 import com.kairos.app.ui.theme.dynamicColorSupported
 import kotlinx.coroutines.launch
 import kotlin.math.roundToInt
@@ -651,7 +654,17 @@ private fun ThemeButtonGroup(current: Int, onSelect: (Int) -> Unit) {
 @Composable
 private fun PaletteList(settings: AppSettings, onSetPalette: (Int) -> Unit) {
     val customIndex = AppPalettes.size
+    val context = LocalContext.current
     Column {
+        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.S) {
+            val dyn = remember(context) { dynamicAccentPalette(context) }
+            PaletteRow(
+                name = DYNAMIC_PALETTE_NAME,
+                selected = settings.paletteId == DYNAMIC_PALETTE_ID,
+                swatches = listOf(dyn.doColor, dyn.scheduleColor, dyn.delegateColor, dyn.eliminateColor),
+                onClick = { onSetPalette(DYNAMIC_PALETTE_ID) },
+            )
+        }
         AppPalettes.forEachIndexed { index, palette ->
             PaletteRow(
                 name = palette.name,

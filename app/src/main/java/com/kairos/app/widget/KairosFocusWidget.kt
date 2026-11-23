@@ -79,7 +79,7 @@ private suspend fun loadFocus(context: Context): List<FocusItem> {
     val labels = db.labelDao().getAll().associateBy { it.id }
     val settings = (context.applicationContext as? KairosApp)
         ?.let { runCatching { it.settingsRepository.settings.first() }.getOrNull() }
-    val palette = settings?.toAccentPalette() ?: AppPalettes[0]
+    val palette = settings?.toAccentPalette(context) ?: AppPalettes[0]
     val weight = settings?.focusDueWeight ?: FocusSelector.DEFAULT_DUE_WEIGHT
     val subtaskDues = FocusSelector.subtaskDues(db.subtaskDao().getAll())
     return FocusSelector.rank(tasks, weight, subtaskDues = subtaskDues).take(FOCUS_SIZE).map { task ->

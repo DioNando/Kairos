@@ -301,7 +301,7 @@ class KairosApp : Application() {
             ) { tasks: List<Task>, dues: Map<Long, Long>, blocks: List<TimeBlock>, labels: List<Label>, settings: AppSettings ->
                 WearSnapshot(tasks, dues, blocks, labels, settings)
             }.collect { (tasks, dues, blocks, labels, settings) ->
-                val palette = settings.toAccentPalette()
+                val palette = settings.toAccentPalette(this@KairosApp)
                 val labelsById = labels.associateBy { it.id }
                 runCatching { WearSync.pushCounts(this@KairosApp, tasks) }
                 runCatching { WearSync.pushFocus(this@KairosApp, tasks, labelsById, settings.focusDueWeight, dues) }

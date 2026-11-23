@@ -112,7 +112,7 @@ class MainActivity : FragmentActivity() {
 
             // Transition douce des couleurs de quadrants lors d'un changement de palette.
             // Résolveur partagé avec le widget (toAccentPalette) → aucune divergence possible.
-            val target = settings.toAccentPalette()
+            val target = settings.toAccentPalette(this@MainActivity)
             val spec = tween<Color>(durationMillis = 450)
             val doC by animateColorAsState(target.doColor, spec, label = "accent-do")
             val schedC by animateColorAsState(target.scheduleColor, spec, label = "accent-schedule")
